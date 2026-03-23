@@ -211,7 +211,14 @@
 <section class="registro" id="registro">
   <div class="form-card">
     <h2>Obtener licencia</h2>
-    <p class="form-desc">Completá el formulario y elegí tu método de pago. Una vez confirmado el pago, activamos tu licencia manualmente en menos de 24hs.</p>
+    <p class="form-desc">
+      Completá el formulario y elegí tu método de pago.<br><br>
+      Una vez realizado el pago, enviá el comprobante a
+      <a href="https://instagram.com/tradingdesdeadentro" target="_blank"
+         style="color:#E57373;text-decoration:none;font-weight:600">@tradingdesdeadentro</a>
+      por Instagram. Recibirás la herramienta en el correo electrónico proporcionado
+      en un plazo máximo de <strong style="color:#fff">24 horas</strong>.
+    </p>
 
     <div class="form-group">
       <label>Nombre completo</label>
@@ -222,9 +229,14 @@
       <input type="email" id="email" placeholder="tu@email.com">
     </div>
     <div class="form-group">
-      <label>MAC Address</label>
+      <label>MAC Address (Dirección física Ethernet)</label>
       <input type="text" id="mac" placeholder="AA-BB-CC-DD-EE-FF">
-      <p class="mac-hint">La encontrás abriendo el Daily Loss Limiter en NT8, o ejecutando <code>ipconfig /all</code> en CMD.</p>
+      <p class="mac-hint">
+        Ejecutá <code>ipconfig /all</code> en CMD y buscá <strong style="color:#E57373">Adaptador de Ethernet Ethernet → Dirección física</strong>.
+        Usá ese valor (formato XX-XX-XX-XX-XX-XX).
+      </p>
+      <img src="mac_instructivo.png" alt="Cómo encontrar tu MAC Address"
+           style="width:100%;border-radius:8px;margin-top:12px;border:1px solid #2A2A2A;">
     </div>
 
     <p class="payment-title">Elegí tu método de pago</p>

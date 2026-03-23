@@ -4,6 +4,10 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Trading desde Adentro — Daily Loss Limiter</title>
+  <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
+  <script>emailjs.init("rp9MNqIfMeyq1q0lG");</script>
+  <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
+  <script>emailjs.init("rp9MNqIfMeyq1q0lG");</script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
   <style>
@@ -214,9 +218,8 @@
     <p class="form-desc">
       Completá el formulario y elegí tu método de pago.<br><br>
       Una vez realizado el pago, enviá el comprobante a
-      <a href="https://instagram.com/tradingdesdeadentro" target="_blank"
-         style="color:#E57373;text-decoration:none;font-weight:600">@tradingdesdeadentro</a>
-      por Instagram. Recibirás la herramienta en el correo electrónico proporcionado
+      <strong style="color:#E57373">tradingdesdeadentro@gmail.com</strong>.
+      Recibirás la herramienta en el correo electrónico proporcionado
       en un plazo máximo de <strong style="color:#fff">24 horas</strong>.
     </p>
 
@@ -276,7 +279,7 @@
   <div class="modal">
     <button class="modal-close" onclick="cerrarModal('modalUsdt')">✕</button>
     <h3>Pago con USDT</h3>
-    <p class="modal-desc">Enviá exactamente <strong>30 USDT</strong> a la siguiente dirección en la red <strong>BNB Smart Chain (BEP20)</strong>. Cualquier otra red resultará en pérdida de fondos.</p>
+    <p class="modal-desc">Enviá exactamente <strong>30 USDT</strong> a la siguiente dirección en la red <strong>BNB Smart Chain (BEP20)</strong>. Cualquier otra red resultará en pérdida de fondos.<br><br>Una vez enviado, enviá el comprobante a <strong>tradingdesdeadentro@gmail.com</strong>.</p>
     <div class="copy-row">
       <div>
         <div class="copy-label">Red</div>
@@ -290,7 +293,7 @@
       </div>
       <button onclick="copiar('0x02E514478AC1Ef604D6aBef12187c4aFD55c6201', this)">Copiar</button>
     </div>
-    <p style="font-size:12px;color:#9E9E9E;margin-top:8px">Una vez enviado el pago, hacé clic en "Confirmar envío" y te contactaremos para activar tu licencia.</p>
+    <p style="font-size:12px;color:#9E9E9E;margin-top:8px">Una vez realizada la transferencia, hacé clic en "Confirmar transferencia" y enviá el comprobante a <strong style="color:#ccc">tradingdesdeadentro@gmail.com</strong>.</p>
     <button class="modal-confirm" onclick="confirmarPago('usdt')">Confirmar envío →</button>
   </div>
 </div>
@@ -407,7 +410,18 @@
     cerrarModal('modalArs');
     const msg = document.getElementById('msg');
     msg.className = 'msg ok';
-    msg.textContent = 'Pago registrado. Te contactaremos a ' + datos.email + ' para activar tu licencia en menos de 24hs.';
+    msg.innerHTML = 'Hemos recibido tu solicitud correctamente.<br>Recorda enviar el comprobante a <strong>tradingdesdeadentro@gmail.com</strong> para activar tu licencia.';
+
+    // Enviar email automatico al cliente
+    try {
+      await emailjs.send('service_3zbxaia', 'template_gmveuaa', {
+        nombre: datos.nombre,
+        email:  datos.email,
+        mac:    datos.mac
+      });
+    } catch(e) {
+      console.error('Error enviando email:', e);
+    }
   }
 
   function copiar(texto, btn) {

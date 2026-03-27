@@ -112,6 +112,32 @@
     }
 
     /* MÉTODOS DE PAGO */
+    /* CUPON */
+    .cupon-row { display: flex; gap: 8px; margin-bottom: 16px; }
+    .cupon-row input {
+      flex: 1; background: #181818; border: 1px solid var(--negro-border);
+      border-radius: 8px; padding: 12px 14px; color: var(--blanco);
+      font-family: 'DM Sans', sans-serif; font-size: 14px; outline: none;
+      text-transform: uppercase; transition: border-color 0.2s;
+    }
+    .cupon-row input:focus { border-color: var(--rojo); }
+    .cupon-row input::placeholder { color: #444; text-transform: none; }
+    .cupon-btn {
+      background: #1A1A1A; border: 1px solid var(--negro-border); border-radius: 8px;
+      padding: 0 16px; color: var(--gris-claro); font-family: 'DM Sans', sans-serif;
+      font-size: 13px; font-weight: 600; cursor: pointer; white-space: nowrap;
+      transition: all 0.2s;
+    }
+    .cupon-btn:hover { border-color: var(--rojo); color: var(--blanco); }
+    .cupon-msg { font-size: 12px; margin: -10px 0 12px 0; min-height: 16px; }
+    .cupon-msg.ok  { color: #4CAF50; }
+    .cupon-msg.err { color: #E57373; }
+    .descuento-badge {
+      display: none; background: rgba(76,175,80,0.15); border: 1px solid rgba(76,175,80,0.4);
+      border-radius: 6px; padding: 8px 14px; margin-bottom: 12px;
+      font-size: 13px; color: #4CAF50; text-align: center;
+    }
+
     .payment-title {
       font-size: 13px; font-weight: 600; letter-spacing: 1px; text-transform: uppercase;
       color: var(--gris-claro); margin-bottom: 12px; margin-top: 8px;
@@ -242,6 +268,14 @@
            style="width:100%;border-radius:8px;margin-top:12px;border:1px solid #2A2A2A;">
     </div>
 
+    <!-- Cupón de descuento -->
+    <div class="cupon-row">
+      <input type="text" id="cuponInput" placeholder="¿Tenés un cupón de descuento?">
+      <button class="cupon-btn" onclick="aplicarCupon()">Aplicar</button>
+    </div>
+    <p class="cupon-msg" id="cuponMsg"></p>
+    <div class="descuento-badge" id="descuentoBadge"></div>
+
     <p class="payment-title">Elegí tu método de pago</p>
     <div class="payment-methods">
       <button class="pay-btn" onclick="abrirPago('usdt')" id="btnUsdt">
@@ -250,7 +284,7 @@
           <div class="pay-name">USDT — Crypto</div>
           <div class="pay-desc">BNB Smart Chain (BEP20)</div>
         </div>
-        <span class="pay-amount">30 USDT</span>
+        <span class="pay-amount" id="usdtAmount">30 USDT</span>
       </button>
       <button class="pay-btn" onclick="abrirPago('ars')" id="btnArs">
         <span class="pay-icon">🏦</span>
@@ -266,7 +300,7 @@
           <div class="pay-name">MercadoPago</div>
           <div class="pay-desc">Próximamente disponible</div>
         </div>
-        <span class="pay-amount">USD 30</span>
+        <span class="pay-amount" id="mpAmount">USD 30</span>
       </button>
     </div>
 
@@ -335,6 +369,8 @@
   const SUPABASE_KEY  = 'sb_publishable_02_5qcxJXbiREPQxNtt-Fg_SnjORvmM';
   const PRECIO_USD    = 30;
   let cotizacion      = 0;
+  let precioFinal     = 30;  // se actualiza con cupón
+  let cuponAplicado   = null;
 
   // Obtener cotización del dólar blue desde API pública
   async function obtenerCotizacion() {
@@ -342,10 +378,7 @@
       const res  = await fetch('https://dolarapi.com/v1/dolares/blue');
       const data = await res.json();
       cotizacion = data.venta;
-      const arsTotal = Math.ceil(PRECIO_USD * cotizacion);
-      document.getElementById('precioARS').textContent = `≈ ARS ${arsTotal.toLocaleString('es-AR')} (dólar blue $${cotizacion})`;
-      document.getElementById('arsAmount').textContent = `≈ ARS ${arsTotal.toLocaleString('es-AR')}`;
-      document.getElementById('modalArsAmount').textContent = `ARS ${arsTotal.toLocaleString('es-AR')}`;
+      actualizarPrecios();
     } catch {
       document.getElementById('precioARS').textContent = 'Consultá cotización al momento del pago';
     }
@@ -400,6 +433,67 @@
 
   function cerrarModal(id) {
     document.getElementById(id).classList.remove('active');
+  }
+
+  function actualizarPrecios() {
+    const arsTotal = Math.ceil(precioFinal * cotizacion);
+    document.getElementById('precioARS').textContent =
+      cotizacion > 0
+        ? `≈ ARS ${arsTotal.toLocaleString('es-AR')} (dólar blue $${cotizacion})`
+        : 'Calculando...';
+    document.getElementById('arsAmount').textContent  = cotizacion > 0 ? `≈ ARS ${arsTotal.toLocaleString('es-AR')}` : '≈ ARS —';
+    document.getElementById('modalArsAmount').textContent = cotizacion > 0 ? `ARS ${arsTotal.toLocaleString('es-AR')}` : '...';
+    document.getElementById('usdtAmount').textContent = `${precioFinal} USDT`;
+    document.getElementById('mpAmount').textContent   = `USD ${precioFinal}`;
+    // Update hero price
+    const priceEl = document.querySelector('.price-box .price');
+    if (priceEl) priceEl.innerHTML = `<span>USD</span> ${precioFinal}`;
+  }
+
+  async function aplicarCupon() {
+    const codigo = document.getElementById('cuponInput').value.trim().toUpperCase();
+    const msg    = document.getElementById('cuponMsg');
+    const badge  = document.getElementById('descuentoBadge');
+
+    if (!codigo) {
+      msg.className = 'cupon-msg err';
+      msg.textContent = 'Ingresá un código de cupón.';
+      return;
+    }
+
+    msg.className = 'cupon-msg';
+    msg.textContent = 'Verificando...';
+
+    try {
+      const res = await fetch(`${SUPABASE_URL}/rest/v1/cupones?codigo=eq.${codigo}&activo=eq.true&select=codigo,descuento`, {
+        headers: {
+          'apikey': SUPABASE_KEY,
+          'Authorization': `Bearer ${SUPABASE_KEY}`
+        }
+      });
+      const data = await res.json();
+
+      if (data && data.length > 0) {
+        const cupon      = data[0];
+        cuponAplicado    = cupon;
+        precioFinal      = Math.round(PRECIO_USD * (1 - cupon.descuento / 100));
+        msg.className    = 'cupon-msg ok';
+        msg.textContent  = `Cupón aplicado!`;
+        badge.style.display = 'block';
+        badge.textContent   = `🎉 Descuento del ${cupon.descuento}% aplicado — Precio final: USD ${precioFinal}`;
+        actualizarPrecios();
+      } else {
+        msg.className   = 'cupon-msg err';
+        msg.textContent = 'Cupón inválido o expirado.';
+        cuponAplicado   = null;
+        precioFinal     = PRECIO_USD;
+        badge.style.display = 'none';
+        actualizarPrecios();
+      }
+    } catch(e) {
+      msg.className   = 'cupon-msg err';
+      msg.textContent = 'Error al verificar el cupón.';
+    }
   }
 
   async function confirmarPago(metodo) {

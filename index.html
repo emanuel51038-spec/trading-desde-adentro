@@ -695,7 +695,8 @@
     <!-- Nav tabs -->
     <nav class="panel-nav">
       <button class="panel-nav-btn active" onclick="switchPanelTab('herramientas', this)">Mis herramientas</button>
-      <button class="panel-nav-btn" onclick="switchPanelTab('historial', this)">Historial</button>
+      <button class="panel-nav-btn" onclick="switchPanelTab('historial', this)">Historial de pagos</button>
+      <button class="panel-nav-btn" onclick="switchPanelTab('tienda', this)">Comprar herramienta</button>
     </nav>
 
     <!-- Content -->
@@ -714,13 +715,18 @@
         </div>
       </div>
 
-      <!-- Sección: Historial -->
+      <!-- Sección: Historial de pagos -->
       <div class="panel-section" id="sec-historial">
         <div id="historialContainer">
           <div style="text-align:center;padding:40px;color:var(--gris)">
             <span class="spinner"></span> Cargando historial...
           </div>
         </div>
+      </div>
+
+      <!-- Sección: Tienda -->
+      <div class="panel-section" id="sec-tienda">
+        <div id="tiendaContainer"></div>
       </div>
     </div>
 
@@ -822,22 +828,23 @@
     btn.disabled = false;
     btn.textContent = 'Crear cuenta';
 
-    // Supabase devuelve ok con user, o ok con identities vacío si ya existe
-    const yaExiste = r.ok && r.data?.user && r.data.user.identities && r.data.user.identities.length === 0;
-    const creado   = r.ok && r.data?.user && !yaExiste;
+    console.log('Signup response:', r.status, JSON.stringify(r.data));
 
-    if (creado) {
-      showAuthMsg(msg, '📧 ¡Cuenta creada! Te enviamos un email de confirmación. Hacé clic en el enlace del correo y después iniciá sesión.', 'ok');
-      document.getElementById('regNombre').value = '';
-      document.getElementById('regEmail').value  = '';
-      document.getElementById('regPass').value   = '';
-      document.getElementById('regPass2').value  = '';
-    } else if (yaExiste) {
-      showAuthMsg(msg, 'Ya existe una cuenta con ese email. Iniciá sesión en lugar de registrarte.', 'err');
-    } else {
+    // status 200 con user = creado OK
+    // status 200 con user null o sin id = email ya registrado (Supabase oculta esto)
+    // status 4xx = error real
+    if (r.status >= 400) {
       const errMsg = r.data?.msg || r.data?.message || r.data?.error_description || r.data?.error || 'Error al crear la cuenta.';
       showAuthMsg(msg, traducirError(errMsg), 'err');
+      return;
     }
+
+    // Cuenta creada exitosamente (o ya existente - Supabase no lo distingue)
+    showAuthMsg(msg, '📧 ¡Listo! Te enviamos un email de confirmación. Hacé clic en el enlace del correo y después iniciá sesión.', 'ok');
+    document.getElementById('regNombre').value = '';
+    document.getElementById('regEmail').value  = '';
+    document.getElementById('regPass').value   = '';
+    document.getElementById('regPass2').value  = '';
   }
 
   async function login() {
@@ -907,6 +914,58 @@
   /* ══════════════════════
      MI PANEL
   ══════════════════════ */
+  function renderTienda() {
+    const cont = document.getElementById('tiendaContainer');
+    if (!cont) return;
+    cont.innerHTML = `
+      <div style="margin-bottom:24px">
+        <p style="font-size:14px;color:var(--gris)">Seleccioná una herramienta para obtener tu licencia.</p>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:16px;max-width:600px">
+        <div class="licencia-card" style="cursor:pointer;transition:border-color 0.2s" 
+             onmouseover="this.style.borderColor='rgba(139,26,26,0.6)'" 
+             onmouseout="this.style.borderColor='#1E1E1E'"
+             onclick="irATiendaProducto()">
+          <div class="licencia-card-header" style="border-bottom:none">
+            <div class="licencia-card-header-left">
+              <div class="licencia-product-icon">🔒</div>
+              <div>
+                <div class="licencia-product-name">Daily Loss Limiter</div>
+                <div class="licencia-product-version">V1.0 · NinjaTrader 8 · Licencia permanente</div>
+              </div>
+            </div>
+            <div style="display:flex;align-items:center;gap:12px">
+              <span style="font-family:'Bebas Neue',sans-serif;font-size:24px;color:#E57373">USD 30</span>
+              <span style="font-size:20px">→</span>
+            </div>
+          </div>
+          <div style="padding:0 24px 20px;display:grid;grid-template-columns:repeat(3,1fr);gap:12px">
+            <div style="background:#0D0D0D;border-radius:8px;padding:10px 14px">
+              <div style="font-size:10px;color:var(--gris);text-transform:uppercase;letter-spacing:1px;margin-bottom:4px">Bloqueo</div>
+              <div style="font-size:12px;font-weight:600">Automático</div>
+            </div>
+            <div style="background:#0D0D0D;border-radius:8px;padding:10px 14px">
+              <div style="font-size:10px;color:var(--gris);text-transform:uppercase;letter-spacing:1px;margin-bottom:4px">Licencia</div>
+              <div style="font-size:12px;font-weight:600">1 equipo</div>
+            </div>
+            <div style="background:#0D0D0D;border-radius:8px;padding:10px 14px">
+              <div style="font-size:10px;color:var(--gris);text-transform:uppercase;letter-spacing:1px;margin-bottom:4px">Pago</div>
+              <div style="font-size:12px;font-weight:600">Único</div>
+            </div>
+          </div>
+        </div>
+      </div>`;
+  }
+
+  function irATiendaProducto() {
+    // Ir a la landing y hacer scroll al formulario de compra
+    irA('landing');
+    setTimeout(() => {
+      const reg = document.getElementById('registro');
+      if (reg) reg.scrollIntoView({ behavior: 'smooth' });
+    }, 300);
+  }
+
   async function cargarPanel() {
     if (!sesiónActual) { irA('auth'); return; }
 
@@ -920,6 +979,7 @@
 
     await cargarHerramientas();
     await cargarHistorial();
+    renderTienda();
   }
 
   async function cargarHerramientas() {

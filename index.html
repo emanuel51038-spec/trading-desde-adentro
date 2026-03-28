@@ -1043,6 +1043,7 @@
     const mac = l.machine_id || '—';
     const version = l.version || 'V1.0';
     const installerUrl = l.installer_url || null;
+    const esActiva = l.estado === 'activa';
 
     return `
     <div class="licencia-card">
@@ -1069,9 +1070,11 @@
         </div>
         <div class="licencia-actions">
           <div class="licencia-field-label">Acciones</div>
-          ${installerUrl
+          ${esActiva && installerUrl
             ? `<a href="${installerUrl}" class="action-btn primary" download><span class="ab-icon">⬇️</span> Descargar instalador</a>`
-            : `<div class="action-btn" style="opacity:0.4;cursor:not-allowed"><span class="ab-icon">⬇️</span> Instalador (pendiente)</div>`
+            : esActiva && !installerUrl
+            ? `<div class="action-btn" style="opacity:0.4;cursor:not-allowed"><span class="ab-icon">⬇️</span> Preparando instalador...</div>`
+            : `<div class="action-btn" style="opacity:0.4;cursor:not-allowed"><span class="ab-icon">⬇️</span> Disponible al activar licencia</div>`
           }
           <a href="https://instagram.com/tradingdesdeadentro" target="_blank" class="action-btn">
             <span class="ab-icon">📖</span> Tutorial de configuración

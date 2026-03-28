@@ -1016,7 +1016,7 @@
 
     const userEmail = sesiónActual.user?.email || '';
     const r = await sbFetch(
-      '/rest/v1/licencias?select=*&email=eq.' + userEmail + '&order=created_at.desc',
+      '/rest/v1/licencias?select=*&email=eq.' + userEmail + '',
       {},
       sesiónActual.access_token
     );
@@ -1105,7 +1105,7 @@
 
     const userEmail2 = sesiónActual.user?.email || '';
     const r = await sbFetch(
-      '/rest/v1/licencias?select=nombre,email,estado,monto,metodo_pago,fecha_pago,created_at&email=eq.' + userEmail2 + '&order=created_at.desc',
+      '/rest/v1/licencias?select=nombre,email,estado,monto,metodo_pago,fecha_pago,created_at&email=eq.' + userEmail2 + '',
       {},
       sesiónActual.access_token
     );

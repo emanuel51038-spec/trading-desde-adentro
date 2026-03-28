@@ -822,14 +822,20 @@
     btn.disabled = false;
     btn.textContent = 'Crear cuenta';
 
-    if (r.ok && r.data.user) {
-      showAuthMsg(msg, '✅ Cuenta creada. Revisá tu email para confirmar tu cuenta y luego iniciá sesión.', 'ok');
+    // Supabase devuelve ok con user, o ok con identities vacío si ya existe
+    const yaExiste = r.ok && r.data?.user && r.data.user.identities && r.data.user.identities.length === 0;
+    const creado   = r.ok && r.data?.user && !yaExiste;
+
+    if (creado) {
+      showAuthMsg(msg, '📧 ¡Cuenta creada! Te enviamos un email de confirmación. Hacé clic en el enlace del correo y después iniciá sesión.', 'ok');
       document.getElementById('regNombre').value = '';
       document.getElementById('regEmail').value  = '';
       document.getElementById('regPass').value   = '';
       document.getElementById('regPass2').value  = '';
+    } else if (yaExiste) {
+      showAuthMsg(msg, 'Ya existe una cuenta con ese email. Iniciá sesión en lugar de registrarte.', 'err');
     } else {
-      const errMsg = r.data?.msg || r.data?.message || r.data?.error_description || 'Error al crear la cuenta.';
+      const errMsg = r.data?.msg || r.data?.message || r.data?.error_description || r.data?.error || 'Error al crear la cuenta.';
       showAuthMsg(msg, traducirError(errMsg), 'err');
     }
   }

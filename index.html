@@ -1177,20 +1177,27 @@
     btn.disabled = true;
     btn.innerHTML = '<span class="spinner"></span>Guardando...';
 
-    const r = await sbFetch(
-      `/rest/v1/licencias?id=eq.${licenciaEditando}`,
-      {
+    // Use direct fetch with full headers for PATCH
+    let patchOk = false;
+    try {
+      const patchRes = await fetch(`${SUPABASE_URL}/rest/v1/licencias?id=eq.${licenciaEditando}`, {
         method: 'PATCH',
-        body: JSON.stringify({ machine_id: nuevaMac }),
-        headers: { 'Prefer': 'return=minimal' }
-      },
-      SUPABASE_KEY
-    );
+        headers: {
+          'Content-Type': 'application/json',
+          'apikey': SUPABASE_ANON,
+          'Authorization': 'Bearer ' + sesiónActual.access_token,
+          'Prefer': 'return=minimal'
+        },
+        body: JSON.stringify({ machine_id: nuevaMac })
+      });
+      console.log('PATCH status:', patchRes.status, await patchRes.text());
+      patchOk = patchRes.ok || patchRes.status === 204;
+    } catch(e) { console.error(e); }
 
     btn.disabled = false;
     btn.textContent = 'Confirmar cambio →';
 
-    if (r.ok) {
+    if (patchOk) {
       showAuthMsg(msg, '✅ Dispositivo actualizado correctamente.', 'ok');
       setTimeout(() => {
         cerrarModal('modalCambiarMac');

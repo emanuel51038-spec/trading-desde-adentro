@@ -697,6 +697,7 @@
       <button class="panel-nav-btn active" onclick="switchPanelTab('herramientas', this)">Mis herramientas</button>
       <button class="panel-nav-btn" onclick="switchPanelTab('historial', this)">Historial de pagos</button>
       <button class="panel-nav-btn" onclick="switchPanelTab('tienda', this)">Comprar herramienta</button>
+      <button class="panel-nav-btn" onclick="switchPanelTab('recursos', this)">Recursos gratuitos</button>
     </nav>
 
     <!-- Content -->
@@ -727,6 +728,11 @@
       <!-- Sección: Tienda -->
       <div class="panel-section" id="sec-tienda">
         <div id="tiendaContainer"></div>
+      </div>
+
+      <!-- Sección: Recursos gratuitos -->
+      <div class="panel-section" id="sec-recursos">
+        <div id="recursosContainer"></div>
       </div>
     </div>
 
@@ -982,6 +988,64 @@
       </div>`;
   }
 
+  const RECURSOS = [
+    {
+      nombre: 'Calculadora de Expected Value',
+      desc: 'Calculá el valor esperado de tus setups para operar con ventaja estadística.',
+      icono: '📊',
+      tipo: 'Excel (.xlsx)',
+      url: 'https://pjrwdseaomijkgytbglh.supabase.co/storage/v1/object/public/Recursos/Calculadora_Expected_Valued.xlsx'
+    },
+    {
+      nombre: 'TimeZone',
+      desc: 'Herramienta para gestionar sesiones y zonas horarias en NinjaTrader 8.',
+      icono: '🕐',
+      tipo: 'NT8 Add-On (.zip)',
+      url: 'https://pjrwdseaomijkgytbglh.supabase.co/storage/v1/object/public/Recursos/TimeZone.zip'
+    },
+    {
+      nombre: 'TradeCopier Free',
+      desc: 'Copiá operaciones entre cuentas dentro de NinjaTrader 8 de forma automatica.',
+      icono: '🔁',
+      tipo: 'NT8 Add-On (.zip)',
+      url: 'https://pjrwdseaomijkgytbglh.supabase.co/storage/v1/object/public/Recursos/TradeCopierFree.zip'
+    }
+  ];
+
+  function renderRecursos() {
+    const cont = document.getElementById('recursosContainer');
+    if (!cont) return;
+
+    const cards = RECURSOS.map(r => `
+      <div class="licencia-card" style="margin-bottom:16px">
+        <div class="licencia-card-header" style="border-bottom:none;padding:20px 24px">
+          <div class="licencia-card-header-left">
+            <div class="licencia-product-icon" style="background:rgba(76,175,80,0.15);border-color:rgba(76,175,80,0.3)">${r.icono}</div>
+            <div>
+              <div class="licencia-product-name">${r.nombre}</div>
+              <div class="licencia-product-version">${r.tipo}</div>
+            </div>
+          </div>
+          <span class="estado-badge estado-activa">Gratis</span>
+        </div>
+        <div style="padding:0 24px 20px">
+          <p style="font-size:13px;color:var(--gris);margin-bottom:14px;line-height:1.6">${r.desc}</p>
+          <a href="${r.url}" class="action-btn primary" target="_blank" style="display:inline-flex;width:auto;padding:10px 20px">
+            <span class="ab-icon">⬇️</span> Descargar gratis
+          </a>
+        </div>
+      </div>`).join('');
+
+    cont.innerHTML = `
+      <div style="margin-bottom:24px">
+        <p style="font-size:14px;color:var(--gris)">Herramientas gratuitas de Trading desde Adentro. Descargalas sin costo.</p>
+      </div>
+      ${cards}
+      <div style="background:rgba(76,175,80,0.08);border:1px solid rgba(76,175,80,0.2);border-radius:12px;padding:16px 20px;margin-top:8px">
+        <p style="font-size:13px;color:#4CAF50">🎁 Proximamente: Bitacora de trading en Excel — gratis para todos los usuarios registrados.</p>
+      </div>`;
+  }
+
   function irATiendaProducto() {
     // Ir a la landing y hacer scroll al formulario de compra
     irA('landing');
@@ -1008,6 +1072,7 @@
     await cargarHerramientas();
     await cargarHistorial();
     renderTienda();
+    renderRecursos();
   }
 
   async function cargarHerramientas() {

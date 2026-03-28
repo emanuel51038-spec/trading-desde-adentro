@@ -986,8 +986,9 @@
     const cont = document.getElementById('herramientasContainer');
     cont.innerHTML = '<div style="text-align:center;padding:40px;color:var(--gris)"><span class="spinner"></span> Cargando...</div>';
 
+    const userEmail = sesiónActual.user?.email || '';
     const r = await sbFetch(
-      '/rest/v1/licencias?select=*&order=created_at.desc',
+      '/rest/v1/licencias?select=*&email=eq.' + encodeURIComponent(userEmail) + '&order=created_at.desc',
       {},
       sesiónActual.access_token
     );
@@ -1073,8 +1074,9 @@
   async function cargarHistorial() {
     const cont = document.getElementById('historialContainer');
 
+    const userEmail2 = sesiónActual.user?.email || '';
     const r = await sbFetch(
-      '/rest/v1/licencias?select=nombre,email,estado,monto,metodo_pago,fecha_pago,created_at&order=created_at.desc',
+      '/rest/v1/licencias?select=nombre,email,estado,monto,metodo_pago,fecha_pago,created_at&email=eq.' + encodeURIComponent(userEmail2) + '&order=created_at.desc',
       {},
       sesiónActual.access_token
     );
@@ -1318,17 +1320,50 @@
   (function init() {
     obtenerCotizacion();
 
-    // Revisar si hay sesión guardada
+    const hash = window.location.hash;
+
+    // Supabase redirige con #access_token=... luego de confirmar email
+    if (hash.includes('access_token=')) {
+      const params = new URLSearchParams(hash.replace('#', '?').slice(1));
+      const token  = params.get('access_token');
+      const type   = params.get('type'); // 'signup' o 'recovery'
+
+      if (token && type === 'signup') {
+        // Limpiar la URL
+        history.replaceState(null, '', window.location.pathname);
+        // Necesitamos obtener el user con el token
+        fetch('https://pjrwdseaomijkgytbglh.supabase.co/auth/v1/user', {
+          headers: {
+            'apikey': 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBqcndkc2Vhb21pamtneXRiZ2xoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQyMDgxNjIsImV4cCI6MjA4OTc4NDE2Mn0.5Nmyu8TwBRVWBL2zDOfFTeEZBMLOyQVu_dDhas07jDI',
+            'Authorization': 'Bearer ' + token
+          }
+        })
+        .then(r => r.json())
+        .then(user => {
+          if (user?.id) {
+            sesiónActual = { access_token: token, user };
+            guardarSesion(sesiónActual);
+            irA('panel');
+          } else {
+            irA('landing');
+          }
+        })
+        .catch(() => irA('landing'));
+        return; // esperar la Promise
+      }
+    }
+
+    // Revisar si hay sesión guardada -> ir al panel directo
     if (cargarSesionGuardada()) {
-      // Mostrar botón "Mi Panel" en nav
+      // Actualizar botón nav
       const navBtn = document.querySelector('.nav-btn.primary');
       if (navBtn) { navBtn.textContent = 'Mi Panel →'; navBtn.onclick = () => irA('panel'); }
     }
 
-    // Routing básico por hash
-    const hash = window.location.hash;
+    // Siempre arrancar en landing salvo que el hash lo indique explícitamente
     if (hash === '#panel') irA('panel');
-    else if (hash === '#login') irA('auth', 'login');
+    // En cualquier otro caso (incluyendo #login): mostrar landing
+    // El usuario llega a auth solo si hace clic en los botones del nav
   })();
 </script>
 </body>

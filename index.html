@@ -6,8 +6,6 @@
   <title>Trading desde Adentro — Daily Loss Limiter</title>
   <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
   <script>emailjs.init("rp9MNqIfMeyq1q0lG");</script>
-  <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
-  <script>emailjs.init("rp9MNqIfMeyq1q0lG");</script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
   <style>
@@ -20,10 +18,18 @@
       --negro-card: #111111;
       --negro-border: #1E1E1E;
       --blanco: #FFFFFF;
+      --verde: #4CAF50;
     }
     * { margin: 0; padding: 0; box-sizing: border-box; }
     body { background: var(--negro); color: var(--blanco); font-family: 'DM Sans', sans-serif; overflow-x: hidden; }
 
+    /* ── VISTAS ── */
+    .vista { display: none; }
+    .vista.activa { display: block; }
+
+    /* ══════════════════════════════
+       LANDING
+    ══════════════════════════════ */
     .hero {
       min-height: 100vh;
       display: flex; flex-direction: column; align-items: center; justify-content: center;
@@ -60,9 +66,7 @@
     .price-box .price { font-family: 'Bebas Neue', sans-serif; font-size: 72px; line-height: 1; }
     .price-box .price span { font-size: 32px; color: var(--gris); vertical-align: super; }
     .price-box .price-desc { font-size: 13px; color: var(--gris); margin-top: 4px; }
-    .price-box .price-ars {
-      font-size: 14px; color: #E57373; margin-top: 8px; min-height: 20px;
-    }
+    .price-box .price-ars { font-size: 14px; color: #E57373; margin-top: 8px; min-height: 20px; }
     .cta-btn {
       background: var(--rojo); color: var(--blanco); font-family: 'DM Sans', sans-serif;
       font-size: 15px; font-weight: 600; letter-spacing: 1px; padding: 16px 40px;
@@ -70,6 +74,21 @@
       transition: background 0.2s, transform 0.1s; text-decoration: none; display: inline-block;
     }
     .cta-btn:hover { background: var(--rojo-bright); transform: translateY(-1px); }
+
+    /* nav top landing */
+    .nav-top {
+      position: fixed; top: 0; right: 0; padding: 16px 24px;
+      display: flex; gap: 12px; z-index: 100;
+    }
+    .nav-btn {
+      background: rgba(255,255,255,0.05); border: 1px solid var(--negro-border);
+      color: var(--gris-claro); font-family: 'DM Sans', sans-serif; font-size: 13px;
+      font-weight: 600; padding: 8px 18px; border-radius: 8px; cursor: pointer;
+      transition: all 0.2s; text-decoration: none;
+    }
+    .nav-btn:hover { border-color: var(--rojo); color: var(--blanco); }
+    .nav-btn.primary { background: var(--rojo); border-color: var(--rojo); color: white; }
+    .nav-btn.primary:hover { background: var(--rojo-bright); }
 
     .features { padding: 80px 20px; max-width: 1000px; margin: 0 auto; }
     .section-title {
@@ -98,7 +117,7 @@
       display: block; font-size: 12px; font-weight: 600; letter-spacing: 1px;
       text-transform: uppercase; color: var(--gris-claro); margin-bottom: 6px;
     }
-    .form-group input {
+    .form-group input, .form-group select {
       width: 100%; background: #181818; border: 1px solid var(--negro-border);
       border-radius: 8px; padding: 12px 14px; color: var(--blanco);
       font-family: 'DM Sans', sans-serif; font-size: 14px; outline: none; transition: border-color 0.2s;
@@ -111,8 +130,6 @@
       padding: 2px 6px; font-family: monospace; color: #E57373;
     }
 
-    /* MÉTODOS DE PAGO */
-    /* CUPON */
     .cupon-row { display: flex; gap: 8px; margin-bottom: 16px; }
     .cupon-row input {
       flex: 1; background: #181818; border: 1px solid var(--negro-border);
@@ -125,8 +142,7 @@
     .cupon-btn {
       background: #1A1A1A; border: 1px solid var(--negro-border); border-radius: 8px;
       padding: 0 16px; color: var(--gris-claro); font-family: 'DM Sans', sans-serif;
-      font-size: 13px; font-weight: 600; cursor: pointer; white-space: nowrap;
-      transition: all 0.2s;
+      font-size: 13px; font-weight: 600; cursor: pointer; white-space: nowrap; transition: all 0.2s;
     }
     .cupon-btn:hover { border-color: var(--rojo); color: var(--blanco); }
     .cupon-msg { font-size: 12px; margin: -10px 0 12px 0; min-height: 16px; }
@@ -209,116 +225,364 @@
     .hero > *:nth-child(4) { animation-delay: 0.3s; }
     .hero > *:nth-child(5) { animation-delay: 0.4s; }
     .hero > *:nth-child(6) { animation-delay: 0.5s; }
+
+    /* ══════════════════════════════
+       LOGIN / REGISTRO
+    ══════════════════════════════ */
+    .auth-page {
+      min-height: 100vh; display: flex; align-items: center; justify-content: center;
+      padding: 40px 20px;
+      background: radial-gradient(ellipse 60% 40% at 50% 0%, rgba(139,26,26,0.2) 0%, transparent 60%), var(--negro);
+    }
+    .auth-card {
+      background: var(--negro-card); border: 1px solid var(--negro-border);
+      border-radius: 20px; padding: 48px 40px; max-width: 420px; width: 100%;
+    }
+    .auth-logo { width: 180px; margin: 0 auto 32px; display: block; }
+    .auth-tabs { display: flex; gap: 0; margin-bottom: 32px; border: 1px solid var(--negro-border); border-radius: 10px; overflow: hidden; }
+    .auth-tab {
+      flex: 1; padding: 11px; text-align: center; font-size: 13px; font-weight: 600;
+      cursor: pointer; border: none; background: transparent; color: var(--gris);
+      font-family: 'DM Sans', sans-serif; transition: all 0.2s;
+    }
+    .auth-tab.active { background: var(--rojo); color: white; }
+    .auth-input {
+      width: 100%; background: #181818; border: 1px solid var(--negro-border);
+      border-radius: 8px; padding: 12px 14px; color: var(--blanco);
+      font-family: 'DM Sans', sans-serif; font-size: 14px; outline: none;
+      transition: border-color 0.2s; margin-bottom: 12px;
+    }
+    .auth-input:focus { border-color: var(--rojo); }
+    .auth-input::placeholder { color: #444; }
+    .auth-label {
+      display: block; font-size: 11px; font-weight: 600; letter-spacing: 1px;
+      text-transform: uppercase; color: var(--gris); margin-bottom: 6px;
+    }
+    .auth-group { margin-bottom: 16px; }
+    .auth-btn {
+      width: 100%; background: var(--rojo); color: white; border: none; border-radius: 8px;
+      padding: 14px; font-family: 'DM Sans', sans-serif; font-size: 14px; font-weight: 600;
+      cursor: pointer; margin-top: 8px; transition: background 0.2s; letter-spacing: 0.5px;
+    }
+    .auth-btn:hover { background: var(--rojo-bright); }
+    .auth-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+    .auth-msg { font-size: 13px; text-align: center; margin-top: 14px; min-height: 18px; padding: 10px; border-radius: 8px; }
+    .auth-msg.ok  { color: #4CAF50; background: rgba(76,175,80,0.08); border: 1px solid rgba(76,175,80,0.2); }
+    .auth-msg.err { color: #E57373; background: rgba(229,115,115,0.08); border: 1px solid rgba(229,115,115,0.2); }
+    .auth-back {
+      display: block; text-align: center; margin-top: 20px; font-size: 13px;
+      color: var(--gris); cursor: pointer; text-decoration: none;
+    }
+    .auth-back:hover { color: var(--blanco); }
+    .auth-divider { text-align: center; font-size: 12px; color: #333; margin: 4px 0 16px; }
+
+    /* ══════════════════════════════
+       MI PANEL
+    ══════════════════════════════ */
+    .panel-layout { min-height: 100vh; display: flex; flex-direction: column; }
+
+    /* Header */
+    .panel-header {
+      background: #0D0D0D; border-bottom: 1px solid var(--negro-border);
+      padding: 0 24px; height: 60px; display: flex; align-items: center; justify-content: space-between;
+      position: sticky; top: 0; z-index: 50;
+    }
+    .panel-header-logo { width: 140px; }
+    .panel-header-right { display: flex; align-items: center; gap: 16px; }
+    .panel-user-badge {
+      display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--gris);
+    }
+    .panel-avatar {
+      width: 32px; height: 32px; border-radius: 50%; background: var(--rojo);
+      display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 700;
+      color: white; flex-shrink: 0;
+    }
+    .panel-logout-btn {
+      background: none; border: 1px solid var(--negro-border); border-radius: 8px;
+      color: var(--gris); font-family: 'DM Sans', sans-serif; font-size: 12px;
+      padding: 6px 14px; cursor: pointer; transition: all 0.2s;
+    }
+    .panel-logout-btn:hover { border-color: var(--rojo); color: var(--blanco); }
+
+    /* Nav tabs */
+    .panel-nav {
+      background: #0D0D0D; border-bottom: 1px solid var(--negro-border);
+      padding: 0 24px; display: flex; gap: 4px;
+    }
+    .panel-nav-btn {
+      padding: 14px 18px; font-size: 13px; font-weight: 600; color: var(--gris);
+      border: none; background: none; cursor: pointer; font-family: 'DM Sans', sans-serif;
+      border-bottom: 2px solid transparent; margin-bottom: -1px; transition: all 0.2s;
+    }
+    .panel-nav-btn.active { color: var(--blanco); border-bottom-color: var(--rojo); }
+    .panel-nav-btn:hover { color: var(--blanco); }
+
+    /* Content */
+    .panel-content { padding: 32px 24px; max-width: 900px; margin: 0 auto; width: 100%; flex: 1; }
+    .panel-section { display: none; }
+    .panel-section.activa { display: block; }
+
+    /* Greeting */
+    .panel-greeting {
+      margin-bottom: 28px;
+    }
+    .panel-greeting h2 {
+      font-family: 'Bebas Neue', sans-serif; font-size: 32px; letter-spacing: 2px; margin-bottom: 4px;
+    }
+    .panel-greeting p { font-size: 14px; color: var(--gris); }
+
+    /* Estado badge */
+    .estado-badge {
+      display: inline-block; font-size: 11px; font-weight: 700; letter-spacing: 1.5px;
+      text-transform: uppercase; padding: 4px 10px; border-radius: 100px;
+    }
+    .estado-activa  { background: rgba(76,175,80,0.15); color: #4CAF50; border: 1px solid rgba(76,175,80,0.3); }
+    .estado-pendiente { background: rgba(255,193,7,0.15); color: #FFC107; border: 1px solid rgba(255,193,7,0.3); }
+    .estado-vencida  { background: rgba(229,115,115,0.15); color: #E57373; border: 1px solid rgba(229,115,115,0.3); }
+
+    /* Licencia card */
+    .licencia-card {
+      background: var(--negro-card); border: 1px solid var(--negro-border);
+      border-radius: 16px; overflow: hidden; margin-bottom: 20px;
+    }
+    .licencia-card-header {
+      padding: 20px 24px; display: flex; align-items: center; justify-content: space-between;
+      border-bottom: 1px solid var(--negro-border);
+    }
+    .licencia-card-header-left { display: flex; align-items: center; gap: 14px; }
+    .licencia-product-icon {
+      width: 44px; height: 44px; border-radius: 10px; background: rgba(139,26,26,0.2);
+      border: 1px solid rgba(139,26,26,0.3); display: flex; align-items: center;
+      justify-content: center; font-size: 20px;
+    }
+    .licencia-product-name { font-size: 15px; font-weight: 600; margin-bottom: 3px; }
+    .licencia-product-version { font-size: 12px; color: var(--gris); }
+
+    .licencia-card-body { padding: 24px; display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+    @media (max-width: 600px) { .licencia-card-body { grid-template-columns: 1fr; } }
+
+    .licencia-field-label {
+      font-size: 11px; font-weight: 600; letter-spacing: 1px; text-transform: uppercase;
+      color: var(--gris); margin-bottom: 8px;
+    }
+    .mac-display {
+      background: #0D0D0D; border: 1px solid #2A2A2A; border-radius: 8px;
+      padding: 10px 14px; font-family: monospace; font-size: 14px;
+      display: flex; align-items: center; justify-content: space-between; gap: 8px;
+    }
+    .mac-copy-btn {
+      background: none; border: none; color: var(--gris); cursor: pointer;
+      font-size: 16px; padding: 2px; transition: color 0.2s; flex-shrink: 0;
+    }
+    .mac-copy-btn:hover { color: var(--blanco); }
+
+    .licencia-actions { display: flex; flex-direction: column; gap: 8px; }
+    .action-btn {
+      width: 100%; padding: 10px 14px; border-radius: 8px; font-family: 'DM Sans', sans-serif;
+      font-size: 13px; font-weight: 600; cursor: pointer; transition: all 0.2s;
+      display: flex; align-items: center; gap: 8px; border: 1px solid var(--negro-border);
+      background: #161616; color: var(--blanco); text-decoration: none;
+    }
+    .action-btn:hover { border-color: var(--rojo); background: #1A1010; }
+    .action-btn.primary { background: var(--rojo); border-color: var(--rojo); }
+    .action-btn.primary:hover { background: var(--rojo-bright); border-color: var(--rojo-bright); }
+    .action-btn .ab-icon { font-size: 16px; }
+
+    /* Empty state */
+    .empty-state {
+      text-align: center; padding: 80px 20px;
+    }
+    .empty-icon { font-size: 56px; margin-bottom: 16px; opacity: 0.4; }
+    .empty-state h3 {
+      font-family: 'Bebas Neue', sans-serif; font-size: 28px; letter-spacing: 2px;
+      margin-bottom: 8px; color: var(--gris-claro);
+    }
+    .empty-state p { font-size: 14px; color: var(--gris); margin-bottom: 32px; }
+    .empty-products { display: flex; flex-direction: column; gap: 12px; max-width: 400px; margin: 0 auto; }
+    .empty-product-card {
+      background: var(--negro-card); border: 1px solid var(--negro-border);
+      border-radius: 12px; padding: 16px 20px; display: flex; align-items: center;
+      gap: 14px; cursor: pointer; transition: all 0.2s; text-decoration: none; color: var(--blanco);
+    }
+    .empty-product-card:hover { border-color: var(--rojo); }
+    .empty-product-icon {
+      width: 40px; height: 40px; border-radius: 10px; background: rgba(139,26,26,0.2);
+      border: 1px solid rgba(139,26,26,0.3); display: flex; align-items: center;
+      justify-content: center; font-size: 18px; flex-shrink: 0;
+    }
+    .empty-product-info { flex: 1; text-align: left; }
+    .empty-product-name { font-size: 14px; font-weight: 600; margin-bottom: 2px; }
+    .empty-product-desc { font-size: 12px; color: var(--gris); }
+    .empty-product-price { font-family: 'Bebas Neue', sans-serif; font-size: 18px; color: #E57373; }
+
+    /* Historial */
+    .historial-table {
+      background: var(--negro-card); border: 1px solid var(--negro-border);
+      border-radius: 16px; overflow: hidden;
+    }
+    .historial-row {
+      display: grid; grid-template-columns: 1fr 120px 120px 100px;
+      padding: 14px 20px; border-bottom: 1px solid var(--negro-border);
+      font-size: 13px; align-items: center;
+      gap: 12px;
+    }
+    @media (max-width: 600px) {
+      .historial-row { grid-template-columns: 1fr 80px; }
+      .historial-row .h-metodo, .historial-row .h-fecha { display: none; }
+    }
+    .historial-row.header {
+      font-size: 11px; font-weight: 600; letter-spacing: 1px; text-transform: uppercase;
+      color: var(--gris); background: #0D0D0D;
+    }
+    .historial-row:last-child { border-bottom: none; }
+    .h-monto { font-family: 'Bebas Neue', sans-serif; font-size: 16px; color: #E57373; }
+    .h-estado { }
+    .historial-empty { padding: 40px; text-align: center; color: var(--gris); font-size: 14px; }
+
+    /* MAC modal */
+    .mac-modal-input {
+      width: 100%; background: #181818; border: 1px solid var(--negro-border);
+      border-radius: 8px; padding: 12px 14px; color: var(--blanco);
+      font-family: monospace; font-size: 15px; outline: none; transition: border-color 0.2s;
+      text-transform: uppercase; letter-spacing: 1px; margin-bottom: 8px;
+    }
+    .mac-modal-input:focus { border-color: var(--rojo); }
+    .mac-modal-hint { font-size: 12px; color: var(--gris); margin-bottom: 16px; line-height: 1.5; }
+    .mac-modal-img { width: 100%; border-radius: 8px; margin-bottom: 16px; border: 1px solid #2A2A2A; }
+
+    /* Loading spinner */
+    .spinner {
+      display: inline-block; width: 16px; height: 16px; border: 2px solid rgba(255,255,255,0.2);
+      border-top-color: white; border-radius: 50%; animation: spin 0.7s linear infinite;
+      vertical-align: middle; margin-right: 6px;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
   </style>
 </head>
 <body>
 
-<section class="hero">
-  <img src="logo.png" alt="Trading desde Adentro" class="logo">
-  <div class="badge">NinjaTrader 8 · Add-On Profesional</div>
-  <h1>DAILY LOSS<br><span>LIMITER</span></h1>
-  <p class="subtitle">Protegé tu capital con un bloqueador automático de pérdidas diarias. Inviolable, persistente y con licencia por equipo.</p>
-  <div class="price-box">
-    <div class="price"><span>USD</span> 30</div>
-    <div class="price-desc">Pago único · Licencia permanente · 1 equipo</div>
-    <div class="price-ars" id="precioARS">Calculando equivalente en ARS...</div>
+<!-- ══════════════════════════════
+     VISTA: LANDING
+══════════════════════════════ -->
+<div id="vista-landing" class="vista activa">
+
+  <!-- Nav top -->
+  <div class="nav-top" id="navTop">
+    <button class="nav-btn" onclick="irA('auth')">Iniciar sesión</button>
+    <button class="nav-btn primary" onclick="irA('auth', 'registro')">Mi Panel</button>
   </div>
-  <a href="#registro" class="cta-btn">Obtener licencia ahora →</a>
-</section>
 
-<section class="features">
-  <h2 class="section-title">¿Qué incluye?</h2>
-  <div class="features-grid">
-    <div class="feature-card"><div class="feature-icon">🔒</div><h3>Bloqueo automático</h3><p>Cancela nuevas órdenes automáticamente cuando alcanzás el límite de pérdida configurado.</p></div>
-    <div class="feature-card"><div class="feature-icon">💻</div><h3>Múltiples cuentas</h3><p>Monitoreá varias cuentas simultáneamente, cada una con su propio límite independiente.</p></div>
-    <div class="feature-card"><div class="feature-icon">🔑</div><h3>Protección por contraseña</h3><p>El operador no puede desactivar el limitador sin la contraseña. Ideal para prop firms.</p></div>
-    <div class="feature-card"><div class="feature-icon">💾</div><h3>Persistente al reinicio</h3><p>El estado se guarda en disco. Si reiniciás NT8 con cuentas bloqueadas, siguen bloqueadas.</p></div>
-    <div class="feature-card"><div class="feature-icon">🔄</div><h3>Desbloqueo inteligente</h3><p>Se desbloquea automáticamente cuando el P&L vuelve a $0. Sin intervención manual.</p></div>
-    <div class="feature-card"><div class="feature-icon">🛡️</div><h3>Licencia por equipo</h3><p>Licencia vinculada a tu MAC Address. No se puede compartir ni usar en otra PC.</p></div>
-  </div>
-</section>
-
-<section class="registro" id="registro">
-  <div class="form-card">
-    <h2>Obtener licencia</h2>
-    <p class="form-desc">
-      Completá el formulario y elegí tu método de pago.<br><br>
-      Una vez realizado el pago, enviá el comprobante a
-      <strong style="color:#E57373">tradingdesdeadentro@gmail.com</strong>.
-      Recibirás la herramienta en el correo electrónico proporcionado
-      en un plazo máximo de <strong style="color:#fff">24 horas</strong>.
-    </p>
-
-    <div class="form-group">
-      <label>Nombre completo</label>
-      <input type="text" id="nombre" placeholder="Tu nombre">
+  <section class="hero">
+    <img src="logo.png" alt="Trading desde Adentro" class="logo">
+    <div class="badge">NinjaTrader 8 · Add-On Profesional</div>
+    <h1>DAILY LOSS<br><span>LIMITER</span></h1>
+    <p class="subtitle">Protegé tu capital con un bloqueador automático de pérdidas diarias. Inviolable, persistente y con licencia por equipo.</p>
+    <div class="price-box">
+      <div class="price"><span>USD</span> 30</div>
+      <div class="price-desc">Pago único · Licencia permanente · 1 equipo</div>
+      <div class="price-ars" id="precioARS">Calculando equivalente en ARS...</div>
     </div>
-    <div class="form-group">
-      <label>Email</label>
-      <input type="email" id="email" placeholder="tu@email.com">
+    <a href="#registro" class="cta-btn">Obtener licencia ahora →</a>
+  </section>
+
+  <section class="features">
+    <h2 class="section-title">¿Qué incluye?</h2>
+    <div class="features-grid">
+      <div class="feature-card"><div class="feature-icon">🔒</div><h3>Bloqueo automático</h3><p>Cancela nuevas órdenes automáticamente cuando alcanzás el límite de pérdida configurado.</p></div>
+      <div class="feature-card"><div class="feature-icon">💻</div><h3>Múltiples cuentas</h3><p>Monitoreá varias cuentas simultáneamente, cada una con su propio límite independiente.</p></div>
+      <div class="feature-card"><div class="feature-icon">🔑</div><h3>Protección por contraseña</h3><p>El operador no puede desactivar el limitador sin la contraseña. Ideal para prop firms.</p></div>
+      <div class="feature-card"><div class="feature-icon">💾</div><h3>Persistente al reinicio</h3><p>El estado se guarda en disco. Si reiniciás NT8 con cuentas bloqueadas, siguen bloqueadas.</p></div>
+      <div class="feature-card"><div class="feature-icon">🔄</div><h3>Desbloqueo inteligente</h3><p>Se desbloquea automáticamente cuando el P&L vuelve a $0. Sin intervención manual.</p></div>
+      <div class="feature-card"><div class="feature-icon">🛡️</div><h3>Licencia por equipo</h3><p>Licencia vinculada a tu MAC Address. No se puede compartir ni usar en otra PC.</p></div>
     </div>
-    <div class="form-group">
-      <label>MAC Address (Dirección física Ethernet)</label>
-      <input type="text" id="mac" placeholder="AA-BB-CC-DD-EE-FF">
-      <p class="mac-hint">
-        Ejecutá <code>ipconfig /all</code> en CMD y buscá <strong style="color:#E57373">Adaptador de Ethernet Ethernet → Dirección física</strong>.
-        Usá ese valor (formato XX-XX-XX-XX-XX-XX).
+  </section>
+
+  <section class="registro" id="registro">
+    <div class="form-card">
+      <h2>Obtener licencia</h2>
+      <p class="form-desc">
+        Completá el formulario y elegí tu método de pago.<br><br>
+        Una vez realizado el pago, enviá el comprobante a
+        <strong style="color:#E57373">tradingdesdeadentro@gmail.com</strong>.
+        Recibirás la herramienta en el correo electrónico proporcionado
+        en un plazo máximo de <strong style="color:#fff">24 horas</strong>.
       </p>
-      <img src="mac_instructivo.png" alt="Cómo encontrar tu MAC Address"
-           style="width:100%;border-radius:8px;margin-top:12px;border:1px solid #2A2A2A;">
-    </div>
 
-    <!-- Cupón de descuento -->
-    <div class="cupon-row">
-      <input type="text" id="cuponInput" placeholder="¿Tenés un cupón de descuento?">
-      <button class="cupon-btn" onclick="aplicarCupon()">Aplicar</button>
-    </div>
-    <p class="cupon-msg" id="cuponMsg"></p>
-    <div class="descuento-badge" id="descuentoBadge"></div>
+      <div class="form-group">
+        <label>Nombre completo</label>
+        <input type="text" id="nombre" placeholder="Tu nombre">
+      </div>
+      <div class="form-group">
+        <label>Email</label>
+        <input type="email" id="email" placeholder="tu@email.com">
+      </div>
+      <div class="form-group">
+        <label>MAC Address (Dirección física Ethernet)</label>
+        <input type="text" id="mac" placeholder="AA-BB-CC-DD-EE-FF">
+        <p class="mac-hint">
+          Ejecutá <code>ipconfig /all</code> en CMD y buscá <strong style="color:#E57373">Adaptador de Ethernet Ethernet → Dirección física</strong>.
+          Usá ese valor (formato XX-XX-XX-XX-XX-XX).
+        </p>
+        <img src="mac_instructivo.png" alt="Cómo encontrar tu MAC Address"
+             style="width:100%;border-radius:8px;margin-top:12px;border:1px solid #2A2A2A;">
+      </div>
 
-    <p class="payment-title">Elegí tu método de pago</p>
-    <div class="payment-methods">
-      <button class="pay-btn" onclick="abrirPago('usdt')" id="btnUsdt">
-        <span class="pay-icon">💎</span>
-        <div class="pay-info">
-          <div class="pay-name">USDT — Crypto</div>
-          <div class="pay-desc">BNB Smart Chain (BEP20)</div>
-        </div>
-        <span class="pay-amount" id="usdtAmount">30 USDT</span>
-      </button>
-      <button class="pay-btn" onclick="abrirPago('ars')" id="btnArs">
-        <span class="pay-icon">🏦</span>
-        <div class="pay-info">
-          <div class="pay-name">Transferencia bancaria — ARS</div>
-          <div class="pay-desc">CVU / Alias · Precio en pesos del día</div>
-        </div>
-        <span class="pay-amount" id="arsAmount">≈ ARS —</span>
-      </button>
-      <button class="pay-btn" onclick="abrirPago('mp')" id="btnMp" style="opacity:0.4;cursor:not-allowed" disabled>
-        <span class="pay-icon">💳</span>
-        <div class="pay-info">
-          <div class="pay-name">MercadoPago</div>
-          <div class="pay-desc">Próximamente disponible</div>
-        </div>
-        <span class="pay-amount" id="mpAmount">USD 30</span>
-      </button>
-    </div>
+      <div class="cupon-row">
+        <input type="text" id="cuponInput" placeholder="¿Tenés un cupón de descuento?">
+        <button class="cupon-btn" onclick="aplicarCupon()">Aplicar</button>
+      </div>
+      <p class="cupon-msg" id="cuponMsg"></p>
+      <div class="descuento-badge" id="descuentoBadge"></div>
 
-    <div class="msg" id="msg"></div>
-  </div>
-</section>
+      <p class="payment-title">Elegí tu método de pago</p>
+      <div class="payment-methods">
+        <button class="pay-btn" onclick="abrirPago('usdt')" id="btnUsdt">
+          <span class="pay-icon">💎</span>
+          <div class="pay-info">
+            <div class="pay-name">USDT — Crypto</div>
+            <div class="pay-desc">BNB Smart Chain (BEP20)</div>
+          </div>
+          <span class="pay-amount" id="usdtAmount">30 USDT</span>
+        </button>
+        <button class="pay-btn" onclick="abrirPago('ars')" id="btnArs">
+          <span class="pay-icon">🏦</span>
+          <div class="pay-info">
+            <div class="pay-name">Transferencia bancaria — ARS</div>
+            <div class="pay-desc">CVU / Alias · Precio en pesos del día</div>
+          </div>
+          <span class="pay-amount" id="arsAmount">≈ ARS —</span>
+        </button>
+        <button class="pay-btn" disabled style="opacity:0.4;cursor:not-allowed">
+          <span class="pay-icon">💳</span>
+          <div class="pay-info">
+            <div class="pay-name">MercadoPago</div>
+            <div class="pay-desc">Próximamente disponible</div>
+          </div>
+          <span class="pay-amount" id="mpAmount">USD 30</span>
+        </button>
+      </div>
+
+      <div class="msg" id="msg"></div>
+    </div>
+  </section>
+
+  <footer>
+    <p style="margin-bottom:8px">
+      <a href="https://instagram.com/tradingdesdeadentro" target="_blank">@tradingdesdeadentro</a>
+      &nbsp;·&nbsp; Trading desde Adentro
+    </p>
+    <p style="font-size:11px;color:#444">Daily Loss Limiter es un Add-On para NinjaTrader 8. No nos hacemos responsables por pérdidas de trading.</p>
+  </footer>
+</div>
 
 <!-- MODAL USDT -->
 <div class="modal-overlay" id="modalUsdt">
   <div class="modal">
     <button class="modal-close" onclick="cerrarModal('modalUsdt')">✕</button>
     <h3>Pago con USDT</h3>
-    <p class="modal-desc">Enviá exactamente <strong>30 USDT</strong> a la siguiente dirección en la red <strong>BNB Smart Chain (BEP20)</strong>. Cualquier otra red resultará en pérdida de fondos.<br><br>Una vez enviado, enviá el comprobante a <strong>tradingdesdeadentro@gmail.com</strong>.</p>
+    <p class="modal-desc">Enviá exactamente <strong id="usdtModalAmount">30 USDT</strong> a la siguiente dirección en la red <strong>BNB Smart Chain (BEP20)</strong>. Cualquier otra red resultará en pérdida de fondos.<br><br>Una vez enviado, enviá el comprobante a <strong>tradingdesdeadentro@gmail.com</strong>.</p>
     <div class="copy-row">
-      <div>
-        <div class="copy-label">Red</div>
-        <div class="copy-value">BNB Smart Chain (BEP20)</div>
-      </div>
+      <div><div class="copy-label">Red</div><div class="copy-value">BNB Smart Chain (BEP20)</div></div>
     </div>
     <div class="copy-row">
       <div style="flex:1">
@@ -327,7 +591,7 @@
       </div>
       <button onclick="copiar('0x02E514478AC1Ef604D6aBef12187c4aFD55c6201', this)">Copiar</button>
     </div>
-    <p style="font-size:12px;color:#9E9E9E;margin-top:8px">Una vez realizada la transferencia, hacé clic en "Confirmar transferencia" y enviá el comprobante a <strong style="color:#ccc">tradingdesdeadentro@gmail.com</strong>.</p>
+    <p style="font-size:12px;color:#9E9E9E;margin-top:8px">Una vez realizada la transferencia, hacé clic en "Confirmar" y enviá el comprobante a <strong style="color:#ccc">tradingdesdeadentro@gmail.com</strong>.</p>
     <button class="modal-confirm" onclick="confirmarPago('usdt')">Confirmar envío →</button>
   </div>
 </div>
@@ -337,7 +601,7 @@
   <div class="modal">
     <button class="modal-close" onclick="cerrarModal('modalArs')">✕</button>
     <h3>Transferencia en ARS</h3>
-    <p class="modal-desc">Realizá una transferencia bancaria por el equivalente en pesos de <strong>USD 30</strong> al día de hoy.</p>
+    <p class="modal-desc">Realizá una transferencia bancaria por el equivalente en pesos de <strong>USD <span id="arsModalUsd">30</span></strong> al día de hoy.</p>
     <div class="copy-row">
       <div style="flex:1">
         <div class="copy-label">Monto a transferir (cotización del día)</div>
@@ -356,24 +620,493 @@
   </div>
 </div>
 
-<footer>
-  <p style="margin-bottom:8px">
-    <a href="https://instagram.com/tradingdesdeadentro" target="_blank">@tradingdesdeadentro</a>
-    &nbsp;·&nbsp; Trading desde Adentro
-  </p>
-  <p style="font-size:11px;color:#444">Daily Loss Limiter es un Add-On para NinjaTrader 8. No nos hacemos responsables por pérdidas de trading.</p>
-</footer>
+<!-- ══════════════════════════════
+     VISTA: LOGIN / REGISTRO
+══════════════════════════════ -->
+<div id="vista-auth" class="vista">
+  <div class="auth-page">
+    <div class="auth-card">
+      <img src="logo.png" alt="Trading desde Adentro" class="auth-logo">
+
+      <div class="auth-tabs">
+        <button class="auth-tab active" id="tabLogin" onclick="switchAuthTab('login')">Iniciar sesión</button>
+        <button class="auth-tab" id="tabRegistro" onclick="switchAuthTab('registro')">Crear cuenta</button>
+      </div>
+
+      <!-- LOGIN -->
+      <div id="formLogin">
+        <div class="auth-group">
+          <label class="auth-label">Email</label>
+          <input type="email" class="auth-input" id="loginEmail" placeholder="tu@email.com">
+        </div>
+        <div class="auth-group">
+          <label class="auth-label">Contraseña</label>
+          <input type="password" class="auth-input" id="loginPass" placeholder="••••••••" onkeydown="if(event.key==='Enter')login()">
+        </div>
+        <button class="auth-btn" id="loginBtn" onclick="login()">Ingresar a Mi Panel →</button>
+        <div class="auth-msg" id="loginMsg" style="display:none"></div>
+      </div>
+
+      <!-- REGISTRO -->
+      <div id="formRegistro" style="display:none">
+        <div class="auth-group">
+          <label class="auth-label">Nombre completo</label>
+          <input type="text" class="auth-input" id="regNombre" placeholder="Tu nombre">
+        </div>
+        <div class="auth-group">
+          <label class="auth-label">Email</label>
+          <input type="email" class="auth-input" id="regEmail" placeholder="tu@email.com">
+        </div>
+        <div class="auth-group">
+          <label class="auth-label">Contraseña</label>
+          <input type="password" class="auth-input" id="regPass" placeholder="Mínimo 6 caracteres">
+        </div>
+        <div class="auth-group">
+          <label class="auth-label">Confirmar contraseña</label>
+          <input type="password" class="auth-input" id="regPass2" placeholder="Repetí tu contraseña" onkeydown="if(event.key==='Enter')registrar()">
+        </div>
+        <button class="auth-btn" id="regBtn" onclick="registrar()">Crear cuenta</button>
+        <div class="auth-msg" id="regMsg" style="display:none"></div>
+      </div>
+
+      <a class="auth-back" onclick="irA('landing')">← Volver al inicio</a>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════
+     VISTA: MI PANEL
+══════════════════════════════ -->
+<div id="vista-panel" class="vista">
+  <div class="panel-layout">
+
+    <!-- Header -->
+    <header class="panel-header">
+      <img src="logo.png" alt="Trading desde Adentro" class="panel-header-logo">
+      <div class="panel-header-right">
+        <div class="panel-user-badge">
+          <div class="panel-avatar" id="panelAvatar">?</div>
+          <span id="panelEmail" style="display:none"></span>
+        </div>
+        <button class="panel-logout-btn" onclick="logout()">Cerrar sesión</button>
+      </div>
+    </header>
+
+    <!-- Nav tabs -->
+    <nav class="panel-nav">
+      <button class="panel-nav-btn active" onclick="switchPanelTab('herramientas', this)">Mis herramientas</button>
+      <button class="panel-nav-btn" onclick="switchPanelTab('historial', this)">Historial</button>
+    </nav>
+
+    <!-- Content -->
+    <div class="panel-content">
+      <div class="panel-greeting">
+        <h2>MI PANEL</h2>
+        <p id="panelGreetingTxt">Bienvenido de nuevo.</p>
+      </div>
+
+      <!-- Sección: Herramientas -->
+      <div class="panel-section activa" id="sec-herramientas">
+        <div id="herramientasContainer">
+          <div style="text-align:center;padding:40px;color:var(--gris)">
+            <span class="spinner"></span> Cargando tus herramientas...
+          </div>
+        </div>
+      </div>
+
+      <!-- Sección: Historial -->
+      <div class="panel-section" id="sec-historial">
+        <div id="historialContainer">
+          <div style="text-align:center;padding:40px;color:var(--gris)">
+            <span class="spinner"></span> Cargando historial...
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- MODAL: Cambiar MAC -->
+<div class="modal-overlay" id="modalCambiarMac">
+  <div class="modal">
+    <button class="modal-close" onclick="cerrarModal('modalCambiarMac')">✕</button>
+    <h3>Cambiar dispositivo</h3>
+    <p class="modal-desc">Ingresá la MAC Address de tu nueva PC. La licencia quedará vinculada al nuevo dispositivo de forma inmediata.</p>
+    <img src="mac_instructivo.png" alt="Cómo encontrar tu MAC" class="mac-modal-img">
+    <label class="auth-label" style="margin-bottom:6px;display:block">Nueva MAC Address</label>
+    <input type="text" class="mac-modal-input" id="nuevaMacInput" placeholder="AA-BB-CC-DD-EE-FF">
+    <p class="mac-modal-hint">Ejecutá <strong>ipconfig /all</strong> en CMD → buscá "Adaptador de Ethernet Ethernet" → "Dirección física".</p>
+    <div class="auth-msg" id="macModalMsg" style="display:none"></div>
+    <button class="modal-confirm" id="macModalBtn" onclick="guardarNuevaMac()">Confirmar cambio →</button>
+  </div>
+</div>
 
 <script>
+  /* ══════════════════════
+     CONSTANTES
+  ══════════════════════ */
   const SUPABASE_URL  = 'https://pjrwdseaomijkgytbglh.supabase.co';
   const SUPABASE_KEY  = 'sb_publishable_02_5qcxJXbiREPQxNtt-Fg_SnjORvmM';
   const SUPABASE_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBqcndkc2Vhb21pamtneXRiZ2xoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQyMDgxNjIsImV4cCI6MjA4OTc4NDE2Mn0.5Nmyu8TwBRVWBL2zDOfFTeEZBMLOyQVu_dDhas07jDI';
   const PRECIO_USD    = 30;
-  let cotizacion      = 0;
-  let precioFinal     = 30;  // se actualiza con cupón
-  let cuponAplicado   = null;
 
-  // Obtener cotización del dólar blue desde API pública
+  let cotizacion    = 0;
+  let precioFinal   = 30;
+  let cuponAplicado = null;
+  let sesiónActual  = null; // { access_token, user }
+  let licenciaEditando = null; // id de licencia que se está cambiando MAC
+
+  /* ══════════════════════
+     NAVEGACIÓN DE VISTAS
+  ══════════════════════ */
+  function irA(vista, tab) {
+    document.querySelectorAll('.vista').forEach(v => v.classList.remove('activa'));
+    document.getElementById('vista-' + vista).classList.add('activa');
+    window.scrollTo(0, 0);
+    if (vista === 'auth' && tab) switchAuthTab(tab);
+    if (vista === 'panel') cargarPanel();
+  }
+
+  function switchAuthTab(tab) {
+    document.getElementById('formLogin').style.display    = tab === 'login'    ? 'block' : 'none';
+    document.getElementById('formRegistro').style.display = tab === 'registro' ? 'block' : 'none';
+    document.getElementById('tabLogin').classList.toggle('active', tab === 'login');
+    document.getElementById('tabRegistro').classList.toggle('active', tab === 'registro');
+  }
+
+  function switchPanelTab(sec, btn) {
+    document.querySelectorAll('.panel-section').forEach(s => s.classList.remove('activa'));
+    document.querySelectorAll('.panel-nav-btn').forEach(b => b.classList.remove('active'));
+    document.getElementById('sec-' + sec).classList.add('activa');
+    btn.classList.add('active');
+  }
+
+  /* ══════════════════════
+     SUPABASE AUTH
+  ══════════════════════ */
+  async function sbFetch(path, options = {}, token = null) {
+    const headers = {
+      'Content-Type': 'application/json',
+      'apikey': SUPABASE_ANON,
+      'Authorization': 'Bearer ' + (token || SUPABASE_ANON),
+      ...(options.headers || {})
+    };
+    const res = await fetch(SUPABASE_URL + path, { ...options, headers });
+    const text = await res.text();
+    try { return { ok: res.ok, status: res.status, data: JSON.parse(text) }; }
+    catch { return { ok: res.ok, status: res.status, data: text }; }
+  }
+
+  async function registrar() {
+    const nombre = document.getElementById('regNombre').value.trim();
+    const email  = document.getElementById('regEmail').value.trim();
+    const pass   = document.getElementById('regPass').value;
+    const pass2  = document.getElementById('regPass2').value;
+    const msg    = document.getElementById('regMsg');
+    const btn    = document.getElementById('regBtn');
+
+    msg.style.display = 'none';
+    if (!nombre || !email || !pass) { showAuthMsg(msg, 'Completá todos los campos.', 'err'); return; }
+    if (pass !== pass2) { showAuthMsg(msg, 'Las contraseñas no coinciden.', 'err'); return; }
+    if (pass.length < 6) { showAuthMsg(msg, 'La contraseña debe tener al menos 6 caracteres.', 'err'); return; }
+
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner"></span>Creando cuenta...';
+
+    const r = await sbFetch('/auth/v1/signup', {
+      method: 'POST',
+      body: JSON.stringify({ email, password: pass, data: { nombre } })
+    });
+
+    btn.disabled = false;
+    btn.textContent = 'Crear cuenta';
+
+    if (r.ok && r.data.user) {
+      showAuthMsg(msg, '✅ Cuenta creada. Revisá tu email para confirmar tu cuenta y luego iniciá sesión.', 'ok');
+      document.getElementById('regNombre').value = '';
+      document.getElementById('regEmail').value  = '';
+      document.getElementById('regPass').value   = '';
+      document.getElementById('regPass2').value  = '';
+    } else {
+      const errMsg = r.data?.msg || r.data?.message || r.data?.error_description || 'Error al crear la cuenta.';
+      showAuthMsg(msg, traducirError(errMsg), 'err');
+    }
+  }
+
+  async function login() {
+    const email = document.getElementById('loginEmail').value.trim();
+    const pass  = document.getElementById('loginPass').value;
+    const msg   = document.getElementById('loginMsg');
+    const btn   = document.getElementById('loginBtn');
+
+    msg.style.display = 'none';
+    if (!email || !pass) { showAuthMsg(msg, 'Ingresá email y contraseña.', 'err'); return; }
+
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner"></span>Ingresando...';
+
+    const r = await sbFetch('/auth/v1/token?grant_type=password', {
+      method: 'POST',
+      body: JSON.stringify({ email, password: pass })
+    });
+
+    btn.disabled = false;
+    btn.textContent = 'Ingresar a Mi Panel →';
+
+    if (r.ok && r.data.access_token) {
+      sesiónActual = r.data;
+      guardarSesion(r.data);
+      irA('panel');
+    } else {
+      const errMsg = r.data?.error_description || r.data?.message || 'Email o contraseña incorrectos.';
+      showAuthMsg(msg, traducirError(errMsg), 'err');
+    }
+  }
+
+  function logout() {
+    sesiónActual = null;
+    localStorage.removeItem('tda_session');
+    irA('landing');
+  }
+
+  function guardarSesion(s) {
+    localStorage.setItem('tda_session', JSON.stringify({ access_token: s.access_token, user: s.user }));
+  }
+
+  function cargarSesionGuardada() {
+    try {
+      const s = JSON.parse(localStorage.getItem('tda_session'));
+      if (s?.access_token) { sesiónActual = s; return true; }
+    } catch {}
+    return false;
+  }
+
+  function showAuthMsg(el, txt, tipo) {
+    el.style.display = 'block';
+    el.className = 'auth-msg ' + tipo;
+    el.textContent = txt;
+  }
+
+  function traducirError(e) {
+    if (!e) return 'Error desconocido.';
+    e = e.toLowerCase();
+    if (e.includes('invalid login') || e.includes('invalid credentials')) return 'Email o contraseña incorrectos.';
+    if (e.includes('email not confirmed')) return 'Confirmá tu email antes de ingresar. Revisá tu bandeja de entrada.';
+    if (e.includes('already registered') || e.includes('user already exists')) return 'Ya existe una cuenta con ese email.';
+    if (e.includes('password')) return 'La contraseña debe tener al menos 6 caracteres.';
+    return e;
+  }
+
+  /* ══════════════════════
+     MI PANEL
+  ══════════════════════ */
+  async function cargarPanel() {
+    if (!sesiónActual) { irA('auth'); return; }
+
+    const u = sesiónActual.user;
+    const nombre = u.user_metadata?.nombre || u.email;
+    const inicial = nombre.charAt(0).toUpperCase();
+
+    document.getElementById('panelAvatar').textContent = inicial;
+    document.getElementById('panelEmail').textContent  = u.email;
+    document.getElementById('panelGreetingTxt').textContent = `Bienvenido, ${nombre.split(' ')[0]}.`;
+
+    await cargarHerramientas();
+    await cargarHistorial();
+  }
+
+  async function cargarHerramientas() {
+    const cont = document.getElementById('herramientasContainer');
+    cont.innerHTML = '<div style="text-align:center;padding:40px;color:var(--gris)"><span class="spinner"></span> Cargando...</div>';
+
+    const r = await sbFetch(
+      '/rest/v1/licencias?select=*&order=created_at.desc',
+      {},
+      sesiónActual.access_token
+    );
+
+    if (!r.ok || !Array.isArray(r.data)) {
+      cont.innerHTML = '<div style="text-align:center;padding:40px;color:#E57373">Error al cargar tus herramientas.</div>';
+      return;
+    }
+
+    const licencias = r.data;
+
+    if (licencias.length === 0) {
+      cont.innerHTML = renderEmptyState();
+      return;
+    }
+
+    cont.innerHTML = licencias.map(renderLicenciaCard).join('');
+  }
+
+  function renderLicenciaCard(l) {
+    const estadoClass = l.estado === 'activa' ? 'activa' : l.estado?.startsWith('pendiente') ? 'pendiente' : 'vencida';
+    const estadoLabel = l.estado === 'activa' ? 'Activo' : l.estado?.startsWith('pendiente') ? 'Pendiente' : 'Vencido';
+    const mac = l.machine_id || '—';
+    const version = l.version || 'V1.0';
+    const installerUrl = l.installer_url || null;
+
+    return `
+    <div class="licencia-card">
+      <div class="licencia-card-header">
+        <div class="licencia-card-header-left">
+          <div class="licencia-product-icon">🔒</div>
+          <div>
+            <div class="licencia-product-name">Daily Loss Limiter</div>
+            <div class="licencia-product-version">${version} · NinjaTrader 8</div>
+          </div>
+        </div>
+        <span class="estado-badge estado-${estadoClass}">${estadoLabel}</span>
+      </div>
+      <div class="licencia-card-body">
+        <div>
+          <div class="licencia-field-label">Dispositivo vinculado</div>
+          <div class="mac-display">
+            <span style="font-size:13px">${mac}</span>
+            <button class="mac-copy-btn" onclick="copiar('${mac}', this)" title="Copiar MAC">📋</button>
+          </div>
+          <button class="action-btn" style="margin-top:10px" onclick="abrirCambiarMac('${l.id}', '${mac}')">
+            <span class="ab-icon">🔄</span> Cambiar dispositivo
+          </button>
+        </div>
+        <div class="licencia-actions">
+          <div class="licencia-field-label">Acciones</div>
+          ${installerUrl
+            ? `<a href="${installerUrl}" class="action-btn primary" download><span class="ab-icon">⬇️</span> Descargar instalador</a>`
+            : `<div class="action-btn" style="opacity:0.4;cursor:not-allowed"><span class="ab-icon">⬇️</span> Instalador (pendiente)</div>`
+          }
+          <a href="https://instagram.com/tradingdesdeadentro" target="_blank" class="action-btn">
+            <span class="ab-icon">📖</span> Tutorial de configuración
+          </a>
+        </div>
+      </div>
+    </div>`;
+  }
+
+  function renderEmptyState() {
+    return `
+    <div class="empty-state">
+      <div class="empty-icon">📦</div>
+      <h3>Todavía no adquiriste ninguna herramienta</h3>
+      <p>Explorá nuestras herramientas y potenciá tu trading.</p>
+      <div class="empty-products">
+        <a class="empty-product-card" onclick="irA('landing'); setTimeout(()=>document.getElementById('registro').scrollIntoView({behavior:'smooth'}),300)">
+          <div class="empty-product-icon">🔒</div>
+          <div class="empty-product-info">
+            <div class="empty-product-name">Daily Loss Limiter</div>
+            <div class="empty-product-desc">Bloqueador automático de pérdidas · NT8</div>
+          </div>
+          <div class="empty-product-price">USD 30</div>
+        </a>
+      </div>
+    </div>`;
+  }
+
+  async function cargarHistorial() {
+    const cont = document.getElementById('historialContainer');
+
+    const r = await sbFetch(
+      '/rest/v1/licencias?select=nombre,email,estado,monto,metodo_pago,fecha_pago,created_at&order=created_at.desc',
+      {},
+      sesiónActual.access_token
+    );
+
+    if (!r.ok || !Array.isArray(r.data) || r.data.length === 0) {
+      cont.innerHTML = `
+        <div class="historial-table">
+          <div class="historial-empty">No hay movimientos registrados aún.</div>
+        </div>`;
+      return;
+    }
+
+    const rows = r.data.map(l => {
+      const fecha = l.fecha_pago || l.created_at?.split('T')[0] || '—';
+      const metodo = l.metodo_pago || (l.estado?.includes('usdt') ? 'USDT' : l.estado?.includes('ars') ? 'ARS' : '—');
+      const monto  = l.monto ? `USD ${l.monto}` : 'USD 30';
+      const estadoClass = l.estado === 'activa' ? 'activa' : 'pendiente';
+      const estadoLabel = l.estado === 'activa' ? 'Activo' : 'Pendiente';
+      return `
+      <div class="historial-row">
+        <div>
+          <div style="font-weight:600;font-size:13px">Daily Loss Limiter V1.0</div>
+          <div style="font-size:11px;color:var(--gris)">Licencia permanente · 1 equipo</div>
+        </div>
+        <div class="h-fecha" style="color:var(--gris);font-size:12px">${fecha}</div>
+        <div class="h-metodo" style="color:var(--gris);font-size:12px">${metodo}</div>
+        <div class="h-monto">
+          <span class="h-monto">${monto}</span><br>
+          <span class="estado-badge estado-${estadoClass}" style="font-size:10px">${estadoLabel}</span>
+        </div>
+      </div>`;
+    }).join('');
+
+    cont.innerHTML = `
+      <div class="historial-table">
+        <div class="historial-row header">
+          <div>Producto</div>
+          <div class="h-fecha">Fecha</div>
+          <div class="h-metodo">Método</div>
+          <div>Monto</div>
+        </div>
+        ${rows}
+      </div>`;
+  }
+
+  /* ══════════════════════
+     CAMBIAR MAC
+  ══════════════════════ */
+  function abrirCambiarMac(licenciaId, macActual) {
+    licenciaEditando = licenciaId;
+    document.getElementById('nuevaMacInput').value = '';
+    document.getElementById('macModalMsg').style.display = 'none';
+    document.getElementById('macModalBtn').disabled = false;
+    document.getElementById('macModalBtn').textContent = 'Confirmar cambio →';
+    document.getElementById('modalCambiarMac').classList.add('active');
+  }
+
+  async function guardarNuevaMac() {
+    const nuevaMac = document.getElementById('nuevaMacInput').value.trim().toUpperCase();
+    const msg      = document.getElementById('macModalMsg');
+    const btn      = document.getElementById('macModalBtn');
+
+    msg.style.display = 'none';
+    if (!/^([0-9A-F]{2}-){5}[0-9A-F]{2}$/.test(nuevaMac)) {
+      showAuthMsg(msg, 'Formato inválido. Debe ser AA-BB-CC-DD-EE-FF', 'err');
+      return;
+    }
+
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner"></span>Guardando...';
+
+    const r = await sbFetch(
+      `/rest/v1/licencias?id=eq.${licenciaEditando}`,
+      {
+        method: 'PATCH',
+        body: JSON.stringify({ machine_id: nuevaMac }),
+        headers: { 'Prefer': 'return=minimal' }
+      },
+      sesiónActual.access_token
+    );
+
+    btn.disabled = false;
+    btn.textContent = 'Confirmar cambio →';
+
+    if (r.ok) {
+      showAuthMsg(msg, '✅ Dispositivo actualizado correctamente.', 'ok');
+      setTimeout(() => {
+        cerrarModal('modalCambiarMac');
+        cargarHerramientas();
+      }, 1500);
+    } else {
+      showAuthMsg(msg, 'Error al guardar. Intentá de nuevo.', 'err');
+    }
+  }
+
+  /* ══════════════════════
+     LANDING — COMPRA
+  ══════════════════════ */
   async function obtenerCotizacion() {
     try {
       const res  = await fetch('https://dolarapi.com/v1/dolares/blue');
@@ -381,10 +1114,10 @@
       cotizacion = data.venta;
       actualizarPrecios();
     } catch {
-      document.getElementById('precioARS').textContent = 'Consultá cotización al momento del pago';
+      const el = document.getElementById('precioARS');
+      if (el) el.textContent = 'Consultá cotización al momento del pago';
     }
   }
-  obtenerCotizacion();
 
   function validarFormulario() {
     const nombre = document.getElementById('nombre').value.trim();
@@ -393,14 +1126,10 @@
     const msg    = document.getElementById('msg');
 
     if (!nombre || !email || !mac) {
-      msg.className = 'msg err';
-      msg.textContent = 'Completá todos los campos antes de continuar.';
-      return null;
+      msg.className = 'msg err'; msg.textContent = 'Completá todos los campos antes de continuar.'; return null;
     }
     if (!/^([0-9A-F]{2}-){5}[0-9A-F]{2}$/.test(mac)) {
-      msg.className = 'msg err';
-      msg.textContent = 'Formato de MAC inválido. Debe ser AA-BB-CC-DD-EE-FF';
-      return null;
+      msg.className = 'msg err'; msg.textContent = 'Formato de MAC inválido. Debe ser AA-BB-CC-DD-EE-FF'; return null;
     }
     msg.textContent = '';
     return { nombre, email, mac };
@@ -408,19 +1137,23 @@
 
   async function guardarPreRegistro(datos, metodo) {
     try {
+      const body = {
+        nombre: datos.nombre,
+        email:  datos.email,
+        machine_id: datos.mac,
+        estado: 'pendiente_' + metodo
+      };
+      // Si hay sesión activa, vinculamos el user_id
+      if (sesiónActual?.user?.id) body.user_id = sesiónActual.user.id;
+
       await fetch(`${SUPABASE_URL}/rest/v1/licencias`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'apikey': SUPABASE_KEY,
-          'Authorization': `Bearer ${SUPABASE_KEY}`
+          'Authorization': `Bearer ${sesiónActual?.access_token || SUPABASE_KEY}`
         },
-        body: JSON.stringify({
-          nombre: datos.nombre,
-          email:  datos.email,
-          machine_id: datos.mac,
-          estado: 'pendiente_' + metodo
-        })
+        body: JSON.stringify(body)
       });
     } catch(e) { console.error(e); }
   }
@@ -428,8 +1161,14 @@
   function abrirPago(metodo) {
     const datos = validarFormulario();
     if (!datos) return;
-    if (metodo === 'usdt') document.getElementById('modalUsdt').classList.add('active');
-    if (metodo === 'ars')  document.getElementById('modalArs').classList.add('active');
+    if (metodo === 'usdt') {
+      document.getElementById('usdtModalAmount').textContent = precioFinal + ' USDT';
+      document.getElementById('modalUsdt').classList.add('active');
+    }
+    if (metodo === 'ars') {
+      document.getElementById('arsModalUsd').textContent = precioFinal;
+      document.getElementById('modalArs').classList.add('active');
+    }
   }
 
   function cerrarModal(id) {
@@ -438,15 +1177,18 @@
 
   function actualizarPrecios() {
     const arsTotal = Math.ceil(precioFinal * cotizacion);
-    document.getElementById('precioARS').textContent =
-      cotizacion > 0
-        ? `≈ ARS ${arsTotal.toLocaleString('es-AR')} (dólar blue $${cotizacion})`
-        : 'Calculando...';
-    document.getElementById('arsAmount').textContent  = cotizacion > 0 ? `≈ ARS ${arsTotal.toLocaleString('es-AR')}` : '≈ ARS —';
-    document.getElementById('modalArsAmount').textContent = cotizacion > 0 ? `ARS ${arsTotal.toLocaleString('es-AR')}` : '...';
-    document.getElementById('usdtAmount').textContent = `${precioFinal} USDT`;
-    document.getElementById('mpAmount').textContent   = `USD ${precioFinal}`;
-    // Update hero price
+    const precioARSEl = document.getElementById('precioARS');
+    if (precioARSEl) precioARSEl.textContent = cotizacion > 0
+      ? `≈ ARS ${arsTotal.toLocaleString('es-AR')} (dólar blue $${cotizacion})`
+      : 'Calculando...';
+    const arsAmountEl = document.getElementById('arsAmount');
+    if (arsAmountEl) arsAmountEl.textContent = cotizacion > 0 ? `≈ ARS ${arsTotal.toLocaleString('es-AR')}` : '≈ ARS —';
+    const modalArsEl = document.getElementById('modalArsAmount');
+    if (modalArsEl) modalArsEl.textContent = cotizacion > 0 ? `ARS ${arsTotal.toLocaleString('es-AR')}` : '...';
+    const usdtEl = document.getElementById('usdtAmount');
+    if (usdtEl) usdtEl.textContent = `${precioFinal} USDT`;
+    const mpEl = document.getElementById('mpAmount');
+    if (mpEl) mpEl.textContent = `USD ${precioFinal}`;
     const priceEl = document.querySelector('.price-box .price');
     if (priceEl) priceEl.innerHTML = `<span>USD</span> ${precioFinal}`;
   }
@@ -456,45 +1198,28 @@
     const msg    = document.getElementById('cuponMsg');
     const badge  = document.getElementById('descuentoBadge');
 
-    if (!codigo) {
-      msg.className = 'cupon-msg err';
-      msg.textContent = 'Ingresá un código de cupón.';
-      return;
-    }
-
-    msg.className = 'cupon-msg';
-    msg.textContent = 'Verificando...';
+    if (!codigo) { msg.className = 'cupon-msg err'; msg.textContent = 'Ingresá un código de cupón.'; return; }
+    msg.className = 'cupon-msg'; msg.textContent = 'Verificando...';
 
     try {
-      const res = await fetch(`${SUPABASE_URL}/rest/v1/cupones?codigo=eq.${codigo}&activo=eq.true&select=codigo,descuento`, {
-        headers: {
-          'apikey': SUPABASE_ANON,
-          'Authorization': `Bearer ${SUPABASE_ANON}`
-        }
+      const res  = await fetch(`${SUPABASE_URL}/rest/v1/cupones?codigo=eq.${codigo}&activo=eq.true&select=codigo,descuento`, {
+        headers: { 'apikey': SUPABASE_ANON, 'Authorization': `Bearer ${SUPABASE_ANON}` }
       });
       const data = await res.json();
-
       if (data && data.length > 0) {
-        const cupon      = data[0];
-        cuponAplicado    = cupon;
-        precioFinal      = Math.round(PRECIO_USD * (1 - cupon.descuento / 100));
-        msg.className    = 'cupon-msg ok';
-        msg.textContent  = `Cupón aplicado!`;
+        const cupon   = data[0];
+        cuponAplicado = cupon;
+        precioFinal   = Math.round(PRECIO_USD * (1 - cupon.descuento / 100));
+        msg.className = 'cupon-msg ok'; msg.textContent = 'Cupón aplicado!';
         badge.style.display = 'block';
         badge.textContent   = `🎉 Descuento del ${cupon.descuento}% aplicado — Precio final: USD ${precioFinal}`;
         actualizarPrecios();
       } else {
-        msg.className   = 'cupon-msg err';
-        msg.textContent = 'Cupón inválido o expirado.';
-        cuponAplicado   = null;
-        precioFinal     = PRECIO_USD;
-        badge.style.display = 'none';
-        actualizarPrecios();
+        msg.className = 'cupon-msg err'; msg.textContent = 'Cupón inválido o expirado.';
+        cuponAplicado = null; precioFinal = PRECIO_USD;
+        badge.style.display = 'none'; actualizarPrecios();
       }
-    } catch(e) {
-      msg.className   = 'cupon-msg err';
-      msg.textContent = 'Error al verificar el cupón.';
-    }
+    } catch { msg.className = 'cupon-msg err'; msg.textContent = 'Error al verificar el cupón.'; }
   }
 
   async function confirmarPago(metodo) {
@@ -505,32 +1230,40 @@
     cerrarModal('modalArs');
     const msg = document.getElementById('msg');
     msg.className = 'msg ok';
-    msg.innerHTML = 'Hemos recibido tu solicitud correctamente. Te enviamos un email de confirmacion.<br><strong>Revisa tu carpeta de correo no deseado (spam)</strong> si no lo encontras.<br>Recorda enviar el comprobante a <strong>tradingdesdeadentro@gmail.com</strong>.';
-
-    // Enviar email automatico al cliente
+    msg.innerHTML = 'Hemos recibido tu solicitud correctamente. Te enviamos un email de confirmación.<br><strong>Revisá tu carpeta de spam</strong> si no lo encontrás.<br>Recordá enviar el comprobante a <strong>tradingdesdeadentro@gmail.com</strong>.';
     try {
       await emailjs.send('service_3zbxaia', 'template_gmveuaa', {
-        nombre: datos.nombre,
-        email:  datos.email,
-        mac:    datos.mac
+        nombre: datos.nombre, email: datos.email, mac: datos.mac
       });
-    } catch(e) {
-      console.error('Error enviando email:', e);
-    }
+    } catch(e) { console.error('EmailJS error:', e); }
   }
 
   function copiar(texto, btn) {
     navigator.clipboard.writeText(texto).then(() => {
-      const orig = btn.textContent;
-      btn.textContent = '¡Copiado!';
-      setTimeout(() => btn.textContent = orig, 2000);
+      const orig = btn.textContent || btn.innerHTML;
+      if (btn.textContent !== undefined) btn.textContent = '✓ Copiado';
+      setTimeout(() => { if (btn.textContent !== undefined) btn.textContent = orig.includes('Copiar') ? 'Copiar' : orig; }, 2000);
     });
   }
 
-  // Cerrar modal al hacer click fuera
-  document.querySelectorAll('.modal-overlay').forEach(el => {
-    el.addEventListener('click', e => { if (e.target === el) el.classList.remove('active'); });
-  });
+  /* ══════════════════════
+     INIT
+  ══════════════════════ */
+  (function init() {
+    obtenerCotizacion();
+
+    // Revisar si hay sesión guardada
+    if (cargarSesionGuardada()) {
+      // Mostrar botón "Mi Panel" en nav
+      const navBtn = document.querySelector('.nav-btn.primary');
+      if (navBtn) { navBtn.textContent = 'Mi Panel →'; navBtn.onclick = () => irA('panel'); }
+    }
+
+    // Routing básico por hash
+    const hash = window.location.hash;
+    if (hash === '#panel') irA('panel');
+    else if (hash === '#login') irA('auth', 'login');
+  })();
 </script>
 </body>
 </html>

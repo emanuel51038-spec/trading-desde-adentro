@@ -468,8 +468,8 @@
 
   <!-- Nav top -->
   <div class="nav-top" id="navTop">
-    <button class="nav-btn" onclick="irA('auth')">Iniciar sesión</button>
-    <button class="nav-btn primary" onclick="irA('auth', 'registro')">Mi Panel</button>
+    <button class="nav-btn" onclick="irA('auth', 'login')">Iniciar sesión</button>
+    <button class="nav-btn primary" onclick="irA('panel')">Mi Panel →</button>
   </div>
 
   <section class="hero">
@@ -669,7 +669,7 @@
         <div class="auth-msg" id="regMsg" style="display:none"></div>
       </div>
 
-      <a class="auth-back" onclick="irA('landing')">← Volver al inicio</a>
+      <a class="auth-back" onclick="irA('landing')">← Ver herramienta</a>
     </div>
   </div>
 </div>
@@ -802,6 +802,31 @@
     const text = await res.text();
     try { return { ok: res.ok, status: res.status, data: JSON.parse(text) }; }
     catch { return { ok: res.ok, status: res.status, data: text }; }
+  }
+
+  async function refrescarToken() {
+    try {
+      const s = JSON.parse(localStorage.getItem('tda_session'));
+      if (!s?.access_token) return false;
+      // Try to get user with current token
+      const res = await fetch(SUPABASE_URL + '/auth/v1/user', {
+        headers: {
+          'apikey': SUPABASE_ANON,
+          'Authorization': 'Bearer ' + s.access_token
+        }
+      });
+      if (res.ok) {
+        const user = await res.json();
+        if (user?.id) {
+          sesiónActual = { access_token: s.access_token, user };
+          return true;
+        }
+      }
+      // Token expired - clear session
+      localStorage.removeItem('tda_session');
+      sesiónActual = null;
+      return false;
+    } catch { return false; }
   }
 
   async function registrar() {
@@ -968,6 +993,9 @@
 
   async function cargarPanel() {
     if (!sesiónActual) { irA('auth'); return; }
+    // Verify token is still valid
+    const tokenOk = await refrescarToken();
+    if (!tokenOk) { irA('auth'); return; }
 
     const u = sesiónActual.user;
     const nombre = u.user_metadata?.nombre || u.email;
@@ -990,7 +1018,7 @@
     const r = await sbFetch(
       '/rest/v1/licencias?select=*&email=eq.' + userEmail + '&order=created_at.desc',
       {},
-      SUPABASE_KEY
+      sesiónActual.access_token
     );
 
     if (!r.ok || !Array.isArray(r.data)) {
@@ -1078,7 +1106,7 @@
     const r = await sbFetch(
       '/rest/v1/licencias?select=nombre,email,estado,monto,metodo_pago,fecha_pago,created_at&email=eq.' + userEmail2 + '&order=created_at.desc',
       {},
-      SUPABASE_KEY
+      sesiónActual.access_token
     );
 
     if (!r.ok || !Array.isArray(r.data) || r.data.length === 0) {
@@ -1360,10 +1388,15 @@
       if (navBtn) { navBtn.textContent = 'Mi Panel →'; navBtn.onclick = () => irA('panel'); }
     }
 
-    // Siempre arrancar en landing salvo que el hash lo indique explícitamente
-    if (hash === '#panel') irA('panel');
-    // En cualquier otro caso (incluyendo #login): mostrar landing
-    // El usuario llega a auth solo si hace clic en los botones del nav
+    // Arrancar en login por defecto
+    if (hash === '#panel') {
+      irA('panel');
+    } else if (hash === '#landing') {
+      irA('landing');
+    } else {
+      // Default: show auth (login)
+      irA('auth', 'login');
+    }
   })();
 </script>
 </body>

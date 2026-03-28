@@ -988,9 +988,9 @@
 
     const userEmail = sesiónActual.user?.email || '';
     const r = await sbFetch(
-      '/rest/v1/licencias?select=*&email=eq.' + encodeURIComponent(userEmail) + '&order=created_at.desc',
+      '/rest/v1/licencias?select=*&email=eq.' + userEmail + '&order=created_at.desc',
       {},
-      sesiónActual.access_token
+      SUPABASE_KEY
     );
 
     if (!r.ok || !Array.isArray(r.data)) {
@@ -1076,9 +1076,9 @@
 
     const userEmail2 = sesiónActual.user?.email || '';
     const r = await sbFetch(
-      '/rest/v1/licencias?select=nombre,email,estado,monto,metodo_pago,fecha_pago,created_at&email=eq.' + encodeURIComponent(userEmail2) + '&order=created_at.desc',
+      '/rest/v1/licencias?select=nombre,email,estado,monto,metodo_pago,fecha_pago,created_at&email=eq.' + userEmail2 + '&order=created_at.desc',
       {},
-      sesiónActual.access_token
+      SUPABASE_KEY
     );
 
     if (!r.ok || !Array.isArray(r.data) || r.data.length === 0) {
@@ -1155,7 +1155,7 @@
         body: JSON.stringify({ machine_id: nuevaMac }),
         headers: { 'Prefer': 'return=minimal' }
       },
-      sesiónActual.access_token
+      SUPABASE_KEY
     );
 
     btn.disabled = false;

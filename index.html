@@ -809,39 +809,25 @@
     </div>
   </section>
 
-  <!-- TICKER PRECIOS EN VIVO -->
-  <div class="ticker-bar" id="tickerBar">
-    <div class="ticker-item">
-      <div class="ticker-dot" id="dot-NQ"></div>
-      <div>
-        <div class="ticker-name">Nasdaq (NQ)</div>
-        <div class="ticker-price" id="price-NQ">—</div>
-      </div>
-      <div class="ticker-change" id="chg-NQ">—</div>
-    </div>
-    <div class="ticker-item">
-      <div class="ticker-dot" id="dot-ES"></div>
-      <div>
-        <div class="ticker-name">S&amp;P 500 (ES)</div>
-        <div class="ticker-price" id="price-ES">—</div>
-      </div>
-      <div class="ticker-change" id="chg-ES">—</div>
-    </div>
-    <div class="ticker-item">
-      <div class="ticker-dot" id="dot-GC"></div>
-      <div>
-        <div class="ticker-name">Oro (GC)</div>
-        <div class="ticker-price" id="price-GC">—</div>
-      </div>
-      <div class="ticker-change" id="chg-GC">—</div>
-    </div>
-    <div class="ticker-item">
-      <div class="ticker-dot" id="dot-VIX"></div>
-      <div>
-        <div class="ticker-name">VIX</div>
-        <div class="ticker-price" id="price-VIX">—</div>
-      </div>
-      <div class="ticker-change" id="chg-VIX">—</div>
+  <!-- TICKER PRECIOS EN VIVO - TradingView Widget -->
+  <div style="background:#0D0D0D;border-top:1px solid #1E1E1E;border-bottom:1px solid #1E1E1E;">
+    <div class="tradingview-widget-container">
+      <div class="tradingview-widget-container__widget"></div>
+      <script type="text/javascript" src="https://s3.tradingview.com/external-embedding/embed-widget-ticker-tape.js" async>
+      {
+        "symbols": [
+          {"proName": "CME_MINI:NQ1!", "title": "Nasdaq"},
+          {"proName": "CME_MINI:ES1!", "title": "S&P 500"},
+          {"proName": "COMEX:GC1!", "title": "Oro"},
+          {"proName": "CBOE:VIX", "title": "VIX"}
+        ],
+        "showSymbolLogo": true,
+        "isTransparent": true,
+        "displayMode": "adaptive",
+        "colorTheme": "dark",
+        "locale": "es"
+      }
+      </script>
     </div>
   </div>
 
@@ -893,12 +879,30 @@
     </div>
   </div>
 
-  <!-- NOTICIAS MACRO -->
+  <!-- CALENDARIO ECONOMICO -->
   <div class="home-section" style="padding-top:0">
-    <h2 class="home-section-title">MACRO HOY</h2>
-    <p class="home-section-sub">Noticias del mercado actualizadas.</p>
-    <div class="noticias-grid" id="noticiasGrid">
-      <div style="color:var(--gris);font-size:13px;padding:20px 0">Cargando noticias...</div>
+    <h2 class="home-section-title">CALENDARIO ECONOMICO</h2>
+    <p class="home-section-sub">Eventos macroeconomicos del mercado en tiempo real.</p>
+    <div style="border-radius:12px;overflow:hidden;border:1px solid var(--negro-border)">
+      <div class="tradingview-widget-container">
+        <div class="tradingview-widget-container__widget"></div>
+        <script type="text/javascript" src="https://s3.tradingview.com/external-embedding/embed-widget-events.js" async>
+        {
+          "colorTheme": "dark",
+          "isTransparent": true,
+          "width": "100%",
+          "height": "467",
+          "locale": "es",
+          "importanceFilter": "-1,0,1",
+          "countryFilter": "us,eu,gb,jp,cn,au,ca"
+        }
+        </script>
+      </div>
+    </div>
+    <div style="text-align:right;margin-top:6px">
+      <a href="https://www.tradingview.com" target="_blank" style="font-size:11px;color:#444;text-decoration:none">
+        Datos provistos por TradingView
+      </a>
     </div>
   </div>
 

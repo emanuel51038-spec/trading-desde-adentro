@@ -809,25 +809,39 @@
     </div>
   </section>
 
-  <!-- TICKER PRECIOS EN VIVO - TradingView Widget -->
-  <div style="background:#0D0D0D;border-top:1px solid #1E1E1E;border-bottom:1px solid #1E1E1E;">
-    <div class="tradingview-widget-container">
-      <div class="tradingview-widget-container__widget"></div>
-      <script type="text/javascript" src="https://s3.tradingview.com/external-embedding/embed-widget-ticker-tape.js" async>
-      {
-        "symbols": [
-          {"proName": "CME_MINI:NQ1!", "title": "Nasdaq"},
-          {"proName": "CME_MINI:ES1!", "title": "S&P 500"},
-          {"proName": "COMEX:GC1!", "title": "Oro"},
-          {"proName": "CBOE:VIX", "title": "VIX"}
-        ],
-        "showSymbolLogo": true,
-        "isTransparent": true,
-        "displayMode": "adaptive",
-        "colorTheme": "dark",
-        "locale": "es"
-      }
-      </script>
+  <!-- TICKER PRECIOS EN VIVO -->
+  <div class="ticker-bar" id="tickerBar">
+    <div class="ticker-item">
+      <div class="ticker-dot" id="dot-NQ"></div>
+      <div>
+        <div class="ticker-name">Nasdaq (NQ)</div>
+        <div class="ticker-price" id="price-NQ">—</div>
+      </div>
+      <div class="ticker-change" id="chg-NQ">—</div>
+    </div>
+    <div class="ticker-item">
+      <div class="ticker-dot" id="dot-ES"></div>
+      <div>
+        <div class="ticker-name">S&amp;P 500 (ES)</div>
+        <div class="ticker-price" id="price-ES">—</div>
+      </div>
+      <div class="ticker-change" id="chg-ES">—</div>
+    </div>
+    <div class="ticker-item">
+      <div class="ticker-dot" id="dot-GC"></div>
+      <div>
+        <div class="ticker-name">Oro (GC)</div>
+        <div class="ticker-price" id="price-GC">—</div>
+      </div>
+      <div class="ticker-change" id="chg-GC">—</div>
+    </div>
+    <div class="ticker-item">
+      <div class="ticker-dot" id="dot-VIX"></div>
+      <div>
+        <div class="ticker-name">VIX</div>
+        <div class="ticker-price" id="price-VIX">—</div>
+      </div>
+      <div class="ticker-change" id="chg-VIX">—</div>
     </div>
   </div>
 
@@ -879,20 +893,12 @@
     </div>
   </div>
 
-  <!-- CALENDARIO ECONOMICO -->
+  <!-- NOTICIAS MACRO -->
   <div class="home-section" style="padding-top:0">
-    <h2 class="home-section-title">CALENDARIO ECONOMICO</h2>
-    <p class="home-section-sub">Eventos macroeconomicos del mercado en tiempo real.</p>
-    <div style="border-radius:12px;overflow:hidden;border:1px solid var(--negro-border)">
-      <iframe src="https://sslecal2.investing.com?ecoDayBackground=%230A0A0A&defaultFont=%23FFFFFF&innerBorderColor=%231E1E1E&borderColor=%231E1E1E&columns=exc_flags,exc_currency,exc_importance,exc_actual,exc_forecast,exc_previous&features=datepicker,timezone&countries=5,22,25&calType=day&timeZone=15&lang=12"
-        width="100%" height="467" frameborder="0" allowtransparency="true" marginwidth="0" marginheight="0"
-        style="display:block;background:#0A0A0A">
-      </iframe>
-    </div>
-    <div style="text-align:right;margin-top:6px">
-      <a href="https://es.investing.com" target="_blank" style="font-size:11px;color:#444;text-decoration:none">
-        Datos provistos por Investing.com
-      </a>
+    <h2 class="home-section-title">MACRO HOY</h2>
+    <p class="home-section-sub">Noticias del mercado actualizadas.</p>
+    <div class="noticias-grid" id="noticiasGrid">
+      <div style="color:var(--gris);font-size:13px;padding:20px 0">Cargando noticias...</div>
     </div>
   </div>
 

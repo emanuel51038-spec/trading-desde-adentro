@@ -1720,10 +1720,14 @@
   ];
 
   async function cargarPrecios() {
+    // Usamos allorigins como proxy para evitar CORS de Yahoo Finance
     for (const s of SYMBOLS) {
       try {
-        const res = await fetch(`https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(s.yahoo)}?interval=1d&range=2d`);
-        const data = await res.json();
+        const url = `https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(s.yahoo)}?interval=1d&range=2d`;
+        const proxy = `https://api.allorigins.win/get?url=${encodeURIComponent(url)}`;
+        const res  = await fetch(proxy);
+        const outer = await res.json();
+        const data = JSON.parse(outer.contents);
         const meta = data?.chart?.result?.[0]?.meta;
         if (!meta) continue;
 
@@ -1754,23 +1758,30 @@
     const grid = document.getElementById('noticiasGrid');
     if (!grid) return;
     try {
-      // Usamos Finnhub API gratuita
-      const res = await fetch('https://finnhub.io/api/v1/news?category=general&token=sandbox_c1qud5iad3i8aveml8ng');
-      const data = await res.json();
-      if (!Array.isArray(data) || data.length === 0) throw new Error('sin datos');
+      // RSS de MarketWatch via proxy allorigins
+      const rssUrl = 'https://feeds.marketwatch.com/marketwatch/topstories/';
+      const proxy  = `https://api.allorigins.win/get?url=${encodeURIComponent(rssUrl)}`;
+      const res    = await fetch(proxy);
+      const outer  = await res.json();
+      const parser = new DOMParser();
+      const xml    = parser.parseFromString(outer.contents, 'text/xml');
+      const items  = Array.from(xml.querySelectorAll('item')).slice(0, 5);
 
-      const noticias = data.slice(0, 5);
-      grid.innerHTML = noticias.map(n => {
-        const fecha = new Date(n.datetime * 1000).toLocaleDateString('es-AR', { day: '2-digit', month: 'short', year: 'numeric' });
-        const img = n.image ? `<img src="${n.image}" class="noticia-img" onerror="this.style.display='none'">` : '';
+      if (items.length === 0) throw new Error('sin items');
+
+      grid.innerHTML = items.map(item => {
+        const title = item.querySelector('title')?.textContent || '';
+        const link  = item.querySelector('link')?.textContent || '#';
+        const date  = item.querySelector('pubDate')?.textContent || '';
+        const fecha = date ? new Date(date).toLocaleDateString('es-AR', { day: '2-digit', month: 'short', year: 'numeric' }) : '';
         return `
-        <a href="${n.url}" target="_blank" class="noticia-card">
-          ${img}
+        <a href="${link}" target="_blank" class="noticia-card">
           <div style="flex:1">
-            <div class="noticia-source">${n.source || 'Mercados'}</div>
-            <div class="noticia-title">${n.headline}</div>
+            <div class="noticia-source">MarketWatch</div>
+            <div class="noticia-title">${title}</div>
             <div class="noticia-date">${fecha}</div>
           </div>
+          <span style="font-size:18px;opacity:0.3">→</span>
         </a>`;
       }).join('');
     } catch(e) {

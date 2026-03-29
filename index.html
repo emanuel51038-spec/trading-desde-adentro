@@ -217,6 +217,165 @@
     footer a { color: var(--gris-claro); text-decoration: none; }
     footer a:hover { color: var(--blanco); }
 
+    /* ══════════════════════════════
+       HOME PAGE SECTIONS
+    ══════════════════════════════ */
+
+    /* Navbar fija arriba del home */
+    .home-nav {
+      position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+      background: rgba(10,10,10,0.95); backdrop-filter: blur(10px);
+      border-bottom: 1px solid var(--negro-border);
+      padding: 0 32px; height: 60px;
+      display: flex; align-items: center; justify-content: space-between;
+    }
+    .home-nav-logo { width: 130px; }
+    .home-nav-btn {
+      background: var(--rojo); color: white; border: none; border-radius: 8px;
+      padding: 9px 20px; font-family: 'DM Sans', sans-serif; font-size: 13px;
+      font-weight: 600; cursor: pointer; transition: background 0.2s;
+    }
+    .home-nav-btn:hover { background: var(--rojo-bright); }
+
+    /* Hero home */
+    .home-hero {
+      min-height: 100vh; display: flex; align-items: center; justify-content: center;
+      padding: 100px 24px 60px;
+      background: radial-gradient(ellipse 70% 50% at 50% 0%, rgba(139,26,26,0.25) 0%, transparent 60%), var(--negro);
+      position: relative;
+    }
+    .home-hero::before {
+      content: ''; position: absolute; inset: 0;
+      background-image: linear-gradient(rgba(139,26,26,0.04) 1px, transparent 1px),
+                        linear-gradient(90deg, rgba(139,26,26,0.04) 1px, transparent 1px);
+      background-size: 60px 60px; pointer-events: none;
+    }
+    .home-hero-inner {
+      max-width: 900px; width: 100%; text-align: center; position: relative; z-index: 1;
+    }
+    .home-hero-logo { width: 220px; margin: 0 auto 32px; display: block; }
+    .home-hero h1 {
+      font-family: 'Bebas Neue', sans-serif; font-size: clamp(48px, 8vw, 88px);
+      line-height: 0.95; letter-spacing: 2px; margin-bottom: 20px;
+    }
+    .home-hero h1 span { color: var(--rojo-bright); }
+    .home-hero-sub {
+      font-size: 17px; color: var(--gris); max-width: 560px; margin: 0 auto 40px;
+      line-height: 1.7;
+    }
+    .home-hero-btns { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; }
+    .home-btn-primary {
+      background: var(--rojo); color: white; border: none; border-radius: 8px;
+      padding: 14px 32px; font-family: 'DM Sans', sans-serif; font-size: 15px;
+      font-weight: 600; cursor: pointer; transition: all 0.2s;
+    }
+    .home-btn-primary:hover { background: var(--rojo-bright); transform: translateY(-1px); }
+    .home-btn-secondary {
+      background: transparent; color: var(--gris-claro); border: 1px solid var(--negro-border);
+      border-radius: 8px; padding: 14px 32px; font-family: 'DM Sans', sans-serif;
+      font-size: 15px; font-weight: 600; cursor: pointer; transition: all 0.2s;
+    }
+    .home-btn-secondary:hover { border-color: var(--rojo); color: white; }
+
+    /* Ticker precios */
+    .ticker-bar {
+      background: #0D0D0D; border-top: 1px solid var(--negro-border);
+      border-bottom: 1px solid var(--negro-border);
+      padding: 0 32px; display: flex; gap: 0; overflow-x: auto;
+      scrollbar-width: none;
+    }
+    .ticker-bar::-webkit-scrollbar { display: none; }
+    .ticker-item {
+      display: flex; align-items: center; gap: 10px; padding: 14px 24px;
+      border-right: 1px solid var(--negro-border); white-space: nowrap; flex-shrink: 0;
+    }
+    .ticker-name { font-size: 11px; font-weight: 700; letter-spacing: 1px; color: var(--gris); text-transform: uppercase; }
+    .ticker-price { font-family: 'Bebas Neue', sans-serif; font-size: 20px; color: var(--blanco); }
+    .ticker-change { font-size: 12px; font-weight: 600; }
+    .ticker-change.up { color: #4CAF50; }
+    .ticker-change.down { color: #E57373; }
+    .ticker-dot { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; }
+    .ticker-dot.up { background: #4CAF50; }
+    .ticker-dot.down { background: #E57373; }
+
+    /* Secciones generales */
+    .home-section { padding: 80px 24px; max-width: 1000px; margin: 0 auto; }
+    .home-section-title {
+      font-family: 'Bebas Neue', sans-serif; font-size: clamp(32px, 5vw, 52px);
+      letter-spacing: 2px; margin-bottom: 12px;
+    }
+    .home-section-sub { font-size: 15px; color: var(--gris); margin-bottom: 48px; line-height: 1.6; }
+
+    /* Bio */
+    .bio-card {
+      background: var(--negro-card); border: 1px solid var(--negro-border);
+      border-radius: 20px; padding: 40px; display: flex; gap: 36px; align-items: flex-start;
+    }
+    @media (max-width: 640px) { .bio-card { flex-direction: column; } }
+    .bio-avatar {
+      width: 100px; height: 100px; border-radius: 50%; background: rgba(139,26,26,0.2);
+      border: 2px solid rgba(139,26,26,0.4); display: flex; align-items: center;
+      justify-content: center; flex-shrink: 0; overflow: hidden;
+    }
+    .bio-avatar img { width: 100%; height: 100%; object-fit: cover; }
+    .bio-content h3 {
+      font-family: 'Bebas Neue', sans-serif; font-size: 28px; letter-spacing: 2px; margin-bottom: 4px;
+    }
+    .bio-role { font-size: 12px; color: var(--rojo-bright); font-weight: 600; letter-spacing: 2px; text-transform: uppercase; margin-bottom: 16px; }
+    .bio-text { font-size: 14px; color: var(--gris); line-height: 1.8; }
+
+    /* Screenshots */
+    .screenshots-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 20px; }
+    .screenshot-card {
+      background: var(--negro-card); border: 1px solid var(--negro-border);
+      border-radius: 12px; overflow: hidden; transition: border-color 0.2s;
+    }
+    .screenshot-card:hover { border-color: rgba(139,26,26,0.5); }
+    .screenshot-card img { width: 100%; display: block; }
+    .screenshot-card-body { padding: 16px 20px; }
+    .screenshot-card-title { font-size: 14px; font-weight: 600; margin-bottom: 4px; }
+    .screenshot-card-desc { font-size: 12px; color: var(--gris); line-height: 1.5; }
+
+    /* Noticias */
+    .noticias-grid { display: flex; flex-direction: column; gap: 12px; }
+    .noticia-card {
+      background: var(--negro-card); border: 1px solid var(--negro-border);
+      border-radius: 10px; padding: 16px 20px; display: flex; gap: 16px;
+      align-items: flex-start; transition: border-color 0.2s; text-decoration: none;
+      color: var(--blanco);
+    }
+    .noticia-card:hover { border-color: rgba(139,26,26,0.4); }
+    .noticia-source {
+      font-size: 10px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase;
+      color: var(--rojo-bright); margin-bottom: 4px;
+    }
+    .noticia-title { font-size: 13px; font-weight: 600; line-height: 1.5; margin-bottom: 4px; }
+    .noticia-date { font-size: 11px; color: var(--gris); }
+    .noticia-img {
+      width: 72px; height: 56px; border-radius: 6px; object-fit: cover;
+      flex-shrink: 0; background: #1A1A1A;
+    }
+
+    /* CTA final */
+    .home-cta {
+      background: radial-gradient(ellipse 80% 60% at 50% 50%, rgba(139,26,26,0.2) 0%, transparent 70%),
+                  var(--negro-card);
+      border: 1px solid var(--negro-border); border-radius: 20px;
+      padding: 64px 40px; text-align: center; margin: 0 24px 80px;
+      max-width: 900px; margin-left: auto; margin-right: auto; margin-bottom: 80px;
+    }
+    .home-cta h2 { font-family: 'Bebas Neue', sans-serif; font-size: clamp(36px, 5vw, 56px); letter-spacing: 2px; margin-bottom: 12px; }
+    .home-cta p { font-size: 15px; color: var(--gris); margin-bottom: 32px; }
+
+    /* Home footer */
+    .home-footer {
+      border-top: 1px solid var(--negro-border); padding: 28px 32px;
+      display: flex; align-items: center; justify-content: space-between;
+      color: var(--gris); font-size: 12px; flex-wrap: wrap; gap: 12px;
+    }
+    .home-footer a { color: var(--gris-claro); text-decoration: none; }
+    .home-footer a:hover { color: white; }
+
     @keyframes fadeUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
     .hero > * { animation: fadeUp 0.6s ease both; }
     .hero > *:nth-child(1) { animation-delay: 0.0s; }
@@ -621,18 +780,136 @@
 </div>
 
 <!-- ══════════════════════════════
-     VISTA: LOGIN / REGISTRO
+     VISTA: AUTH (HOME + LOGIN)
 ══════════════════════════════ -->
 <div id="vista-auth" class="vista">
-  <div class="auth-page">
-    <div class="auth-card">
-      <img src="logo.png" alt="Trading desde Adentro" class="auth-logo">
 
+  <!-- NAV FIJA -->
+  <nav class="home-nav">
+    <img src="logo.png" alt="Trading desde Adentro" class="home-nav-logo">
+    <button class="home-nav-btn" onclick="document.getElementById('loginSection').scrollIntoView({behavior:'smooth'})">
+      Iniciar sesión →
+    </button>
+  </nav>
+
+  <!-- HERO -->
+  <section class="home-hero">
+    <div class="home-hero-inner">
+      <img src="logo.png" alt="Trading desde Adentro" class="home-hero-logo">
+      <h1>EL TRADING SE CONSTRUYE<br><span>DESDE ADENTRO</span></h1>
+      <p class="home-hero-sub">Herramientas para traders que entienden que la disciplina, la mente y la estrategia van de la mano.</p>
+      <div class="home-hero-btns">
+        <button class="home-btn-primary" onclick="document.getElementById('loginSection').scrollIntoView({behavior:'smooth'})">
+          Acceder a mi cuenta →
+        </button>
+        <button class="home-btn-secondary" onclick="irA('landing')">
+          Ver Daily Loss Limiter
+        </button>
+      </div>
+    </div>
+  </section>
+
+  <!-- TICKER PRECIOS EN VIVO -->
+  <div class="ticker-bar" id="tickerBar">
+    <div class="ticker-item">
+      <div class="ticker-dot" id="dot-NQ"></div>
+      <div>
+        <div class="ticker-name">Nasdaq (NQ)</div>
+        <div class="ticker-price" id="price-NQ">—</div>
+      </div>
+      <div class="ticker-change" id="chg-NQ">—</div>
+    </div>
+    <div class="ticker-item">
+      <div class="ticker-dot" id="dot-ES"></div>
+      <div>
+        <div class="ticker-name">S&amp;P 500 (ES)</div>
+        <div class="ticker-price" id="price-ES">—</div>
+      </div>
+      <div class="ticker-change" id="chg-ES">—</div>
+    </div>
+    <div class="ticker-item">
+      <div class="ticker-dot" id="dot-GC"></div>
+      <div>
+        <div class="ticker-name">Oro (GC)</div>
+        <div class="ticker-price" id="price-GC">—</div>
+      </div>
+      <div class="ticker-change" id="chg-GC">—</div>
+    </div>
+    <div class="ticker-item">
+      <div class="ticker-dot" id="dot-VIX"></div>
+      <div>
+        <div class="ticker-name">VIX</div>
+        <div class="ticker-price" id="price-VIX">—</div>
+      </div>
+      <div class="ticker-change" id="chg-VIX">—</div>
+    </div>
+  </div>
+
+  <!-- BIO -->
+  <div class="home-section">
+    <h2 class="home-section-title">QUIEN SOY</h2>
+    <div class="bio-card">
+      <div class="bio-avatar">
+        <img src="logo.png" alt="Emanuel Mora" style="object-fit:contain;padding:10px">
+      </div>
+      <div class="bio-content">
+        <h3>EMANUEL MORA</h3>
+        <div class="bio-role">Fundador · Trading desde Adentro</div>
+        <p class="bio-text">
+          Soy Emanuel Mora, argentino, fundador de Trading Desde Adentro. Descubri el mundo del trading a principios del 2021, en plena pandemia. A lo largo de este camino, mi mayor dificultad fueron los aspectos emocionales. Aprendi una estrategia, pero mis creencias, miedos y dudas siempre me demostraban que aun habia algo que necesitaba dominar, algo que yacia en el interior y que hasta ese momento venia ignorando.
+          <br><br>
+          Ahi nacio Trading Desde Adentro, un espacio para compartir mi experiencia, aprendizajes, reflexiones y herramientas utiles para todos aquellos que se animen a aventurarse en este hermoso, pero desafiante camino. Porque el verdadero Trading se construye Desde Adentro.
+        </p>
+      </div>
+    </div>
+  </div>
+
+  <!-- HERRAMIENTAS / SCREENSHOTS -->
+  <div class="home-section" style="padding-top:0">
+    <h2 class="home-section-title">HERRAMIENTAS</h2>
+    <p class="home-section-sub">Construidas desde la experiencia real del trading. Sin humo, sin promesas — solo herramientas que funcionan.</p>
+    <div class="screenshots-grid">
+      <div class="screenshot-card">
+        <img src="captura_DailyLossLimiter.jpeg" alt="Daily Loss Limiter">
+        <div class="screenshot-card-body">
+          <div class="screenshot-card-title">Daily Loss Limiter</div>
+          <div class="screenshot-card-desc">Bloqueo automatico de operaciones al superar el limite de perdida diaria. Inviolable y persistente. Para NinjaTrader 8.</div>
+        </div>
+      </div>
+      <div class="screenshot-card">
+        <img src="ManualBacktestAnalyzer.png" alt="Backtest Manual">
+        <div class="screenshot-card-body">
+          <div class="screenshot-card-title">Backtest Manual</div>
+          <div class="screenshot-card-desc">Indicador para hacer backtesting manual directamente en el grafico de NinjaTrader 8. Estadisticas en tiempo real.</div>
+        </div>
+      </div>
+      <div class="screenshot-card">
+        <img src="bitacora1.png" alt="Bitacora de Trading">
+        <div class="screenshot-card-body">
+          <div class="screenshot-card-title">Bitacora de Trading</div>
+          <div class="screenshot-card-desc">Registro cuantitativo y cualitativo de tus operaciones. Equity curve, radar de reglas operativas y registro emocional.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- NOTICIAS MACRO -->
+  <div class="home-section" style="padding-top:0">
+    <h2 class="home-section-title">MACRO HOY</h2>
+    <p class="home-section-sub">Noticias del mercado actualizadas.</p>
+    <div class="noticias-grid" id="noticiasGrid">
+      <div style="color:var(--gris);font-size:13px;padding:20px 0">Cargando noticias...</div>
+    </div>
+  </div>
+
+  <!-- CTA + LOGIN -->
+  <div id="loginSection" style="padding: 0 24px 80px; max-width: 480px; margin: 0 auto;">
+    <div class="auth-card" style="background:var(--negro-card);border:1px solid var(--negro-border);border-radius:20px;padding:40px">
+      <img src="logo.png" alt="Trading desde Adentro" class="auth-logo">
       <div class="auth-tabs">
-        <button class="auth-tab active" id="tabLogin" onclick="switchAuthTab('login')">Iniciar sesión</button>
+        <button class="auth-tab active" id="tabLogin" onclick="switchAuthTab('login')">Iniciar sesion</button>
         <button class="auth-tab" id="tabRegistro" onclick="switchAuthTab('registro')">Crear cuenta</button>
       </div>
-
       <!-- LOGIN -->
       <div id="formLogin">
         <div class="auth-group">
@@ -640,13 +917,12 @@
           <input type="email" class="auth-input" id="loginEmail" placeholder="tu@email.com">
         </div>
         <div class="auth-group">
-          <label class="auth-label">Contraseña</label>
+          <label class="auth-label">Contrasena</label>
           <input type="password" class="auth-input" id="loginPass" placeholder="••••••••" onkeydown="if(event.key==='Enter')login()">
         </div>
         <button class="auth-btn" id="loginBtn" onclick="login()">Ingresar a Mi Panel →</button>
         <div class="auth-msg" id="loginMsg" style="display:none"></div>
       </div>
-
       <!-- REGISTRO -->
       <div id="formRegistro" style="display:none">
         <div class="auth-group">
@@ -658,20 +934,26 @@
           <input type="email" class="auth-input" id="regEmail" placeholder="tu@email.com">
         </div>
         <div class="auth-group">
-          <label class="auth-label">Contraseña</label>
-          <input type="password" class="auth-input" id="regPass" placeholder="Mínimo 6 caracteres">
+          <label class="auth-label">Contrasena</label>
+          <input type="password" class="auth-input" id="regPass" placeholder="Minimo 6 caracteres">
         </div>
         <div class="auth-group">
-          <label class="auth-label">Confirmar contraseña</label>
-          <input type="password" class="auth-input" id="regPass2" placeholder="Repetí tu contraseña" onkeydown="if(event.key==='Enter')registrar()">
+          <label class="auth-label">Confirmar contrasena</label>
+          <input type="password" class="auth-input" id="regPass2" placeholder="Repeti tu contrasena" onkeydown="if(event.key==='Enter')registrar()">
         </div>
         <button class="auth-btn" id="regBtn" onclick="registrar()">Crear cuenta</button>
         <div class="auth-msg" id="regMsg" style="display:none"></div>
       </div>
-
-
     </div>
   </div>
+
+  <!-- FOOTER -->
+  <footer class="home-footer">
+    <span>© 2026 Trading desde Adentro</span>
+    <a href="https://instagram.com/tradingdesdeadentro" target="_blank">@tradingdesdeadentro</a>
+    <span style="font-size:11px;color:#444">Daily Loss Limiter es un Add-On para NinjaTrader 8. No nos responsabilizamos por perdidas de trading.</span>
+  </footer>
+
 </div>
 
 <!-- ══════════════════════════════
@@ -1427,8 +1709,84 @@
   /* ══════════════════════
      INIT
   ══════════════════════ */
+  /* ══════════════════════
+     PRECIOS EN VIVO
+  ══════════════════════ */
+  const SYMBOLS = [
+    { id: 'NQ', yahoo: 'NQ=F', name: 'Nasdaq' },
+    { id: 'ES', yahoo: 'ES=F', name: 'S&P 500' },
+    { id: 'GC', yahoo: 'GC=F', name: 'Oro' },
+    { id: 'VIX', yahoo: '^VIX', name: 'VIX' }
+  ];
+
+  async function cargarPrecios() {
+    for (const s of SYMBOLS) {
+      try {
+        const res = await fetch(`https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(s.yahoo)}?interval=1d&range=2d`);
+        const data = await res.json();
+        const meta = data?.chart?.result?.[0]?.meta;
+        if (!meta) continue;
+
+        const price  = meta.regularMarketPrice || 0;
+        const prev   = meta.chartPreviousClose || meta.previousClose || price;
+        const change = price - prev;
+        const pct    = prev ? (change / prev * 100) : 0;
+        const up     = change >= 0;
+
+        const priceEl = document.getElementById('price-' + s.id);
+        const chgEl   = document.getElementById('chg-' + s.id);
+        const dotEl   = document.getElementById('dot-' + s.id);
+
+        if (priceEl) priceEl.textContent = price.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+        if (chgEl) {
+          chgEl.textContent = (up ? '+' : '') + pct.toFixed(2) + '%';
+          chgEl.className = 'ticker-change ' + (up ? 'up' : 'down');
+        }
+        if (dotEl) dotEl.className = 'ticker-dot ' + (up ? 'up' : 'down');
+      } catch(e) { console.log('Price error:', s.id, e); }
+    }
+  }
+
+  /* ══════════════════════
+     NOTICIAS MACRO
+  ══════════════════════ */
+  async function cargarNoticias() {
+    const grid = document.getElementById('noticiasGrid');
+    if (!grid) return;
+    try {
+      // Usamos Finnhub API gratuita
+      const res = await fetch('https://finnhub.io/api/v1/news?category=general&token=sandbox_c1qud5iad3i8aveml8ng');
+      const data = await res.json();
+      if (!Array.isArray(data) || data.length === 0) throw new Error('sin datos');
+
+      const noticias = data.slice(0, 5);
+      grid.innerHTML = noticias.map(n => {
+        const fecha = new Date(n.datetime * 1000).toLocaleDateString('es-AR', { day: '2-digit', month: 'short', year: 'numeric' });
+        const img = n.image ? `<img src="${n.image}" class="noticia-img" onerror="this.style.display='none'">` : '';
+        return `
+        <a href="${n.url}" target="_blank" class="noticia-card">
+          ${img}
+          <div style="flex:1">
+            <div class="noticia-source">${n.source || 'Mercados'}</div>
+            <div class="noticia-title">${n.headline}</div>
+            <div class="noticia-date">${fecha}</div>
+          </div>
+        </a>`;
+      }).join('');
+    } catch(e) {
+      grid.innerHTML = '<div style="color:var(--gris);font-size:13px">No se pudieron cargar las noticias en este momento.</div>';
+    }
+  }
+
   (function init() {
     obtenerCotizacion();
+    if (document.getElementById('tickerBar')) {
+      cargarPrecios();
+      setInterval(cargarPrecios, 60000); // actualizar cada 60s
+    }
+    if (document.getElementById('noticiasGrid')) {
+      cargarNoticias();
+    }
 
     const hash = window.location.hash;
 

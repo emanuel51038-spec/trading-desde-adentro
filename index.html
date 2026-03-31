@@ -1841,11 +1841,11 @@
 
     cont.innerHTML = header + `
       <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:12px;margin-bottom:28px">
+        ${renderStatCard('Acumulado', (stats.acumulado >= 0 ? '+' : '') + '$' + Math.abs(stats.acumulado).toFixed(2), stats.acumulado >= 0 ? 'var(--verde)' : '#E57373')}
         ${renderStatCard('Win Rate', stats.winRate + '%', stats.winRate >= 50 ? 'var(--verde)' : '#E57373')}
         ${renderStatCard('Ratio R:R', stats.ratio, parseFloat(stats.ratio) >= 1 ? 'var(--verde)' : '#E57373')}
-        ${renderStatCard('Expected Value', stats.evR + 'R', parseFloat(stats.evR) >= 0 ? 'var(--verde)' : '#E57373')}
-        ${renderStatCard('Acumulado', (stats.acumulado >= 0 ? '+' : '') + '$' + Math.abs(stats.acumulado).toFixed(2), stats.acumulado >= 0 ? 'var(--verde)' : '#E57373')}
         ${renderStatCard('Profit Factor', stats.pf, parseFloat(stats.pf) >= 1 ? 'var(--verde)' : '#E57373')}
+        ${renderStatCard('Expected Value', stats.evR + 'R', parseFloat(stats.evR) >= 0 ? 'var(--verde)' : '#E57373')}
         ${renderStatCard('Max Drawdown', '-$' + stats.maxDD, '#E57373')}
         ${renderStatCard('Racha negativa', stats.rachaMax + ' ops', '#E57373')}
         ${renderStatCard('Estrategia top', stats.estMasUsada, 'var(--blanco)')}
@@ -1857,6 +1857,18 @@
           <option value="">Todas las estrategias</option>
           ${estrategiasUnicas.map(e => `<option value="${e}">${e}</option>`).join('')}
         </select>
+      </div>
+      <!-- Calendario mensual -->
+      <div style="background:var(--negro-card);border:1px solid var(--negro-border);border-radius:16px;padding:20px;margin-bottom:16px">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
+          <div style="font-size:12px;font-weight:600;letter-spacing:1px;text-transform:uppercase;color:var(--gris)">Calendario</div>
+          <div style="display:flex;align-items:center;gap:8px">
+            <button onclick="cambiarMesCalendario(-1)" style="background:#1A1A1A;border:1px solid #2A2A2A;color:var(--gris);width:28px;height:28px;border-radius:6px;cursor:pointer;font-size:14px">‹</button>
+            <span id="calMesLabel" style="font-size:13px;font-weight:600;min-width:110px;text-align:center"></span>
+            <button onclick="cambiarMesCalendario(1)" style="background:#1A1A1A;border:1px solid #2A2A2A;color:var(--gris);width:28px;height:28px;border-radius:6px;cursor:pointer;font-size:14px">›</button>
+          </div>
+        </div>
+        <div id="calGrid"></div>
       </div>
       <!-- Equity Curve -->
       <div style="background:var(--negro-card);border:1px solid var(--negro-border);border-radius:16px;padding:20px;margin-bottom:16px">
@@ -1881,9 +1893,87 @@
         </table>
       </div>`;
     _drawEquityAfterRender(ops);
+    setTimeout(() => iniciarCalendario(ops), 60);
   }
 
   // Llamar equity curve después de renderizar
+  // ── CALENDARIO ──────────────────────────────────────
+  let _calOps = [];
+  let _calMes = new Date().getMonth();
+  let _calAnio = new Date().getFullYear();
+
+  function iniciarCalendario(ops) {
+    _calOps = ops;
+    _calMes = new Date().getMonth();
+    _calAnio = new Date().getFullYear();
+    renderCalendario();
+  }
+
+  function cambiarMesCalendario(delta) {
+    _calMes += delta;
+    if (_calMes > 11) { _calMes = 0; _calAnio++; }
+    if (_calMes < 0)  { _calMes = 11; _calAnio--; }
+    renderCalendario();
+  }
+
+  function renderCalendario() {
+    const grid = document.getElementById('calGrid');
+    const label = document.getElementById('calMesLabel');
+    if (!grid || !label) return;
+
+    const meses = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+    label.textContent = meses[_calMes] + ' ' + _calAnio;
+
+    // Agrupar ops por día
+    const porDia = {};
+    _calOps.forEach(o => {
+      const d = new Date(o.fecha);
+      if (d.getMonth() === _calMes && d.getFullYear() === _calAnio) {
+        const key = d.getDate();
+        if (!porDia[key]) porDia[key] = { pnl: 0, trades: 0 };
+        porDia[key].pnl    += o.pnl;
+        porDia[key].trades += 1;
+      }
+    });
+
+    const primerDia = new Date(_calAnio, _calMes, 1).getDay(); // 0=Dom
+    const diasMes   = new Date(_calAnio, _calMes + 1, 0).getDate();
+    const dias = ['Dom','Lun','Mar','Mié','Jue','Vie','Sáb'];
+
+    let html = '<div style="display:grid;grid-template-columns:repeat(7,1fr);gap:4px">';
+    // Headers
+    dias.forEach(d => {
+      html += `<div style="text-align:center;font-size:10px;font-weight:600;color:var(--gris);padding:4px 0;text-transform:uppercase;letter-spacing:0.5px">${d}</div>`;
+    });
+    // Espacios vacíos al inicio
+    for (let i = 0; i < primerDia; i++) {
+      html += '<div></div>';
+    }
+    // Días
+    const hoy = new Date();
+    for (let dia = 1; dia <= diasMes; dia++) {
+      const info = porDia[dia];
+      const esHoy = dia === hoy.getDate() && _calMes === hoy.getMonth() && _calAnio === hoy.getFullYear();
+      let bg = '#0D0D0D', border = '#1E1E1E', pnlColor = 'var(--gris)', pnlTxt = '';
+
+      if (info) {
+        const p = info.pnl;
+        pnlTxt = (p >= 0 ? '+' : '') + '$' + Math.abs(p).toFixed(0);
+        if (p > 0)      { bg = 'rgba(76,175,80,0.12)';  border = 'rgba(76,175,80,0.3)';  pnlColor = '#4CAF50'; }
+        else if (p < 0) { bg = 'rgba(229,115,115,0.12)'; border = 'rgba(229,115,115,0.3)'; pnlColor = '#E57373'; }
+        else            { bg = '#0D0D0D'; pnlColor = 'var(--gris)'; }
+      }
+
+      html += `<div style="background:${bg};border:1px solid ${esHoy ? 'var(--rojo)' : border};border-radius:8px;padding:6px 4px;min-height:52px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px">
+        <div style="font-size:11px;font-weight:600;color:${esHoy ? 'var(--rojo-bright)' : 'var(--gris-claro)'}">${dia}</div>
+        ${info ? `<div style="font-size:10px;font-weight:700;color:${pnlColor}">${pnlTxt}</div>
+        <div style="font-size:9px;color:var(--gris)">${info.trades} op${info.trades !== 1 ? 's' : ''}</div>` : ''}
+      </div>`;
+    }
+    html += '</div>';
+    grid.innerHTML = html;
+  }
+
   function _drawEquityAfterRender(ops) {
     setTimeout(() => dibujarEquityCurve(ops), 50);
   }

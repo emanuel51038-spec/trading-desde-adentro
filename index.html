@@ -1887,9 +1887,9 @@
         </div>
         <div id="calGrid"></div>
       </div>
-      <!-- Radar de reglas generales -->
+      <!-- Radar reglas generales -->
       <div id="radarContainer" style="background:var(--negro-card);border:1px solid var(--negro-border);border-radius:16px;padding:20px;margin-bottom:16px;display:none">
-        <div style="font-size:12px;font-weight:600;letter-spacing:1px;text-transform:uppercase;color:var(--gris);margin-bottom:12px">Reglas de sesión — % cumplimiento</div>
+        <div style="font-size:12px;font-weight:600;letter-spacing:1px;text-transform:uppercase;color:var(--gris);margin-bottom:12px">Reglas de sesion — % cumplimiento</div>
         <canvas id="radarCanvas" style="max-height:280px"></canvas>
       </div>
       <!-- Equity Curve -->
@@ -1916,7 +1916,7 @@
       </div>`;
     _drawEquityAfterRender(ops);
     setTimeout(() => iniciarCalendario(ops), 60);
-    setTimeout(() => dibujarRadar(ops), 80);
+    setTimeout(() => dibujarRadar(ops), 100);
   }
 
   // Llamar equity curve después de renderizar
@@ -2338,7 +2338,7 @@
         </div>
         <div id="listaReglasGenerales">
           ${reglasGenerales.length === 0
-            ? '<div style=\"text-align:center;padding:24px;color:var(--gris);font-size:13px;background:#0D0D0D;border:1px solid #1E1E1E;border-radius:10px\">Sin reglas generales. Ej: Gestion emocional, R/B positivo...</div>'
+            ? '<div style=\"text-align:center;padding:20px;color:var(--gris);font-size:13px;background:#0D0D0D;border:1px solid #1E1E1E;border-radius:10px\">Sin reglas generales aun. Ej: Gestion emocional, R/B positivo...</div>'
             : reglasGenerales.map((rg,i) => '<div style=\"background:#0D0D0D;border:1px solid #1E1E1E;border-radius:10px;padding:12px 16px;margin-bottom:6px;display:flex;align-items:center;justify-content:space-between\"><span style=\"font-size:13px\">' + rg + '</span><button onclick=\"eliminarReglaGeneral(' + i + ')\" style=\"background:rgba(139,26,26,0.15);border:1px solid rgba(139,26,26,0.3);color:#E57373;padding:4px 10px;border-radius:6px;cursor:pointer;font-size:11px\">x</button></div>').join('')}
         </div>
         <div id="formReglaGeneral" style="display:none;background:#0D0D0D;border:1px solid #1E1E1E;border-radius:10px;padding:14px;margin-top:10px">
@@ -2438,48 +2438,37 @@
     cargarConfigJournal();
   }
 
-  // ── RADAR DE REGLAS GENERALES ────────────────────────
+  // ── RADAR ──────────────────────────────────────────
   let _radarChart = null;
 
   async function dibujarRadar(ops) {
-    // Cargar reglas generales del usuario
     const r = await sbFetch('/rest/v1/reglas_generales_sesion?select=reglas&user_id=eq.' + sesiónActual.user.id + '&limit=1', {}, sesiónActual.access_token);
     const reglas = r.ok && Array.isArray(r.data) && r.data.length > 0 ? (r.data[0].reglas || []) : [];
-
     const cont = document.getElementById('radarContainer');
     if (!cont) return;
-
-    if (reglas.length < 3) {
-      cont.style.display = 'none';
-      return;
-    }
+    if (reglas.length < 3) { cont.style.display = 'none'; return; }
     cont.style.display = 'block';
 
-    // Calcular % de cumplimiento por regla
+    // Calcular % cumplimiento por regla
     const totales = {}, cumplidos = {};
     reglas.forEach(r => { totales[r] = 0; cumplidos[r] = 0; });
-
     ops.forEach(o => {
       const rc = o.reglas_generales || [];
-      reglas.forEach(r => {
-        if (rc.includes(r) || rc.includes('NO:' + r) || rc.some(x => x === r || x === 'NO:' + r)) {
-          totales[r]++;
-          if (rc.includes(r)) cumplidos[r]++;
+      reglas.forEach(reg => {
+        if (rc.includes(reg) || rc.includes('NO:' + reg)) {
+          totales[reg]++;
+          if (rc.includes(reg)) cumplidos[reg]++;
         }
       });
     });
 
-    const labels = reglas;
-    const data = reglas.map(r => totales[r] > 0 ? Math.round(cumplidos[r] / totales[r] * 100) : 0);
-
-    // Destruir chart anterior si existe
+    const data = reglas.map(reg => totales[reg] > 0 ? Math.round(cumplidos[reg] / totales[reg] * 100) : 0);
     if (_radarChart) { _radarChart.destroy(); _radarChart = null; }
-
     const ctx = document.getElementById('radarCanvas').getContext('2d');
     _radarChart = new Chart(ctx, {
       type: 'radar',
       data: {
-        labels,
+        labels: reglas,
         datasets: [{
           label: '% Cumplimiento',
           data,
@@ -2492,26 +2481,20 @@
           label: 'Objetivo',
           data: reglas.map(() => 100),
           backgroundColor: 'rgba(255,255,255,0.03)',
-          borderColor: 'rgba(255,255,255,0.15)',
+          borderColor: 'rgba(255,255,255,0.12)',
           borderWidth: 1,
-          borderDash: [4,4],
           pointRadius: 0,
         }]
       },
       options: {
         responsive: true,
-        plugins: {
-          legend: { display: false },
-          tooltip: {
-            callbacks: { label: ctx => ctx.dataset.label + ': ' + ctx.raw + '%' }
-          }
-        },
+        plugins: { legend: { display: false } },
         scales: {
           r: {
             min: 0, max: 100,
             ticks: { stepSize: 25, color: '#555', backdropColor: 'transparent', font: { size: 10 } },
-            grid: { color: 'rgba(255,255,255,0.08)' },
-            angleLines: { color: 'rgba(255,255,255,0.08)' },
+            grid: { color: 'rgba(255,255,255,0.07)' },
+            angleLines: { color: 'rgba(255,255,255,0.07)' },
             pointLabels: { color: '#9E9E9E', font: { size: 12, family: "'DM Sans', sans-serif" } }
           }
         }

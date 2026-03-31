@@ -2338,7 +2338,7 @@
         </div>
         <div id="listaReglasGenerales">
           ${reglasGenerales.length === 0
-            ? '<div style=\"text-align:center;padding:20px;color:var(--gris);font-size:13px;background:#0D0D0D;border:1px solid #1E1E1E;border-radius:10px\">Sin reglas generales aun. Ej: Gestion emocional, R/B positivo...</div>'
+            ? '<div style=\"text-align:center;padding:20px;color:var(--gris);font-size:13px;background:#0D0D0D;border:1px solid #1E1E1E;border-radius:10px\">Sin reglas generales. Ej: Gestion emocional, R/B positivo...</div>'
             : reglasGenerales.map((rg,i) => '<div style=\"background:#0D0D0D;border:1px solid #1E1E1E;border-radius:10px;padding:12px 16px;margin-bottom:6px;display:flex;align-items:center;justify-content:space-between\"><span style=\"font-size:13px\">' + rg + '</span><button onclick=\"eliminarReglaGeneral(' + i + ')\" style=\"background:rgba(139,26,26,0.15);border:1px solid rgba(139,26,26,0.3);color:#E57373;padding:4px 10px;border-radius:6px;cursor:pointer;font-size:11px\">x</button></div>').join('')}
         </div>
         <div id="formReglaGeneral" style="display:none;background:#0D0D0D;border:1px solid #1E1E1E;border-radius:10px;padding:14px;margin-top:10px">
@@ -2348,7 +2348,7 @@
             <button onclick="document.getElementById('formReglaGeneral').style.display='none'" style="background:#1E1E1E;border:1px solid #2A2A2A;color:var(--gris);padding:9px 14px;border-radius:7px;cursor:pointer;font-size:13px">Cancelar</button>
           </div>
         </div>
-      </div>\`;
+      </div>`;
   }
 
   function abrirFormReglaGeneral() {
@@ -2438,7 +2438,6 @@
     cargarConfigJournal();
   }
 
-  // ── RADAR ──────────────────────────────────────────
   let _radarChart = null;
 
   async function dibujarRadar(ops) {
@@ -2448,10 +2447,8 @@
     if (!cont) return;
     if (reglas.length < 3) { cont.style.display = 'none'; return; }
     cont.style.display = 'block';
-
-    // Calcular % cumplimiento por regla
     const totales = {}, cumplidos = {};
-    reglas.forEach(r => { totales[r] = 0; cumplidos[r] = 0; });
+    reglas.forEach(reg => { totales[reg] = 0; cumplidos[reg] = 0; });
     ops.forEach(o => {
       const rc = o.reglas_generales || [];
       reglas.forEach(reg => {
@@ -2461,7 +2458,6 @@
         }
       });
     });
-
     const data = reglas.map(reg => totales[reg] > 0 ? Math.round(cumplidos[reg] / totales[reg] * 100) : 0);
     if (_radarChart) { _radarChart.destroy(); _radarChart = null; }
     const ctx = document.getElementById('radarCanvas').getContext('2d');

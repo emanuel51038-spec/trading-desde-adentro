@@ -2542,19 +2542,29 @@
     }
 
     // Revisar si hay sesión guardada -> ir al panel directo
-    if (cargarSesionGuardada()) {
-      // Actualizar botón nav
-      const navBtn = document.querySelector('.nav-btn.primary');
-      if (navBtn) { navBtn.textContent = 'Mi Panel →'; navBtn.onclick = () => irA('panel'); }
+    if (hash === '#landing') {
+      irA('landing');
+      return;
     }
 
-    // Arrancar en login por defecto
+    if (cargarSesionGuardada()) {
+      const navBtn = document.querySelector('.nav-btn.primary');
+      if (navBtn) { navBtn.textContent = 'Mi Panel →'; navBtn.onclick = () => irA('panel'); }
+      // Validar token y entrar directo
+      refrescarToken().then(ok => {
+        if (ok) {
+          irA('panel');
+        } else {
+          irA('auth', 'login');
+        }
+      });
+      return;
+    }
+
+    // Sin sesión guardada
     if (hash === '#panel') {
-      irA('panel');
-    } else if (hash === '#landing') {
-      irA('landing');
+      irA('auth', 'login');
     } else {
-      // Default: show auth (login)
       irA('auth', 'login');
     }
   })();

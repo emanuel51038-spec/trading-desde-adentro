@@ -1863,15 +1863,9 @@
             <option value="">Todas las estrategias</option>
             ${estrategiasUnicas.map(e => `<option value="${e}">${e}</option>`).join('')}
           </select>
-          <div style="display:flex;align-items:center;gap:4px;background:#0D0D0D;border:1px solid #1E1E1E;border-radius:8px;padding:4px 10px">
-            <span style="font-size:11px;color:var(--gris);white-space:nowrap">Desde</span>
-            <input type="date" id="filtroDesde" onchange="filtrarJournal()" style="background:transparent;border:none;color:var(--blanco);font-size:13px;font-family:'DM Sans',sans-serif;cursor:pointer;outline:none;width:130px;color-scheme:dark">
-          </div>
-          <div style="display:flex;align-items:center;gap:4px;background:#0D0D0D;border:1px solid #1E1E1E;border-radius:8px;padding:4px 10px">
-            <span style="font-size:11px;color:var(--gris);white-space:nowrap">Hasta</span>
-            <input type="date" id="filtroHasta" onchange="filtrarJournal()" style="background:transparent;border:none;color:var(--blanco);font-size:13px;font-family:'DM Sans',sans-serif;cursor:pointer;outline:none;width:130px;color-scheme:dark">
-          </div>
-          <button onclick="limpiarFiltros()" style="background:#1A1A1A;border:1px solid #2A2A2A;color:var(--gris);padding:7px 12px;border-radius:8px;font-size:12px;cursor:pointer">✕ Limpiar filtro</button>
+          <input type="date" id="filtroDesde" onchange="filtrarJournal()" style="background:#0D0D0D;border:1px solid #1E1E1E;color:var(--blanco);padding:7px 10px;border-radius:8px;font-size:13px;font-family:'DM Sans',sans-serif;cursor:pointer">
+          <input type="date" id="filtroHasta" onchange="filtrarJournal()" style="background:#0D0D0D;border:1px solid #1E1E1E;color:var(--blanco);padding:7px 10px;border-radius:8px;font-size:13px;font-family:'DM Sans',sans-serif;cursor:pointer">
+          <button onclick="limpiarFiltros()" style="background:#1A1A1A;border:1px solid #2A2A2A;color:var(--gris);padding:7px 12px;border-radius:8px;font-size:12px;cursor:pointer">✕ Limpiar</button>
         </div>
       </div>
       <!-- Calendario mensual -->
@@ -2424,19 +2418,30 @@
     }
 
     // Revisar si hay sesión guardada -> ir al panel directo
+    if (hash === '#landing') {
+      irA('landing');
+      return;
+    }
+
     if (cargarSesionGuardada()) {
       // Actualizar botón nav
       const navBtn = document.querySelector('.nav-btn.primary');
       if (navBtn) { navBtn.textContent = 'Mi Panel →'; navBtn.onclick = () => irA('panel'); }
+      // Verificar token y entrar directo al panel
+      refrescarToken().then(ok => {
+        if (ok) {
+          irA('panel');
+        } else {
+          irA('auth', 'login');
+        }
+      });
+      return;
     }
 
-    // Arrancar en login por defecto
+    // Sin sesión guardada
     if (hash === '#panel') {
-      irA('panel');
-    } else if (hash === '#landing') {
-      irA('landing');
+      irA('auth', 'login');
     } else {
-      // Default: show auth (login)
       irA('auth', 'login');
     }
   })();

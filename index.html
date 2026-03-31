@@ -1848,6 +1848,8 @@
         ${renderStatCard('Profit Factor', stats.pf, parseFloat(stats.pf) >= 1 ? 'var(--verde)' : '#E57373')}
         ${renderStatCard('Max Drawdown', '-$' + stats.maxDD, '#E57373')}
         ${renderStatCard('Racha negativa', stats.rachaMax + ' ops', '#E57373')}
+        ${renderStatCard('Estrategia top', stats.estMasUsada, 'var(--blanco)')}
+        ${renderStatCard('Emoción top', stats.emocionTop, 'var(--blanco)')}
       </div>
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;flex-wrap:wrap;gap:10px">
         <span style="font-size:14px;font-weight:600">${ops.length} operaciones</span>
@@ -1913,7 +1915,15 @@
     [...ops].reverse().forEach(o => { equity += o.pnl; if (equity > peak) peak = equity; const dd = peak - equity; if (dd > maxDD) maxDD = dd; });
     let rachaMax = 0, rachaActual = 0;
     [...ops].reverse().forEach(o => { if (o.pnl < 0) { rachaActual++; if (rachaActual > rachaMax) rachaMax = rachaActual; } else rachaActual = 0; });
-    return { winRate, ratio, pf, evR, acumulado, maxDD: maxDD.toFixed(2), rachaMax };
+    // Estrategia más usada
+    const estConteo = {};
+    ops.forEach(o => { if (o.estrategia) estConteo[o.estrategia] = (estConteo[o.estrategia] || 0) + 1; });
+    const estMasUsada = Object.keys(estConteo).sort((a,b) => estConteo[b]-estConteo[a])[0] || '—';
+    // Emoción predominante
+    const emConteo = {};
+    ops.forEach(o => { if (o.emocion && !o.emocion.startsWith('__')) emConteo[o.emocion] = (emConteo[o.emocion] || 0) + 1; });
+    const emocionTop = Object.keys(emConteo).sort((a,b) => emConteo[b]-emConteo[a])[0] || '—';
+    return { winRate, ratio, pf, evR, acumulado, maxDD: maxDD.toFixed(2), rachaMax, estMasUsada, emocionTop };
   }
 
   function renderOpFila(o) {
@@ -1927,16 +1937,46 @@
     const total = reglas.length;
     const reglasStr = total > 0 ? `${cumplidas}/${total}` : '—';
     const reglasColor = total > 0 && cumplidas === total ? 'var(--verde)' : total > 0 ? '#E57373' : 'var(--gris)';
-    return `<tr style="border-bottom:1px solid #1A1A1A" data-estrategia="${o.estrategia || ''}" onmouseover="this.style.background='#111'" onmouseout="this.style.background='transparent'">
+    const tieneNotas = o.notas && !o.notas.startsWith('__');
+    const tieneDetalle = tieneNotas || total > 0;
+    const rowId = 'row_' + (o.id || Math.random().toString(36).substr(2,6));
+
+    // Construir detalle de reglas
+    const reglasDetalle = reglas.length > 0 ? reglas.map(r => {
+      const nc = r.startsWith('NO:');
+      const nombre = nc ? r.replace('NO:','') : r;
+      return `<span style="display:inline-block;margin:2px 4px;padding:3px 8px;border-radius:4px;font-size:11px;background:${nc?'rgba(229,115,115,0.12)':'rgba(76,175,80,0.12)'};color:${nc?'#E57373':'var(--verde)'}">${nc?'✗':'✓'} ${nombre}</span>`;
+    }).join('') : '';
+
+    return `<tr id="${rowId}" style="border-bottom:${tieneDetalle?'none':'1px solid #1A1A1A'}" data-estrategia="${o.estrategia || ''}"
+      onclick="${tieneDetalle ? `toggleDetalle('${rowId}')` : ''}"
+      style="cursor:${tieneDetalle?'pointer':'default'}"
+      onmouseover="this.style.background='#111'" onmouseout="this.style.background='transparent'">
       <td style="padding:12px 16px;color:var(--gris)">${fecha}</td>
       <td style="padding:12px 16px;font-weight:600">${o.instrumento || '—'}</td>
       <td style="padding:12px 16px">${dir}</td>
       <td style="padding:12px 16px;font-weight:600;color:${pnlColor}">${pnlStr}</td>
       <td style="padding:12px 16px;color:var(--gris)">${o.estrategia || '—'}</td>
       <td style="padding:12px 16px;font-weight:600;color:${reglasColor}">${reglasStr}</td>
-      <td style="padding:12px 16px;color:var(--gris);max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${o.emocion || ''}">${o.emocion || '—'}</td>
-      <td style="padding:12px 16px;color:var(--gris);max-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${o.notas || ''}">${o.notas || '—'}</td>
-    </tr>`;
+      <td style="padding:12px 16px;color:var(--gris);max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${o.emocion && !o.emocion.startsWith('__') ? o.emocion : '—'}</td>
+      <td style="padding:12px 16px;color:var(--gris)">${tieneDetalle ? '<span style="font-size:11px;color:#555">▼ ver</span>' : '—'}</td>
+    </tr>${tieneDetalle ? `<tr id="${rowId}_det" style="display:none;border-bottom:1px solid #1A1A1A;background:#0A0A0A" data-estrategia="${o.estrategia || ''}">
+      <td colspan="8" style="padding:12px 16px">
+        ${reglasDetalle ? `<div style="margin-bottom:${tieneNotas?'10px':'0'}">${reglasDetalle}</div>` : ''}
+        ${tieneNotas ? `<div style="font-size:13px;color:var(--gris);line-height:1.6"><span style="color:#555;font-size:11px;text-transform:uppercase;letter-spacing:1px;margin-right:8px">Nota</span>${o.notas}</div>` : ''}
+      </td>
+    </tr>` : ''}`;
+  }
+
+  function toggleDetalle(rowId) {
+    const det = document.getElementById(rowId + '_det');
+    const row = document.getElementById(rowId);
+    if (!det) return;
+    const visible = det.style.display !== 'none';
+    det.style.display = visible ? 'none' : 'table-row';
+    // Rotar el indicador
+    const ind = row.querySelector('span');
+    if (ind) ind.textContent = visible ? '▼ ver' : '▲ cerrar';
   }
 
   function dibujarEquityCurve(ops) {

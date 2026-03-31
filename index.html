@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Trading desde Adentro — Daily Loss Limiter</title>
   <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
   <script>emailjs.init("rp9MNqIfMeyq1q0lG");</script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
@@ -1863,9 +1864,15 @@
             <option value="">Todas las estrategias</option>
             ${estrategiasUnicas.map(e => `<option value="${e}">${e}</option>`).join('')}
           </select>
-          <input type="date" id="filtroDesde" onchange="filtrarJournal()" style="background:#0D0D0D;border:1px solid #1E1E1E;color:var(--blanco);padding:7px 10px;border-radius:8px;font-size:13px;font-family:'DM Sans',sans-serif;cursor:pointer">
-          <input type="date" id="filtroHasta" onchange="filtrarJournal()" style="background:#0D0D0D;border:1px solid #1E1E1E;color:var(--blanco);padding:7px 10px;border-radius:8px;font-size:13px;font-family:'DM Sans',sans-serif;cursor:pointer">
-          <button onclick="limpiarFiltros()" style="background:#1A1A1A;border:1px solid #2A2A2A;color:var(--gris);padding:7px 12px;border-radius:8px;font-size:12px;cursor:pointer">✕ Limpiar</button>
+          <div style="display:flex;align-items:center;gap:4px;background:#0D0D0D;border:1px solid #1E1E1E;border-radius:8px;padding:4px 10px">
+            <span style="font-size:11px;color:var(--gris);white-space:nowrap">Desde</span>
+            <input type="date" id="filtroDesde" onchange="filtrarJournal()" style="background:transparent;border:none;color:var(--blanco);font-size:13px;font-family:'DM Sans',sans-serif;cursor:pointer;outline:none;width:130px;color-scheme:dark">
+          </div>
+          <div style="display:flex;align-items:center;gap:4px;background:#0D0D0D;border:1px solid #1E1E1E;border-radius:8px;padding:4px 10px">
+            <span style="font-size:11px;color:var(--gris);white-space:nowrap">Hasta</span>
+            <input type="date" id="filtroHasta" onchange="filtrarJournal()" style="background:transparent;border:none;color:var(--blanco);font-size:13px;font-family:'DM Sans',sans-serif;cursor:pointer;outline:none;width:130px;color-scheme:dark">
+          </div>
+          <button onclick="limpiarFiltros()" style="background:#1A1A1A;border:1px solid #2A2A2A;color:var(--gris);padding:7px 12px;border-radius:8px;font-size:12px;cursor:pointer">✕ Limpiar filtro</button>
         </div>
       </div>
       <!-- Calendario mensual -->
@@ -1879,6 +1886,11 @@
           </div>
         </div>
         <div id="calGrid"></div>
+      </div>
+      <!-- Radar de reglas generales -->
+      <div id="radarContainer" style="background:var(--negro-card);border:1px solid var(--negro-border);border-radius:16px;padding:20px;margin-bottom:16px;display:none">
+        <div style="font-size:12px;font-weight:600;letter-spacing:1px;text-transform:uppercase;color:var(--gris);margin-bottom:12px">Reglas de sesión — % cumplimiento</div>
+        <canvas id="radarCanvas" style="max-height:280px"></canvas>
       </div>
       <!-- Equity Curve -->
       <div style="background:var(--negro-card);border:1px solid var(--negro-border);border-radius:16px;padding:20px;margin-bottom:16px">
@@ -1904,6 +1916,7 @@
       </div>`;
     _drawEquityAfterRender(ops);
     setTimeout(() => iniciarCalendario(ops), 60);
+    setTimeout(() => dibujarRadar(ops), 80);
   }
 
   // Llamar equity curve después de renderizar
@@ -2244,12 +2257,14 @@
 
   async function cargarConfigJournal() {
     const cont = document.getElementById('configJournalContent');
-    const [tgRes, estRes] = await Promise.all([
+    const [tgRes, estRes, rgRes] = await Promise.all([
       sbFetch('/rest/v1/telegram_users?select=telegram_chat_id,telegram_username&user_id=eq.' + sesiónActual.user.id, {}, sesiónActual.access_token),
-      sbFetch('/rest/v1/estrategias?select=*&user_id=eq.' + sesiónActual.user.id + '&order=created_at', {}, sesiónActual.access_token)
+      sbFetch('/rest/v1/estrategias?select=*&user_id=eq.' + sesiónActual.user.id + '&order=created_at', {}, sesiónActual.access_token),
+      sbFetch('/rest/v1/reglas_generales_sesion?select=reglas&user_id=eq.' + sesiónActual.user.id + '&limit=1', {}, sesiónActual.access_token)
     ]);
     const tg = tgRes.ok && Array.isArray(tgRes.data) && tgRes.data.length > 0 ? tgRes.data[0] : null;
     const estrategias = estRes.ok && Array.isArray(estRes.data) ? estRes.data : [];
+    const reglasGenerales = rgRes.ok && Array.isArray(rgRes.data) && rgRes.data.length > 0 ? (rgRes.data[0].reglas || []) : [];
 
     cont.innerHTML = `
       <!-- Telegram -->
@@ -2312,7 +2327,56 @@
             <button onclick="document.getElementById('formEstrategia').style.display='none'" style="background:#1E1E1E;border:1px solid #2A2A2A;color:var(--gris);padding:10px 16px;border-radius:7px;cursor:pointer;font-size:13px">Cancelar</button>
           </div>
         </div>
-      </div>`;
+      </div>
+      <div style="margin-top:24px;padding-top:24px;border-top:1px solid #1E1E1E">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+          <div>
+            <div style="font-size:12px;font-weight:600;letter-spacing:1px;text-transform:uppercase;color:var(--gris)">Reglas generales de sesion</div>
+            <div style="font-size:11px;color:#555;margin-top:2px">Se preguntan en Telegram despues de cada operacion</div>
+          </div>
+          <button onclick="abrirFormReglaGeneral()" style="background:var(--rojo);color:white;border:none;padding:7px 14px;border-radius:6px;cursor:pointer;font-size:12px;font-weight:600">+ Nueva</button>
+        </div>
+        <div id="listaReglasGenerales">
+          ${reglasGenerales.length === 0
+            ? '<div style=\"text-align:center;padding:24px;color:var(--gris);font-size:13px;background:#0D0D0D;border:1px solid #1E1E1E;border-radius:10px\">Sin reglas generales. Ej: Gestion emocional, R/B positivo...</div>'
+            : reglasGenerales.map((rg,i) => '<div style=\"background:#0D0D0D;border:1px solid #1E1E1E;border-radius:10px;padding:12px 16px;margin-bottom:6px;display:flex;align-items:center;justify-content:space-between\"><span style=\"font-size:13px\">' + rg + '</span><button onclick=\"eliminarReglaGeneral(' + i + ')\" style=\"background:rgba(139,26,26,0.15);border:1px solid rgba(139,26,26,0.3);color:#E57373;padding:4px 10px;border-radius:6px;cursor:pointer;font-size:11px\">x</button></div>').join('')}
+        </div>
+        <div id="formReglaGeneral" style="display:none;background:#0D0D0D;border:1px solid #1E1E1E;border-radius:10px;padding:14px;margin-top:10px">
+          <input type="text" id="inputReglaGeneral" placeholder="Ej: Gestion emocional" style="width:100%;background:#181818;border:1px solid #2A2A2A;color:var(--blanco);padding:9px 12px;border-radius:7px;font-size:13px;outline:none;font-family:'DM Sans',sans-serif;margin-bottom:10px">
+          <div style="display:flex;gap:8px">
+            <button onclick="guardarReglaGeneral()" style="flex:1;background:var(--rojo);color:white;border:none;padding:9px;border-radius:7px;cursor:pointer;font-size:13px;font-weight:600">Agregar</button>
+            <button onclick="document.getElementById('formReglaGeneral').style.display='none'" style="background:#1E1E1E;border:1px solid #2A2A2A;color:var(--gris);padding:9px 14px;border-radius:7px;cursor:pointer;font-size:13px">Cancelar</button>
+          </div>
+        </div>
+      </div>\`;
+  }
+
+  function abrirFormReglaGeneral() {
+    document.getElementById('formReglaGeneral').style.display = 'block';
+    document.getElementById('inputReglaGeneral').value = '';
+    setTimeout(() => document.getElementById('inputReglaGeneral').focus(), 50);
+  }
+
+  async function guardarReglaGeneral() {
+    const nombre = document.getElementById('inputReglaGeneral').value.trim();
+    if (!nombre) return;
+    const r = await sbFetch('/rest/v1/reglas_generales_sesion?select=*&user_id=eq.' + sesiónActual.user.id + '&limit=1', {}, sesiónActual.access_token);
+    let reglas = [];
+    if (r.ok && Array.isArray(r.data) && r.data.length > 0) reglas = r.data[0].reglas || [];
+    reglas.push(nombre);
+    await sbFetch('/rest/v1/reglas_generales_sesion?user_id=eq.' + sesiónActual.user.id, { method: 'DELETE' }, sesiónActual.access_token);
+    await sbFetch('/rest/v1/reglas_generales_sesion', { method: 'POST', body: JSON.stringify({ user_id: sesiónActual.user.id, reglas }) }, sesiónActual.access_token);
+    document.getElementById('formReglaGeneral').style.display = 'none';
+    cargarConfigJournal();
+  }
+
+  async function eliminarReglaGeneral(idx) {
+    const r = await sbFetch('/rest/v1/reglas_generales_sesion?select=*&user_id=eq.' + sesiónActual.user.id + '&limit=1', {}, sesiónActual.access_token);
+    if (!r.ok || !r.data || !r.data[0]) return;
+    const reglas = (r.data[0].reglas || []).filter((_,i) => i !== idx);
+    await sbFetch('/rest/v1/reglas_generales_sesion?user_id=eq.' + sesiónActual.user.id, { method: 'DELETE' }, sesiónActual.access_token);
+    if (reglas.length > 0) await sbFetch('/rest/v1/reglas_generales_sesion', { method: 'POST', body: JSON.stringify({ user_id: sesiónActual.user.id, reglas }) }, sesiónActual.access_token);
+    cargarConfigJournal();
   }
 
   function abrirFormEstrategia() {
@@ -2374,6 +2438,87 @@
     cargarConfigJournal();
   }
 
+  // ── RADAR DE REGLAS GENERALES ────────────────────────
+  let _radarChart = null;
+
+  async function dibujarRadar(ops) {
+    // Cargar reglas generales del usuario
+    const r = await sbFetch('/rest/v1/reglas_generales_sesion?select=reglas&user_id=eq.' + sesiónActual.user.id + '&limit=1', {}, sesiónActual.access_token);
+    const reglas = r.ok && Array.isArray(r.data) && r.data.length > 0 ? (r.data[0].reglas || []) : [];
+
+    const cont = document.getElementById('radarContainer');
+    if (!cont) return;
+
+    if (reglas.length < 3) {
+      cont.style.display = 'none';
+      return;
+    }
+    cont.style.display = 'block';
+
+    // Calcular % de cumplimiento por regla
+    const totales = {}, cumplidos = {};
+    reglas.forEach(r => { totales[r] = 0; cumplidos[r] = 0; });
+
+    ops.forEach(o => {
+      const rc = o.reglas_generales || [];
+      reglas.forEach(r => {
+        if (rc.includes(r) || rc.includes('NO:' + r) || rc.some(x => x === r || x === 'NO:' + r)) {
+          totales[r]++;
+          if (rc.includes(r)) cumplidos[r]++;
+        }
+      });
+    });
+
+    const labels = reglas;
+    const data = reglas.map(r => totales[r] > 0 ? Math.round(cumplidos[r] / totales[r] * 100) : 0);
+
+    // Destruir chart anterior si existe
+    if (_radarChart) { _radarChart.destroy(); _radarChart = null; }
+
+    const ctx = document.getElementById('radarCanvas').getContext('2d');
+    _radarChart = new Chart(ctx, {
+      type: 'radar',
+      data: {
+        labels,
+        datasets: [{
+          label: '% Cumplimiento',
+          data,
+          backgroundColor: 'rgba(139,26,26,0.2)',
+          borderColor: '#C0392B',
+          borderWidth: 2,
+          pointBackgroundColor: '#C0392B',
+          pointRadius: 4,
+        }, {
+          label: 'Objetivo',
+          data: reglas.map(() => 100),
+          backgroundColor: 'rgba(255,255,255,0.03)',
+          borderColor: 'rgba(255,255,255,0.15)',
+          borderWidth: 1,
+          borderDash: [4,4],
+          pointRadius: 0,
+        }]
+      },
+      options: {
+        responsive: true,
+        plugins: {
+          legend: { display: false },
+          tooltip: {
+            callbacks: { label: ctx => ctx.dataset.label + ': ' + ctx.raw + '%' }
+          }
+        },
+        scales: {
+          r: {
+            min: 0, max: 100,
+            ticks: { stepSize: 25, color: '#555', backdropColor: 'transparent', font: { size: 10 } },
+            grid: { color: 'rgba(255,255,255,0.08)' },
+            angleLines: { color: 'rgba(255,255,255,0.08)' },
+            pointLabels: { color: '#9E9E9E', font: { size: 12, family: "'DM Sans', sans-serif" } }
+          }
+        }
+      }
+    });
+  }
+
   (function init() {
     obtenerCotizacion();
     if (document.getElementById('tickerBar')) {
@@ -2418,30 +2563,19 @@
     }
 
     // Revisar si hay sesión guardada -> ir al panel directo
-    if (hash === '#landing') {
-      irA('landing');
-      return;
-    }
-
     if (cargarSesionGuardada()) {
       // Actualizar botón nav
       const navBtn = document.querySelector('.nav-btn.primary');
       if (navBtn) { navBtn.textContent = 'Mi Panel →'; navBtn.onclick = () => irA('panel'); }
-      // Verificar token y entrar directo al panel
-      refrescarToken().then(ok => {
-        if (ok) {
-          irA('panel');
-        } else {
-          irA('auth', 'login');
-        }
-      });
-      return;
     }
 
-    // Sin sesión guardada
+    // Arrancar en login por defecto
     if (hash === '#panel') {
-      irA('auth', 'login');
+      irA('panel');
+    } else if (hash === '#landing') {
+      irA('landing');
     } else {
+      // Default: show auth (login)
       irA('auth', 'login');
     }
   })();

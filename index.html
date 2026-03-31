@@ -1843,7 +1843,8 @@
       <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:12px;margin-bottom:28px">
         ${renderStatCard('Win Rate', stats.winRate + '%', stats.winRate >= 50 ? 'var(--verde)' : '#E57373')}
         ${renderStatCard('Ratio R:R', stats.ratio, parseFloat(stats.ratio) >= 1 ? 'var(--verde)' : '#E57373')}
-        ${renderStatCard('Expected Value', '$' + stats.ev, parseFloat(stats.ev) >= 0 ? 'var(--verde)' : '#E57373')}
+        ${renderStatCard('Expected Value', stats.evR + 'R', parseFloat(stats.evR) >= 0 ? 'var(--verde)' : '#E57373')}
+        ${renderStatCard('Acumulado', (stats.acumulado >= 0 ? '+' : '') + '$' + Math.abs(stats.acumulado).toFixed(2), stats.acumulado >= 0 ? 'var(--verde)' : '#E57373')}
         ${renderStatCard('Profit Factor', stats.pf, parseFloat(stats.pf) >= 1 ? 'var(--verde)' : '#E57373')}
         ${renderStatCard('Max Drawdown', '-$' + stats.maxDD, '#E57373')}
         ${renderStatCard('Racha negativa', stats.rachaMax + ' ops', '#E57373')}
@@ -1854,6 +1855,11 @@
           <option value="">Todas las estrategias</option>
           ${estrategiasUnicas.map(e => `<option value="${e}">${e}</option>`).join('')}
         </select>
+      </div>
+      <!-- Equity Curve -->
+      <div style="background:var(--negro-card);border:1px solid var(--negro-border);border-radius:16px;padding:20px;margin-bottom:16px">
+        <div style="font-size:12px;font-weight:600;letter-spacing:1px;text-transform:uppercase;color:var(--gris);margin-bottom:12px">Equity Curve</div>
+        <canvas id="equityCanvas" style="width:100%;height:160px"></canvas>
       </div>
       <div style="overflow-x:auto;background:var(--negro-card);border:1px solid var(--negro-border);border-radius:16px">
         <table style="width:100%;border-collapse:collapse;font-size:13px">
@@ -1872,6 +1878,12 @@
           <tbody id="journalTbody">${ops.map(renderOpFila).join('')}</tbody>
         </table>
       </div>`;
+    _drawEquityAfterRender(ops);
+  }
+
+  // Llamar equity curve después de renderizar
+  function _drawEquityAfterRender(ops) {
+    setTimeout(() => dibujarEquityCurve(ops), 50);
   }
 
   function renderStatCard(label, valor, color) {
@@ -1892,12 +1904,16 @@
     const totalPer = Math.abs(perdedoras.reduce((a, o) => a + o.pnl, 0));
     const pf = totalPer > 0 ? (totalGan / totalPer).toFixed(2) : '—';
     const wr = ops.length ? ganadoras.length / ops.length : 0;
-    const ev = ((wr * avgGan) - ((1 - wr) * avgPer)).toFixed(2);
+    // EV en R: (WR × ratio) - (1-WR)
+    const ratioNum = avgPer > 0 ? avgGan / avgPer : 0;
+    const evR = avgPer > 0 ? ((wr * ratioNum) - (1 - wr)).toFixed(2) : '—';
+    // Acumulado total
+    const acumulado = ops.reduce((a, o) => a + o.pnl, 0);
     let equity = 0, peak = 0, maxDD = 0;
     [...ops].reverse().forEach(o => { equity += o.pnl; if (equity > peak) peak = equity; const dd = peak - equity; if (dd > maxDD) maxDD = dd; });
     let rachaMax = 0, rachaActual = 0;
     [...ops].reverse().forEach(o => { if (o.pnl < 0) { rachaActual++; if (rachaActual > rachaMax) rachaMax = rachaActual; } else rachaActual = 0; });
-    return { winRate, ratio, pf, ev, maxDD: maxDD.toFixed(2), rachaMax };
+    return { winRate, ratio, pf, evR, acumulado, maxDD: maxDD.toFixed(2), rachaMax };
   }
 
   function renderOpFila(o) {
@@ -1921,6 +1937,72 @@
       <td style="padding:12px 16px;color:var(--gris);max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${o.emocion || ''}">${o.emocion || '—'}</td>
       <td style="padding:12px 16px;color:var(--gris);max-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${o.notas || ''}">${o.notas || '—'}</td>
     </tr>`;
+  }
+
+  function dibujarEquityCurve(ops) {
+    const canvas = document.getElementById('equityCanvas');
+    if (!canvas) return;
+    const dpr = window.devicePixelRatio || 1;
+    const W = canvas.offsetWidth || canvas.parentElement.offsetWidth || 600;
+    const H = 160;
+    canvas.width  = W * dpr;
+    canvas.height = H * dpr;
+    canvas.style.width  = W + 'px';
+    canvas.style.height = H + 'px';
+    const ctx = canvas.getContext('2d');
+    ctx.scale(dpr, dpr);
+
+    // Calcular puntos de equity acumulada (orden cronológico = reversed)
+    const sorted = [...ops].reverse();
+    const puntos = [0];
+    let acum = 0;
+    sorted.forEach(o => { acum += o.pnl; puntos.push(acum); });
+
+    const minV = Math.min(...puntos);
+    const maxV = Math.max(...puntos);
+    const rango = maxV - minV || 1;
+    const pad = { top: 10, bottom: 10, left: 8, right: 8 };
+    const w = W - pad.left - pad.right;
+    const h = H - pad.top - pad.bottom;
+
+    const px = (i) => pad.left + (i / (puntos.length - 1)) * w;
+    const py = (v) => pad.top + (1 - (v - minV) / rango) * h;
+
+    // Gradiente bajo la curva
+    const grad = ctx.createLinearGradient(0, pad.top, 0, H - pad.bottom);
+    const color = acum >= 0 ? '76,175,80' : '229,115,115';
+    grad.addColorStop(0, `rgba(${color},0.3)`);
+    grad.addColorStop(1, `rgba(${color},0)`);
+
+    ctx.beginPath();
+    ctx.moveTo(px(0), py(puntos[0]));
+    puntos.forEach((v, i) => { if (i > 0) ctx.lineTo(px(i), py(v)); });
+    ctx.lineTo(px(puntos.length - 1), H - pad.bottom);
+    ctx.lineTo(px(0), H - pad.bottom);
+    ctx.closePath();
+    ctx.fillStyle = grad;
+    ctx.fill();
+
+    // Línea
+    ctx.beginPath();
+    ctx.moveTo(px(0), py(puntos[0]));
+    puntos.forEach((v, i) => { if (i > 0) ctx.lineTo(px(i), py(v)); });
+    ctx.strokeStyle = acum >= 0 ? '#4CAF50' : '#E57373';
+    ctx.lineWidth = 2;
+    ctx.stroke();
+
+    // Línea base $0
+    const y0 = py(0);
+    if (y0 > pad.top && y0 < H - pad.bottom) {
+      ctx.beginPath();
+      ctx.moveTo(pad.left, y0);
+      ctx.lineTo(W - pad.right, y0);
+      ctx.strokeStyle = 'rgba(255,255,255,0.1)';
+      ctx.lineWidth = 1;
+      ctx.setLineDash([4, 4]);
+      ctx.stroke();
+      ctx.setLineDash([]);
+    }
   }
 
   function filtrarJournal() {

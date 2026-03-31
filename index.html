@@ -1811,7 +1811,8 @@
     const r = await sbFetch('/rest/v1/operaciones_journal?select=*&user_id=eq.' + sesiónActual.user.id + '&order=fecha.desc', {}, sesiónActual.access_token);
     if (!r.ok || !Array.isArray(r.data)) { cont.innerHTML = '<div style="color:#E57373;padding:20px">Error cargando el journal.</div>'; return; }
 
-    const ops = r.data.filter(o => o.pnl !== null && o.estrategia && !o.estrategia.includes('__'));
+    _todasLasOps = r.data.filter(o => o.pnl !== null && o.estrategia && !o.estrategia.includes('__'));
+    const ops = _todasLasOps;
 
     // Header con botón configurar (engranaje)
     const header = `
@@ -1852,11 +1853,20 @@
         ${renderStatCard('Emoción top', stats.emocionTop, 'var(--blanco)')}
       </div>
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;flex-wrap:wrap;gap:10px">
-        <span style="font-size:14px;font-weight:600">${ops.length} operaciones</span>
-        <select id="filtroEstrategia" onchange="filtrarJournal()" style="background:#0D0D0D;border:1px solid #1E1E1E;color:var(--blanco);padding:7px 12px;border-radius:8px;font-size:13px;cursor:pointer;font-family:'DM Sans',sans-serif">
-          <option value="">Todas las estrategias</option>
-          ${estrategiasUnicas.map(e => `<option value="${e}">${e}</option>`).join('')}
-        </select>
+        <span id="journalConteo" style="font-size:14px;font-weight:600">${ops.length} operaciones</span>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+          <select id="filtroCuenta" onchange="filtrarJournal()" style="background:#0D0D0D;border:1px solid #1E1E1E;color:var(--blanco);padding:7px 12px;border-radius:8px;font-size:13px;cursor:pointer;font-family:'DM Sans',sans-serif">
+            <option value="">Todas las cuentas</option>
+            ${[...new Set(ops.map(o => o.cuenta).filter(Boolean))].map(c => `<option value="${c}">${c}</option>`).join('')}
+          </select>
+          <select id="filtroEstrategia" onchange="filtrarJournal()" style="background:#0D0D0D;border:1px solid #1E1E1E;color:var(--blanco);padding:7px 12px;border-radius:8px;font-size:13px;cursor:pointer;font-family:'DM Sans',sans-serif">
+            <option value="">Todas las estrategias</option>
+            ${estrategiasUnicas.map(e => `<option value="${e}">${e}</option>`).join('')}
+          </select>
+          <input type="date" id="filtroDesde" onchange="filtrarJournal()" style="background:#0D0D0D;border:1px solid #1E1E1E;color:var(--blanco);padding:7px 10px;border-radius:8px;font-size:13px;font-family:'DM Sans',sans-serif;cursor:pointer">
+          <input type="date" id="filtroHasta" onchange="filtrarJournal()" style="background:#0D0D0D;border:1px solid #1E1E1E;color:var(--blanco);padding:7px 10px;border-radius:8px;font-size:13px;font-family:'DM Sans',sans-serif;cursor:pointer">
+          <button onclick="limpiarFiltros()" style="background:#1A1A1A;border:1px solid #2A2A2A;color:var(--gris);padding:7px 12px;border-radius:8px;font-size:12px;cursor:pointer">✕ Limpiar</button>
+        </div>
       </div>
       <!-- Calendario mensual -->
       <div style="background:var(--negro-card);border:1px solid var(--negro-border);border-radius:16px;padding:20px;margin-bottom:16px">
@@ -1898,6 +1908,7 @@
 
   // Llamar equity curve después de renderizar
   // ── CALENDARIO ──────────────────────────────────────
+  let _todasLasOps = [];
   let _calOps = [];
   let _calMes = new Date().getMonth();
   let _calAnio = new Date().getFullYear();
@@ -1981,7 +1992,7 @@
   function renderStatCard(label, valor, color) {
     return `<div style="background:var(--negro-card);border:1px solid var(--negro-border);border-radius:12px;padding:16px 18px">
       <div style="font-size:10px;color:var(--gris);text-transform:uppercase;letter-spacing:1px;margin-bottom:8px">${label}</div>
-      <div style="font-size:24px;font-family:'Bebas Neue',sans-serif;color:${color}">${valor}</div>
+      <div data-stat="${label}" style="font-size:24px;font-family:'Bebas Neue',sans-serif;color:${color}">${valor}</div>
     </div>`;
   }
 
@@ -2038,7 +2049,7 @@
       return `<span style="display:inline-block;margin:2px 4px;padding:3px 8px;border-radius:4px;font-size:11px;background:${nc?'rgba(229,115,115,0.12)':'rgba(76,175,80,0.12)'};color:${nc?'#E57373':'var(--verde)'}">${nc?'✗':'✓'} ${nombre}</span>`;
     }).join('') : '';
 
-    return `<tr id="${rowId}" style="border-bottom:${tieneDetalle?'none':'1px solid #1A1A1A'}" data-estrategia="${o.estrategia || ''}"
+    return `<tr id="${rowId}" style="border-bottom:${tieneDetalle?'none':'1px solid #1A1A1A'}" data-estrategia="${o.estrategia || ''}" data-cuenta="${o.cuenta || ''}" data-fecha="${o.fecha ? o.fecha.substring(0,10) : ''}"
       onclick="${tieneDetalle ? `toggleDetalle('${rowId}')` : ''}"
       style="cursor:${tieneDetalle?'pointer':'default'}"
       onmouseover="this.style.background='#111'" onmouseout="this.style.background='transparent'">
@@ -2136,9 +2147,74 @@
   }
 
   function filtrarJournal() {
-    const filtro = document.getElementById('filtroEstrategia').value;
-    document.querySelectorAll('#journalTbody tr').forEach(tr => {
-      tr.style.display = (!filtro || tr.dataset.estrategia === filtro) ? '' : 'none';
+    const filtroEst    = document.getElementById('filtroEstrategia')?.value || '';
+    const filtroCta    = document.getElementById('filtroCuenta')?.value || '';
+    const filtroDesde  = document.getElementById('filtroDesde')?.value || '';
+    const filtroHasta  = document.getElementById('filtroHasta')?.value || '';
+
+    let visible = 0;
+    const filas = document.querySelectorAll('#journalTbody tr[id^="row_"]:not([id$="_det"])');
+    filas.forEach(tr => {
+      const est   = tr.dataset.estrategia || '';
+      const cta   = tr.dataset.cuenta || '';
+      const fecha = tr.dataset.fecha || '';
+
+      const okEst   = !filtroEst   || est === filtroEst;
+      const okCta   = !filtroCta   || cta === filtroCta;
+      const okDesde = !filtroDesde || fecha >= filtroDesde;
+      const okHasta = !filtroHasta || fecha <= filtroHasta;
+      const mostrar = okEst && okCta && okDesde && okHasta;
+
+      tr.style.display = mostrar ? '' : 'none';
+      // Sincronizar fila de detalle
+      const det = document.getElementById(tr.id + '_det');
+      if (det) det.style.display = mostrar ? det.style.display : 'none';
+      if (mostrar) visible++;
+    });
+
+    const conteo = document.getElementById('journalConteo');
+    if (conteo) conteo.textContent = visible + ' operaciones';
+
+    // Actualizar stats y calendario con las ops visibles filtradas
+    const opsFiltradas = _todasLasOps.filter(o => {
+      const fecha = o.fecha ? o.fecha.substring(0,10) : '';
+      return (!filtroEst   || o.estrategia === filtroEst)
+          && (!filtroCta   || o.cuenta === filtroCta)
+          && (!filtroDesde || fecha >= filtroDesde)
+          && (!filtroHasta || fecha <= filtroHasta);
+    });
+    // Recalcular stats
+    if (opsFiltradas.length > 0) {
+      const s = calcularStats(opsFiltradas);
+      actualizarStatCards(s);
+    }
+    // Actualizar calendario
+    if (typeof iniciarCalendario === 'function') iniciarCalendario(opsFiltradas);
+    // Actualizar equity curve
+    if (typeof dibujarEquityCurve === 'function') dibujarEquityCurve(opsFiltradas);
+  }
+
+  function limpiarFiltros() {
+    const ids = ['filtroEstrategia','filtroCuenta','filtroDesde','filtroHasta'];
+    ids.forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
+    filtrarJournal();
+  }
+
+  function actualizarStatCards(s) {
+    const mapa = {
+      'Acumulado':       (s.acumulado >= 0 ? '+' : '') + '$' + Math.abs(s.acumulado).toFixed(2),
+      'Win Rate':        s.winRate + '%',
+      'Ratio R:R':       s.ratio,
+      'Profit Factor':   s.pf,
+      'Expected Value':  s.evR + 'R',
+      'Max Drawdown':    '-$' + s.maxDD,
+      'Racha negativa':  s.rachaMax + ' ops',
+      'Estrategia top':  s.estMasUsada,
+      'Emoción top':     s.emocionTop,
+    };
+    document.querySelectorAll('#journalContainer [data-stat]').forEach(el => {
+      const key = el.dataset.stat;
+      if (mapa[key] !== undefined) el.textContent = mapa[key];
     });
   }
 

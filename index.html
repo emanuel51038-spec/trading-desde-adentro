@@ -877,8 +877,36 @@
           <div class="screenshot-card-desc">Registro cuantitativo y cualitativo de tus operaciones. Equity curve, radar de reglas operativas y registro emocional.</div>
         </div>
       </div>
+      <div class="screenshot-card">
+        <div style="position:relative;overflow:hidden;background:#0D0D0D;aspect-ratio:16/10">
+          <img id="journalSlide0" src="journal_1.png" alt="Trading Journal" style="width:100%;display:block;position:absolute;top:0;left:0;opacity:1;transition:opacity 0.8s ease">
+          <img id="journalSlide1" src="journal_2.png" alt="Trading Journal Radar" style="width:100%;display:block;position:absolute;top:0;left:0;opacity:0;transition:opacity 0.8s ease">
+          <img id="journalSlide2" src="telegram.png" alt="Trading Journal Telegram" style="width:100%;display:block;position:absolute;top:0;left:0;opacity:0;transition:opacity 0.8s ease">
+          <div style="position:absolute;bottom:8px;left:50%;transform:translateX(-50%);display:flex;gap:5px">
+            <div id="jDot0" style="width:6px;height:6px;border-radius:50%;background:rgba(192,57,43,0.9)"></div>
+            <div id="jDot1" style="width:6px;height:6px;border-radius:50%;background:rgba(255,255,255,0.3)"></div>
+            <div id="jDot2" style="width:6px;height:6px;border-radius:50%;background:rgba(255,255,255,0.3)"></div>
+          </div>
+        </div>
+        <div class="screenshot-card-body">
+          <div class="screenshot-card-title">Trading Journal</div>
+          <div class="screenshot-card-desc">Journal integrado con NinjaTrader 8 y Telegram. Registra estrategia, emociones, reglas y genera estadisticas automaticamente.</div>
+        </div>
+      </div>
     </div>
   </div>
+  <script>
+    (function() {
+      var slides = 3, current = 0;
+      setInterval(function() {
+        document.getElementById('journalSlide' + current).style.opacity = '0';
+        document.getElementById('jDot' + current).style.background = 'rgba(255,255,255,0.3)';
+        current = (current + 1) % slides;
+        document.getElementById('journalSlide' + current).style.opacity = '1';
+        document.getElementById('jDot' + current).style.background = 'rgba(192,57,43,0.9)';
+      }, 3000);
+    })();
+  </script>
 
   <!-- CALENDARIO ECONOMICO -->
   <div class="home-section" style="padding-top:0">

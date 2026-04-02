@@ -1605,10 +1605,10 @@
     const nombreProducto = esMBA ? 'Manual Backtest Analyzer' : 'Daily Loss Limiter';
     const iconoProducto  = esMBA ? '📊' : '🔒';
     const installerUrl   = esMBA
-      ? 'https://pjrwdseaomijkgytbglh.supabase.co/storage/v1/object/public/Instaladores/ManualBacktestAnalyzer_Setup%20V1.0.exe'
+      ? 'https://pjrwdseaomijkgytbglh.supabase.co/storage/v1/object/public/Instaladores/ManualBacktestAnalyzer.zip'
       : 'https://pjrwdseaomijkgytbglh.supabase.co/storage/v1/object/public/Instaladores/DailyLossLimiter_Setup%20V1.0.exe';
     const guideUrl = esMBA
-      ? 'https://pjrwdseaomijkgytbglh.supabase.co/storage/v1/object/public/Instaladores/Guia_Instalacion_ManualBacktestAnalyzer.pdf'
+      ? 'https://pjrwdseaomijkgytbglh.supabase.co/storage/v1/object/public/Instaladores/GUIA_INSTALACION_MBA.pdf'
       : 'https://pjrwdseaomijkgytbglh.supabase.co/storage/v1/object/public/Instaladores/Guia_Instalacion_DailyLossLimite.pdf';
 
     return `
@@ -1637,8 +1637,11 @@
         <div class="licencia-actions">
           <div class="licencia-field-label">Acciones</div>
           ${esActiva && installerUrl
-            ? `<a href="${installerUrl}" class="action-btn primary" target="_blank"><span class="ab-icon">⬇️</span> Descargar instalador</a>
-               <p style="font-size:11px;color:#9E9E9E;margin-top:6px;line-height:1.5">⚠️ Si Windows bloquea la descarga: clic en <strong style="color:#ccc">···</strong> → <strong style="color:#ccc">Conservar</strong> → <strong style="color:#ccc">Mostrar más</strong> → <strong style="color:#ccc">Conservar de todas formas</strong>.</p>`
+            ? `<a href="${installerUrl}" class="action-btn primary" target="_blank"><span class="ab-icon">⬇️</span> ${esMBA ? 'Descargar ZIP (NinjaScript)' : 'Descargar instalador'}</a>
+               ${esMBA
+                 ? `<p style="font-size:11px;color:#9E9E9E;margin-top:6px;line-height:1.5">📦 Descomprimí el ZIP e importalo en NT8: <strong style="color:#ccc">Herramientas → Importar NinjaScript</strong>.</p>`
+                 : `<p style="font-size:11px;color:#9E9E9E;margin-top:6px;line-height:1.5">⚠️ Si Windows bloquea la descarga: clic en <strong style="color:#ccc">···</strong> → <strong style="color:#ccc">Conservar</strong> → <strong style="color:#ccc">Mostrar más</strong> → <strong style="color:#ccc">Conservar de todas formas</strong>.</p>`
+               }`
             : esActiva && !installerUrl
             ? `<div class="action-btn" style="opacity:0.4;cursor:not-allowed"><span class="ab-icon">⬇️</span> Preparando instalador...</div>`
             : `<div class="action-btn" style="opacity:0.4;cursor:not-allowed"><span class="ab-icon">⬇️</span> Disponible al activar licencia</div>`

@@ -1606,10 +1606,10 @@
     const iconoProducto  = esMBA ? '📊' : '🔒';
     const installerUrl   = esMBA
       ? 'https://pjrwdseaomijkgytbglh.supabase.co/storage/v1/object/public/Instaladores/ManualBacktestAnalyzer.zip'
-      : 'https://pjrwdseaomijkgytbglh.supabase.co/storage/v1/object/public/Instaladores/dailylosslimiter.zip';
+      : 'https://pjrwdseaomijkgytbglh.supabase.co/storage/v1/object/public/Instaladores/DailyLossLimiter_Setup%20V1.0.exe';
     const guideUrl = esMBA
       ? 'https://pjrwdseaomijkgytbglh.supabase.co/storage/v1/object/public/Instaladores/GUIA_INSTALACION_MBA.pdf'
-      : 'https://pjrwdseaomijkgytbglh.supabase.co/storage/v1/object/public/Instaladores/GUIA_INSTALACION_DAILYLOSSLIMITER.pdf';
+      : 'https://pjrwdseaomijkgytbglh.supabase.co/storage/v1/object/public/Instaladores/Guia_Instalacion_DailyLossLimite.pdf';
 
     return `
     <div class="licencia-card">
@@ -1637,10 +1637,13 @@
         <div class="licencia-actions">
           <div class="licencia-field-label">Acciones</div>
           ${esActiva && installerUrl
-            ? `<a href="${installerUrl}" class="action-btn primary" target="_blank"><span class="ab-icon">⬇️</span> Descargar ZIP</a>
-               <p style="font-size:11px;color:#9E9E9E;margin-top:6px;line-height:1.5">📦 Descomprimí el ZIP e importalo en NT8: <strong style="color:#ccc">Herramientas → Importar NinjaScript</strong>.</p>`
+            ? `<a href="${installerUrl}" class="action-btn primary" target="_blank"><span class="ab-icon">⬇️</span> ${esMBA ? 'Descargar ZIP (NinjaScript)' : 'Descargar instalador'}</a>
+               ${esMBA
+               <p style="font-size:11px;color:#9E9E9E;margin-top:6px;line-height:1.5">📦 Importá el ZIP directamente en NT8: <strong style="color:#ccc">Herramientas → Importar NinjaScript</strong>.</p>`
+                 : `<p style="font-size:11px;color:#9E9E9E;margin-top:6px;line-height:1.5">⚠️ Si Windows bloquea la descarga: clic en <strong style="color:#ccc">···</strong> → <strong style="color:#ccc">Conservar</strong> → <strong style="color:#ccc">Mostrar más</strong> → <strong style="color:#ccc">Conservar de todas formas</strong>.</p>`
+               }`
             : esActiva && !installerUrl
-            ? `<div class="action-btn" style="opacity:0.4;cursor:not-allowed"><span class="ab-icon">⬇️</span> Preparando descarga...</div>`
+            ? `<div class="action-btn" style="opacity:0.4;cursor:not-allowed"><span class="ab-icon">⬇️</span> Preparando instalador...</div>`
             : `<div class="action-btn" style="opacity:0.4;cursor:not-allowed"><span class="ab-icon">⬇️</span> Disponible al activar licencia</div>`
           }
           ${esActiva
@@ -2059,7 +2062,7 @@
           <p style="font-size:13px;color:var(--gris)">Registro cuantitativo y cualitativo de tus operaciones.</p>
         </div>
         <div style="display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end">
-          <a href="https://pjrwdseaomijkgytbglh.supabase.co/storage/v1/object/public/Instaladores/TradingJournal.zip" target="_blank" style="display:inline-flex;align-items:center;gap:6px;background:#1A1A1A;border:1px solid #2A2A2A;color:var(--gris);padding:10px 14px;border-radius:8px;text-decoration:none;font-size:12px;font-weight:600">⬇ Descargar ZIP</a>
+          <a href="https://pjrwdseaomijkgytbglh.supabase.co/storage/v1/object/public/Instaladores/TraderJournalTDA_Setup.exe" target="_blank" style="display:inline-flex;align-items:center;gap:6px;background:#1A1A1A;border:1px solid #2A2A2A;color:var(--gris);padding:10px 14px;border-radius:8px;text-decoration:none;font-size:12px;font-weight:600">⬇ Instalador</a>
           <a href="https://pjrwdseaomijkgytbglh.supabase.co/storage/v1/object/public/Instaladores/GUIA_INSTALACION_TRADINGJOURNALTDA.pdf" target="_blank" style="display:inline-flex;align-items:center;gap:6px;background:#1A1A1A;border:1px solid #2A2A2A;color:var(--gris);padding:10px 14px;border-radius:8px;text-decoration:none;font-size:12px;font-weight:600">📄 Guía</a>
           <button onclick="abrirConfigJournal()" style="background:#1A1A1A;border:1px solid #2A2A2A;color:var(--gris);padding:10px 16px;border-radius:8px;cursor:pointer;font-size:13px;font-weight:600;display:flex;align-items:center;gap:8px">
             ⚙️ Configurar
@@ -2082,8 +2085,7 @@
                 <div style="font-size:13px;font-weight:600;color:var(--blanco);margin-bottom:3px">Descargá el instalador y la guía</div>
                 <div style="font-size:12px;color:var(--gris);line-height:1.5">Instalá el AddOn de NinjaTrader 8 siguiendo las instrucciones de la guía.</div>
                 <div style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap">
-                  <a href="https://pjrwdseaomijkgytbglh.supabase.co/storage/v1/object/public/Instaladores/TradingJournal.zip" target="_blank" style="display:inline-flex;align-items:center;gap:6px;background:var(--rojo);color:white;padding:7px 14px;border-radius:7px;text-decoration:none;font-size:12px;font-weight:600">⬇ Descargar ZIP</a>
-                  <a href="https://pjrwdseaomijkgytbglh.supabase.co/storage/v1/object/public/Instaladores/GUIA_INSTALACION_TRADINGJOURNALTDA.pdf" target="_blank" style="display:inline-flex;align-items:center;gap:6px;background:#1A1A1A;border:1px solid #2A2A2A;color:var(--gris);padding:7px 14px;border-radius:7px;text-decoration:none;font-size:12px;font-weight:600">📄 Guía de instalación</a>
+                  <a href="https://pjrwdseaomijkgytbglh.supabase.co/storage/v1/object/public/Instaladores/TraderJournalTDA_Setup.exe" target="_blank" style="display:inline-flex;align-items:center;gap:6px;background:var(--rojo);color:white;padding:7px 14px;border-radius:7px;text-decoration:none;font-size:12px;font-weight:600">⬇ Descargar instalador</a>
                   <a href="https://pjrwdseaomijkgytbglh.supabase.co/storage/v1/object/public/Instaladores/GUIA_INSTALACION_TRADINGJOURNALTDA.pdf" target="_blank" style="display:inline-flex;align-items:center;gap:6px;background:#1A1A1A;border:1px solid #2A2A2A;color:var(--gris);padding:7px 14px;border-radius:7px;text-decoration:none;font-size:12px;font-weight:600">📄 Ver guía PDF</a>
                 </div>
               </div>

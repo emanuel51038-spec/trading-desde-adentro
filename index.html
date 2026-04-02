@@ -634,9 +634,9 @@
 
   <section class="hero">
     <img src="logo.png" alt="Trading desde Adentro" class="logo">
-    <div class="badge">NinjaTrader 8 · Add-On Profesional</div>
-    <h1>DAILY LOSS<br><span>LIMITER</span></h1>
-    <p class="subtitle">Protegé tu capital con un bloqueador automático de pérdidas diarias. Inviolable, persistente y con licencia por equipo.</p>
+    <div class="badge" id="landingBadge">NinjaTrader 8 · Add-On Profesional</div>
+    <h1 id="landingTitle">DAILY LOSS<br><span>LIMITER</span></h1>
+    <p class="subtitle" id="landingSubtitle">Protegé tu capital con un bloqueador automático de pérdidas diarias. Inviolable, persistente y con licencia por equipo.</p>
     <div class="price-box">
       <div class="price"><span>USD</span> 30</div>
       <div class="price-desc">Pago único · Licencia permanente · 1 equipo</div>
@@ -659,7 +659,7 @@
 
   <section class="registro" id="registro">
     <div class="form-card">
-      <h2>Obtener licencia</h2>
+      <h2 id="landingFormTitle">Obtener licencia</h2>
       <p class="form-desc">
         Completá el formulario y elegí tu método de pago.<br><br>
         Una vez realizado el pago, enviá el comprobante a
@@ -688,7 +688,7 @@
       </div>
 
       <div class="cupon-row">
-        <input type="text" id="cuponInput" placeholder="¿Tenés un cupón de descuento?">
+        <input type="text" id="cuponInput" placeholder="¿Tenés un cupón de descuento?" autocomplete="off">
         <button class="cupon-btn" onclick="aplicarCupon()">Aplicar</button>
       </div>
       <p class="cupon-msg" id="cuponMsg"></p>
@@ -1523,6 +1523,21 @@
     precioFinal = PRECIOS[productoSeleccionado] || 30;
     cuponAplicado = null;
     actualizarPrecios();
+
+    // Actualizar hero de la landing según producto
+    const esMBA = productoSeleccionado === 'ManualBacktestAnalyzer';
+    const badge    = document.getElementById('landingBadge');
+    const title    = document.getElementById('landingTitle');
+    const subtitle = document.getElementById('landingSubtitle');
+    const formTitle = document.getElementById('landingFormTitle');
+
+    if (badge)    badge.textContent = esMBA ? 'NinjaTrader 8 · Indicador' : 'NinjaTrader 8 · Add-On Profesional';
+    if (title)    title.innerHTML   = esMBA ? 'BACKTEST<br><span>ANALYZER</span>' : 'DAILY LOSS<br><span>LIMITER</span>';
+    if (subtitle) subtitle.textContent = esMBA
+      ? 'Realizá backtests a libro abierto de forma rápida y sencilla. Dibujá tus Risk/Reward en el gráfico y obtené estadísticas completas en tiempo real.'
+      : 'Protegé tu capital con un bloqueador automático de pérdidas diarias. Inviolable, persistente y con licencia por equipo.';
+    if (formTitle) formTitle.textContent = esMBA ? 'Obtener Manual Backtest Analyzer' : 'Obtener licencia';
+
     // Ir a la landing y hacer scroll al formulario de compra
     irA('landing');
     setTimeout(() => {
@@ -1904,9 +1919,15 @@
     const msg = document.getElementById('msg');
     msg.className = 'msg ok';
     msg.innerHTML = 'Hemos recibido tu solicitud correctamente. Te enviamos un email de confirmación.<br><strong>Revisá tu carpeta de spam</strong> si no lo encontrás.<br>Recordá enviar el comprobante a <strong>tradingdesdeadentro@gmail.com</strong>.';
+    const nombreProductoEmail = productoSeleccionado === 'ManualBacktestAnalyzer'
+      ? 'Manual Backtest Analyzer'
+      : 'Daily Loss Limiter';
     try {
       await emailjs.send('service_3zbxaia', 'template_gmveuaa', {
-        nombre: datos.nombre, email: datos.email, mac: datos.mac
+        nombre: datos.nombre,
+        email: datos.email,
+        mac: datos.mac,
+        producto: nombreProductoEmail
       });
     } catch(e) { console.error('EmailJS error:', e); }
   }

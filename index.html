@@ -1824,26 +1824,36 @@
 
   async function guardarPreRegistro(datos, metodo) {
     try {
+      const PRECIOS_BASE = { 'DailyLossLimiter': 30, 'ManualBacktestAnalyzer': 20 };
       const body = {
         nombre: datos.nombre,
         email:  datos.email,
         machine_id: datos.mac,
         estado: 'pendiente_' + metodo,
-        producto: productoSeleccionado
+        producto: productoSeleccionado,
+        monto: precioFinal,
+        metodo_pago: metodo === 'usdt' ? 'USDT' : 'ARS'
       };
       // Si hay sesión activa, vinculamos el user_id
       if (sesiónActual?.user?.id) body.user_id = sesiónActual.user.id;
 
-      await fetch(`${SUPABASE_URL}/rest/v1/licencias`, {
+      const res = await fetch(`${SUPABASE_URL}/rest/v1/licencias`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'apikey': SUPABASE_KEY,
-          'Authorization': `Bearer ${sesiónActual?.access_token || SUPABASE_KEY}`
+          'Authorization': `Bearer ${sesiónActual?.access_token || SUPABASE_KEY}`,
+          'Prefer': 'return=representation'
         },
         body: JSON.stringify(body)
       });
-    } catch(e) { console.error(e); }
+      const responseText = await res.text();
+      if (!res.ok) {
+        console.error('Error al guardar licencia:', res.status, responseText);
+      } else {
+        console.log('Licencia guardada:', responseText);
+      }
+    } catch(e) { console.error('guardarPreRegistro exception:', e); }
   }
 
   function abrirPago(metodo) {
@@ -1889,6 +1899,10 @@
     if (!codigo) { msg.className = 'cupon-msg err'; msg.textContent = 'Ingresá un código de cupón.'; return; }
     msg.className = 'cupon-msg'; msg.textContent = 'Verificando...';
 
+    // Precio base del producto seleccionado (no siempre 30)
+    const PRECIOS_BASE = { 'DailyLossLimiter': 30, 'ManualBacktestAnalyzer': 20 };
+    const precioBase = PRECIOS_BASE[productoSeleccionado] || 30;
+
     try {
       const res  = await fetch(`${SUPABASE_URL}/rest/v1/cupones?codigo=eq.${codigo}&activo=eq.true&select=codigo,descuento`, {
         headers: { 'apikey': SUPABASE_ANON, 'Authorization': `Bearer ${SUPABASE_ANON}` }
@@ -1897,14 +1911,14 @@
       if (data && data.length > 0) {
         const cupon   = data[0];
         cuponAplicado = cupon;
-        precioFinal   = Math.round(PRECIO_USD * (1 - cupon.descuento / 100));
+        precioFinal   = Math.round(precioBase * (1 - cupon.descuento / 100));
         msg.className = 'cupon-msg ok'; msg.textContent = 'Cupón aplicado!';
         badge.style.display = 'block';
         badge.textContent   = `🎉 Descuento del ${cupon.descuento}% aplicado — Precio final: USD ${precioFinal}`;
         actualizarPrecios();
       } else {
         msg.className = 'cupon-msg err'; msg.textContent = 'Cupón inválido o expirado.';
-        cuponAplicado = null; precioFinal = PRECIO_USD;
+        cuponAplicado = null; precioFinal = precioBase;
         badge.style.display = 'none'; actualizarPrecios();
       }
     } catch { msg.className = 'cupon-msg err'; msg.textContent = 'Error al verificar el cupón.'; }

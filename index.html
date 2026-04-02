@@ -972,6 +972,20 @@
           <button onclick="volverAlLogin()" style="background:none;border:none;color:var(--gris);font-size:12px;cursor:pointer;text-decoration:underline;font-family:'DM Sans',sans-serif">← Volver al login</button>
         </div>
       </div>
+      <!-- NUEVA CONTRASEÑA -->
+      <div id="formNuevaPass" style="display:none">
+        <p style="font-size:13px;color:var(--gris);margin-bottom:16px;line-height:1.6">Ingresá tu nueva contraseña.</p>
+        <div class="auth-group">
+          <label class="auth-label">Nueva contraseña</label>
+          <input type="password" class="auth-input" id="nuevaPass1" placeholder="Mínimo 6 caracteres">
+        </div>
+        <div class="auth-group">
+          <label class="auth-label">Confirmar contraseña</label>
+          <input type="password" class="auth-input" id="nuevaPass2" placeholder="Repetí la contraseña" onkeydown="if(event.key==='Enter')guardarNuevaPass()">
+        </div>
+        <button class="auth-btn" id="nuevaPassBtn" onclick="guardarNuevaPass()">Guardar nueva contraseña →</button>
+        <div class="auth-msg" id="nuevaPassMsg" style="display:none"></div>
+      </div>
       <!-- REGISTRO -->
       <div id="formRegistro" style="display:none">
         <div class="auth-group">
@@ -1232,48 +1246,68 @@
     const email = document.getElementById('recuperarEmail').value.trim();
     const msg   = document.getElementById('recuperarMsg');
     const btn   = document.getElementById('recuperarBtn');
-
     if (!email) {
-      msg.style.display = 'block';
-      msg.style.background = 'rgba(139,26,26,0.2)';
-      msg.style.color = '#E57373';
-      msg.textContent = 'Ingresá tu email.';
-      return;
+      msg.style.display='block'; msg.style.background='rgba(139,26,26,0.2)'; msg.style.color='#E57373';
+      msg.textContent='Ingresá tu email.'; return;
     }
-
-    btn.disabled = true;
-    btn.textContent = 'Enviando...';
-    msg.style.display = 'none';
-
+    btn.disabled=true; btn.textContent='Enviando...'; msg.style.display='none';
     try {
       const res = await fetch('https://pjrwdseaomijkgytbglh.supabase.co/auth/v1/recover', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'apikey': 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBqcndkc2Vhb21pamtneXRiZ2xoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQyMDgxNjIsImV4cCI6MjA4OTc4NDE2Mn0.5Nmyu8TwBRVWBL2zDOfFTeEZBMLOyQVu_dDhas07jDI'
-        },
-        body: JSON.stringify({ email })
+        method:'POST',
+        headers:{'Content-Type':'application/json','apikey':'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBqcndkc2Vhb21pamtneXRiZ2xoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQyMDgxNjIsImV4cCI6MjA4OTc4NDE2Mn0.5Nmyu8TwBRVWBL2zDOfFTeEZBMLOyQVu_dDhas07jDI'},
+        body:JSON.stringify({email})
       });
-
-      msg.style.display = 'block';
-      if (res.ok) {
-        msg.style.background = 'rgba(76,175,80,0.15)';
-        msg.style.color = '#4CAF50';
-        msg.textContent = '✓ Te mandamos un email con el enlace. Revisá tu bandeja (y spam).';
-      } else {
-        msg.style.background = 'rgba(139,26,26,0.2)';
-        msg.style.color = '#E57373';
-        msg.textContent = 'No encontramos ese email. Verificá que sea el correcto.';
-      }
-    } catch (e) {
-      msg.style.display = 'block';
-      msg.style.background = 'rgba(139,26,26,0.2)';
-      msg.style.color = '#E57373';
-      msg.textContent = 'Error de conexión. Intentá de nuevo.';
+      msg.style.display='block';
+      if (res.ok) { msg.style.background='rgba(76,175,80,0.15)'; msg.style.color='#4CAF50'; msg.textContent='✓ Te mandamos el enlace. Revisá tu email (y spam).'; }
+      else { msg.style.background='rgba(139,26,26,0.2)'; msg.style.color='#E57373'; msg.textContent='No encontramos ese email.'; }
+    } catch(e) {
+      msg.style.display='block'; msg.style.background='rgba(139,26,26,0.2)'; msg.style.color='#E57373'; msg.textContent='Error de conexión.';
     }
+    btn.disabled=false; btn.textContent='Enviar enlace →';
+  }
 
-    btn.disabled = false;
-    btn.textContent = 'Enviar enlace →';
+  async function guardarNuevaPass() {
+    const pass1 = document.getElementById('nuevaPass1').value;
+    const pass2 = document.getElementById('nuevaPass2').value;
+    const msg   = document.getElementById('nuevaPassMsg');
+    const btn   = document.getElementById('nuevaPassBtn');
+    msg.style.display='none';
+    if (!pass1 || pass1.length < 6) {
+      msg.style.display='block'; msg.style.background='rgba(139,26,26,0.2)'; msg.style.color='#E57373';
+      msg.textContent='Mínimo 6 caracteres.'; return;
+    }
+    if (pass1 !== pass2) {
+      msg.style.display='block'; msg.style.background='rgba(139,26,26,0.2)'; msg.style.color='#E57373';
+      msg.textContent='Las contraseñas no coinciden.'; return;
+    }
+    btn.disabled=true; btn.textContent='Guardando...';
+    try {
+      const res = await fetch('https://pjrwdseaomijkgytbglh.supabase.co/auth/v1/user', {
+        method:'PUT',
+        headers:{'Content-Type':'application/json','apikey':'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBqcndkc2Vhb21pamtneXRiZ2xoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQyMDgxNjIsImV4cCI6MjA4OTc4NDE2Mn0.5Nmyu8TwBRVWBL2zDOfFTeEZBMLOyQVu_dDhas07jDI','Authorization':'Bearer '+(window._recoveryToken||'')},
+        body:JSON.stringify({password:pass1})
+      });
+      if (res.ok) {
+        msg.style.display='block'; msg.style.background='rgba(76,175,80,0.15)'; msg.style.color='#4CAF50';
+        msg.textContent='✓ Contraseña actualizada. Ya podés iniciar sesión.';
+        btn.style.display='none';
+        window._recoveryToken=null;
+        setTimeout(() => {
+          const tabs=document.querySelector('.auth-tabs'); if(tabs) tabs.style.display='';
+          document.getElementById('formNuevaPass').style.display='none';
+          document.getElementById('formLogin').style.display='block';
+          document.getElementById('nuevaPass1').value='';
+          document.getElementById('nuevaPass2').value='';
+          msg.style.display='none'; btn.style.display='';
+        }, 2500);
+      } else {
+        msg.style.display='block'; msg.style.background='rgba(139,26,26,0.2)'; msg.style.color='#E57373';
+        msg.textContent='Error. El enlace puede haber expirado.';
+      }
+    } catch(e) {
+      msg.style.display='block'; msg.style.background='rgba(139,26,26,0.2)'; msg.style.color='#E57373'; msg.textContent='Error de conexión.';
+    }
+    btn.disabled=false; btn.textContent='Guardar nueva contraseña →';
   }
 
   async function login() {
@@ -2660,6 +2694,20 @@
       const params = new URLSearchParams(hash.replace('#', '?').slice(1));
       const token  = params.get('access_token');
       const type   = params.get('type'); // 'signup' o 'recovery'
+
+      if (token && type === 'recovery') {
+        history.replaceState(null, '', window.location.pathname);
+        window._recoveryToken = token;
+        irA('auth', 'login');
+        setTimeout(() => {
+          document.getElementById('formLogin').style.display = 'none';
+          document.getElementById('formRecuperar').style.display = 'none';
+          document.getElementById('formNuevaPass').style.display = 'block';
+          const tabs = document.querySelector('.auth-tabs');
+          if (tabs) tabs.style.display = 'none';
+        }, 100);
+        return;
+      }
 
       if (token && type === 'signup') {
         // Limpiar la URL

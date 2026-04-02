@@ -955,6 +955,22 @@
         </div>
         <button class="auth-btn" id="loginBtn" onclick="login()">Ingresar a Mi Panel →</button>
         <div class="auth-msg" id="loginMsg" style="display:none"></div>
+        <div style="text-align:center;margin-top:12px">
+          <button onclick="mostrarRecuperarPass()" style="background:none;border:none;color:var(--gris);font-size:12px;cursor:pointer;text-decoration:underline;font-family:'DM Sans',sans-serif">Olvidé mi contraseña</button>
+        </div>
+      </div>
+      <!-- RECUPERAR CONTRASEÑA -->
+      <div id="formRecuperar" style="display:none">
+        <p style="font-size:13px;color:var(--gris);margin-bottom:16px;line-height:1.6">Ingresá tu email y te mandamos un enlace para restablecer tu contraseña.</p>
+        <div class="auth-group">
+          <label class="auth-label">Email</label>
+          <input type="email" class="auth-input" id="recuperarEmail" placeholder="tu@email.com" onkeydown="if(event.key==='Enter')enviarRecuperacion()">
+        </div>
+        <button class="auth-btn" id="recuperarBtn" onclick="enviarRecuperacion()">Enviar enlace →</button>
+        <div class="auth-msg" id="recuperarMsg" style="display:none"></div>
+        <div style="text-align:center;margin-top:12px">
+          <button onclick="volverAlLogin()" style="background:none;border:none;color:var(--gris);font-size:12px;cursor:pointer;text-decoration:underline;font-family:'DM Sans',sans-serif">← Volver al login</button>
+        </div>
       </div>
       <!-- REGISTRO -->
       <div id="formRegistro" style="display:none">
@@ -1198,6 +1214,66 @@
     document.getElementById('regEmail').value  = '';
     document.getElementById('regPass').value   = '';
     document.getElementById('regPass2').value  = '';
+  }
+
+  function mostrarRecuperarPass() {
+    document.getElementById('formLogin').style.display = 'none';
+    document.getElementById('formRecuperar').style.display = 'block';
+    document.getElementById('recuperarEmail').value = document.getElementById('loginEmail').value || '';
+    document.getElementById('recuperarMsg').style.display = 'none';
+  }
+
+  function volverAlLogin() {
+    document.getElementById('formRecuperar').style.display = 'none';
+    document.getElementById('formLogin').style.display = 'block';
+  }
+
+  async function enviarRecuperacion() {
+    const email = document.getElementById('recuperarEmail').value.trim();
+    const msg   = document.getElementById('recuperarMsg');
+    const btn   = document.getElementById('recuperarBtn');
+
+    if (!email) {
+      msg.style.display = 'block';
+      msg.style.background = 'rgba(139,26,26,0.2)';
+      msg.style.color = '#E57373';
+      msg.textContent = 'Ingresá tu email.';
+      return;
+    }
+
+    btn.disabled = true;
+    btn.textContent = 'Enviando...';
+    msg.style.display = 'none';
+
+    try {
+      const res = await fetch('https://pjrwdseaomijkgytbglh.supabase.co/auth/v1/recover', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'apikey': 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBqcndkc2Vhb21pamtneXRiZ2xoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQyMDgxNjIsImV4cCI6MjA4OTc4NDE2Mn0.5Nmyu8TwBRVWBL2zDOfFTeEZBMLOyQVu_dDhas07jDI'
+        },
+        body: JSON.stringify({ email })
+      });
+
+      msg.style.display = 'block';
+      if (res.ok) {
+        msg.style.background = 'rgba(76,175,80,0.15)';
+        msg.style.color = '#4CAF50';
+        msg.textContent = '✓ Te mandamos un email con el enlace. Revisá tu bandeja (y spam).';
+      } else {
+        msg.style.background = 'rgba(139,26,26,0.2)';
+        msg.style.color = '#E57373';
+        msg.textContent = 'No encontramos ese email. Verificá que sea el correcto.';
+      }
+    } catch (e) {
+      msg.style.display = 'block';
+      msg.style.background = 'rgba(139,26,26,0.2)';
+      msg.style.color = '#E57373';
+      msg.textContent = 'Error de conexión. Intentá de nuevo.';
+    }
+
+    btn.disabled = false;
+    btn.textContent = 'Enviar enlace →';
   }
 
   async function login() {

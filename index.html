@@ -646,8 +646,8 @@
   </section>
 
   <section class="features">
-    <h2 class="section-title">¿Qué incluye?</h2>
-    <div class="features-grid">
+    <h2 class="section-title" id="featuresTitle">¿Qué incluye?</h2>
+    <div class="features-grid" id="featuresGrid">
       <div class="feature-card"><div class="feature-icon">🔒</div><h3>Bloqueo automático</h3><p>Cancela nuevas órdenes automáticamente cuando alcanzás el límite de pérdida configurado.</p></div>
       <div class="feature-card"><div class="feature-icon">💻</div><h3>Múltiples cuentas</h3><p>Monitoreá varias cuentas simultáneamente, cada una con su propio límite independiente.</p></div>
       <div class="feature-card"><div class="feature-icon">🔑</div><h3>Protección por contraseña</h3><p>El operador no puede desactivar el limitador sin la contraseña. Ideal para prop firms.</p></div>
@@ -1534,6 +1534,28 @@
       ? 'Realizá backtests a libro abierto de forma rápida y sencilla. Dibujá tus Risk/Reward en el gráfico y obtené estadísticas completas en tiempo real.'
       : 'Protegé tu capital con un bloqueador automático de pérdidas diarias. Inviolable, persistente y con licencia por equipo.';
     if (formTitle) formTitle.textContent = esMBA ? 'Obtener Manual Backtest Analyzer' : 'Obtener licencia';
+
+    // Actualizar features grid según producto
+    const featuresGrid = document.getElementById('featuresGrid');
+    if (featuresGrid) {
+      if (esMBA) {
+        featuresGrid.innerHTML = `
+          <div class="feature-card"><div class="feature-icon">📊</div><h3>Estadísticas en tiempo real</h3><p>Win Rate, Profit Factor, Expected Value, RR promedio y R acumulado calculados automáticamente sobre tus setups dibujados.</p></div>
+          <div class="feature-card"><div class="feature-icon">✏️</div><h3>Backtest a libro abierto</h3><p>Dibujá herramientas Risk/Reward directamente en el gráfico y el indicador detecta y analiza cada operación automáticamente.</p></div>
+          <div class="feature-card"><div class="feature-icon">📉</div><h3>Max Drawdown y curva de equity</h3><p>Visualizá el peor momento de tu sistema y cuánta R acumulada generan tus setups históricos.</p></div>
+          <div class="feature-card"><div class="feature-icon">⚡</div><h3>Actualización automática</h3><p>El panel se refresca cada 500ms. Agregá o borrás setups y las métricas se actualizan al instante sin recargar nada.</p></div>
+          <div class="feature-card"><div class="feature-icon">🎯</div><h3>Simulación realista</h3><p>Detecta si el precio tocó el Take Profit o el Stop Loss primero, barra por barra, para un resultado fiel a la realidad.</p></div>
+          <div class="feature-card"><div class="feature-icon">🛡️</div><h3>Licencia por equipo</h3><p>Licencia vinculada a tu MAC Address. No se puede compartir ni usar en otra PC.</p></div>`;
+      } else {
+        featuresGrid.innerHTML = `
+          <div class="feature-card"><div class="feature-icon">🔒</div><h3>Bloqueo automático</h3><p>Cancela nuevas órdenes automáticamente cuando alcanzás el límite de pérdida configurado.</p></div>
+          <div class="feature-card"><div class="feature-icon">💻</div><h3>Múltiples cuentas</h3><p>Monitoreá varias cuentas simultáneamente, cada una con su propio límite independiente.</p></div>
+          <div class="feature-card"><div class="feature-icon">🔑</div><h3>Protección por contraseña</h3><p>El operador no puede desactivar el limitador sin la contraseña. Ideal para prop firms.</p></div>
+          <div class="feature-card"><div class="feature-icon">💾</div><h3>Persistente al reinicio</h3><p>El estado se guarda en disco. Si reiniciás NT8 con cuentas bloqueadas, siguen bloqueadas.</p></div>
+          <div class="feature-card"><div class="feature-icon">🔄</div><h3>Desbloqueo inteligente</h3><p>Se desbloquea automáticamente cuando el P&L vuelve a $0. Sin intervención manual.</p></div>
+          <div class="feature-card"><div class="feature-icon">🛡️</div><h3>Licencia por equipo</h3><p>Licencia vinculada a tu MAC Address. No se puede compartir ni usar en otra PC.</p></div>`;
+      }
+    }
 
     // Ir a la landing y hacer scroll al formulario de compra
     irA('landing');

@@ -1119,7 +1119,6 @@
   let cuponAplicado = null;
   let sesiónActual  = null; // { access_token, user }
   let licenciaEditando = null; // id de licencia que se está cambiando MAC
-  let productoSeleccionado = 'DailyLossLimiter'; // producto activo en el formulario de compra
 
   /* ══════════════════════
      NAVEGACIÓN DE VISTAS
@@ -1386,12 +1385,10 @@
         <p style="font-size:14px;color:var(--gris)">Seleccioná una herramienta para obtener tu licencia.</p>
       </div>
       <div style="display:flex;flex-direction:column;gap:16px;max-width:600px">
-
-        <!-- Daily Loss Limiter -->
         <div class="licencia-card" style="cursor:pointer;transition:border-color 0.2s" 
              onmouseover="this.style.borderColor='rgba(139,26,26,0.6)'" 
              onmouseout="this.style.borderColor='#1E1E1E'"
-             onclick="irATiendaProducto('DailyLossLimiter')">
+             onclick="irATiendaProducto()">
           <div class="licencia-card-header" style="border-bottom:none">
             <div class="licencia-card-header-left">
               <div class="licencia-product-icon">🔒</div>
@@ -1420,41 +1417,6 @@
             </div>
           </div>
         </div>
-
-        <!-- Manual Backtest Analyzer -->
-        <div class="licencia-card" style="cursor:pointer;transition:border-color 0.2s" 
-             onmouseover="this.style.borderColor='rgba(139,26,26,0.6)'" 
-             onmouseout="this.style.borderColor='#1E1E1E'"
-             onclick="irATiendaProducto('ManualBacktestAnalyzer')">
-          <div class="licencia-card-header" style="border-bottom:none">
-            <div class="licencia-card-header-left">
-              <div class="licencia-product-icon">📊</div>
-              <div>
-                <div class="licencia-product-name">Manual Backtest Analyzer</div>
-                <div class="licencia-product-version">V1.0 · NinjaTrader 8 · Licencia permanente</div>
-              </div>
-            </div>
-            <div style="display:flex;align-items:center;gap:12px">
-              <span style="font-family:'Bebas Neue',sans-serif;font-size:24px;color:#E57373">USD 20</span>
-              <span style="font-size:20px">→</span>
-            </div>
-          </div>
-          <div style="padding:0 24px 20px;display:grid;grid-template-columns:repeat(3,1fr);gap:12px">
-            <div style="background:#0D0D0D;border-radius:8px;padding:10px 14px">
-              <div style="font-size:10px;color:var(--gris);text-transform:uppercase;letter-spacing:1px;margin-bottom:4px">Análisis</div>
-              <div style="font-size:12px;font-weight:600">Automático</div>
-            </div>
-            <div style="background:#0D0D0D;border-radius:8px;padding:10px 14px">
-              <div style="font-size:10px;color:var(--gris);text-transform:uppercase;letter-spacing:1px;margin-bottom:4px">Licencia</div>
-              <div style="font-size:12px;font-weight:600">1 equipo</div>
-            </div>
-            <div style="background:#0D0D0D;border-radius:8px;padding:10px 14px">
-              <div style="font-size:10px;color:var(--gris);text-transform:uppercase;letter-spacing:1px;margin-bottom:4px">Pago</div>
-              <div style="font-size:12px;font-weight:600">Único</div>
-            </div>
-          </div>
-        </div>
-
       </div>`;
   }
 
@@ -1516,13 +1478,7 @@
       </div>`;
   }
 
-  function irATiendaProducto(producto) {
-    productoSeleccionado = producto || 'DailyLossLimiter';
-    // Ajustar precio según producto
-    const PRECIOS = { 'DailyLossLimiter': 30, 'ManualBacktestAnalyzer': 20 };
-    precioFinal = PRECIOS[productoSeleccionado] || 30;
-    cuponAplicado = null;
-    actualizarPrecios();
+  function irATiendaProducto() {
     // Ir a la landing y hacer scroll al formulario de compra
     irA('landing');
     setTimeout(() => {
@@ -1583,26 +1539,17 @@
     const estadoLabel = l.estado === 'activa' ? 'Activo' : l.estado?.startsWith('pendiente') ? 'Pendiente' : 'Vencido';
     const mac = l.machine_id || '—';
     const version = l.version || 'V1.0';
+    const installerUrl = 'https://pjrwdseaomijkgytbglh.supabase.co/storage/v1/object/public/Instaladores/DailyLossLimiter_Setup%20V1.0.exe';
+    const guideUrl = 'https://pjrwdseaomijkgytbglh.supabase.co/storage/v1/object/public/Instaladores/Guia_Instalacion_DailyLossLimite.pdf';
     const esActiva = l.estado === 'activa';
-
-    // Datos por producto
-    const esMBA = l.producto === 'ManualBacktestAnalyzer';
-    const nombreProducto = esMBA ? 'Manual Backtest Analyzer' : 'Daily Loss Limiter';
-    const iconoProducto  = esMBA ? '📊' : '🔒';
-    const installerUrl   = esMBA
-      ? 'https://pjrwdseaomijkgytbglh.supabase.co/storage/v1/object/public/Instaladores/ManualBacktestAnalyzer_Setup%20V1.0.exe'
-      : 'https://pjrwdseaomijkgytbglh.supabase.co/storage/v1/object/public/Instaladores/DailyLossLimiter_Setup%20V1.0.exe';
-    const guideUrl = esMBA
-      ? 'https://pjrwdseaomijkgytbglh.supabase.co/storage/v1/object/public/Instaladores/Guia_Instalacion_ManualBacktestAnalyzer.pdf'
-      : 'https://pjrwdseaomijkgytbglh.supabase.co/storage/v1/object/public/Instaladores/Guia_Instalacion_DailyLossLimite.pdf';
 
     return `
     <div class="licencia-card">
       <div class="licencia-card-header">
         <div class="licencia-card-header-left">
-          <div class="licencia-product-icon">${iconoProducto}</div>
+          <div class="licencia-product-icon">🔒</div>
           <div>
-            <div class="licencia-product-name">${nombreProducto}</div>
+            <div class="licencia-product-name">Daily Loss Limiter</div>
             <div class="licencia-product-version">${version} · NinjaTrader 8</div>
           </div>
         </div>
@@ -1647,21 +1594,13 @@
       <h3>Todavía no adquiriste ninguna herramienta</h3>
       <p>Explorá nuestras herramientas y potenciá tu trading.</p>
       <div class="empty-products">
-        <a class="empty-product-card" onclick="irATiendaProducto('DailyLossLimiter')">
+        <a class="empty-product-card" onclick="irA('landing'); setTimeout(()=>document.getElementById('registro').scrollIntoView({behavior:'smooth'}),300)">
           <div class="empty-product-icon">🔒</div>
           <div class="empty-product-info">
             <div class="empty-product-name">Daily Loss Limiter</div>
             <div class="empty-product-desc">Bloqueador automático de pérdidas · NT8</div>
           </div>
           <div class="empty-product-price">USD 30</div>
-        </a>
-        <a class="empty-product-card" onclick="irATiendaProducto('ManualBacktestAnalyzer')">
-          <div class="empty-product-icon">📊</div>
-          <div class="empty-product-info">
-            <div class="empty-product-name">Manual Backtest Analyzer</div>
-            <div class="empty-product-desc">Analizador de backtests manuales · NT8</div>
-          </div>
-          <div class="empty-product-price">USD 20</div>
         </a>
       </div>
     </div>`;
@@ -1688,14 +1627,13 @@
     const rows = r.data.map(l => {
       const fecha = l.fecha_pago || l.created_at?.split('T')[0] || '—';
       const metodo = l.metodo_pago || (l.estado?.includes('usdt') ? 'USDT' : l.estado?.includes('ars') ? 'ARS' : '—');
-      const monto  = l.monto ? `USD ${l.monto}` : (l.producto === 'ManualBacktestAnalyzer' ? 'USD 20' : 'USD 30');
+      const monto  = l.monto ? `USD ${l.monto}` : 'USD 30';
       const estadoClass = l.estado === 'activa' ? 'activa' : 'pendiente';
       const estadoLabel = l.estado === 'activa' ? 'Activo' : 'Pendiente';
-      const nombreProducto = l.producto === 'ManualBacktestAnalyzer' ? 'Manual Backtest Analyzer V1.0' : 'Daily Loss Limiter V1.0';
       return `
       <div class="historial-row">
         <div>
-          <div style="font-weight:600;font-size:13px">${nombreProducto}</div>
+          <div style="font-weight:600;font-size:13px">Daily Loss Limiter V1.0</div>
           <div style="font-size:11px;color:var(--gris)">Licencia permanente · 1 equipo</div>
         </div>
         <div class="h-fecha" style="color:var(--gris);font-size:12px">${fecha}</div>
@@ -1813,8 +1751,7 @@
         nombre: datos.nombre,
         email:  datos.email,
         machine_id: datos.mac,
-        estado: 'pendiente_' + metodo,
-        producto: productoSeleccionado
+        estado: 'pendiente_' + metodo
       };
       // Si hay sesión activa, vinculamos el user_id
       if (sesiónActual?.user?.id) body.user_id = sesiónActual.user.id;

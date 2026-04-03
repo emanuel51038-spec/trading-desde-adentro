@@ -663,7 +663,7 @@
       <p class="form-desc">
         Completá el formulario y elegí tu método de pago.<br><br>
         Una vez realizado el pago, enviá el comprobante a
-        <strong style="color:#E57373"><a href="/cdn-cgi/l/email-protection" class="__cf_email__" data-cfemail="097d7b686d60676e6d6c7a6d6c686d6c677d7b66496e64686065276a6664">[email&#160;protected]</a></strong>.
+        <strong style="color:#E57373">tradingdesdeadentro@gmail.com</strong>.
         Recibirás la herramienta en el correo electrónico proporcionado
         en un plazo máximo de <strong style="color:#fff">24 horas</strong>.
       </p>
@@ -740,7 +740,7 @@
   <div class="modal">
     <button class="modal-close" onclick="cerrarModal('modalUsdt')">✕</button>
     <h3>Pago con USDT</h3>
-    <p class="modal-desc">Enviá exactamente <strong id="usdtModalAmount">30 USDT</strong> a la siguiente dirección en la red <strong>BNB Smart Chain (BEP20)</strong>. Cualquier otra red resultará en pérdida de fondos.<br><br>Una vez enviado, enviá el comprobante a <strong><a href="/cdn-cgi/l/email-protection" class="__cf_email__" data-cfemail="2155534045484f4645445245444045444f55534e61464c40484d0f424e4c">[email&#160;protected]</a></strong>.</p>
+    <p class="modal-desc">Enviá exactamente <strong id="usdtModalAmount">30 USDT</strong> a la siguiente dirección en la red <strong>BNB Smart Chain (BEP20)</strong>. Cualquier otra red resultará en pérdida de fondos.<br><br>Una vez enviado, enviá el comprobante a <strong>tradingdesdeadentro@gmail.com</strong>.</p>
     <div class="copy-row">
       <div><div class="copy-label">Red</div><div class="copy-value">BNB Smart Chain (BEP20)</div></div>
     </div>
@@ -751,7 +751,7 @@
       </div>
       <button onclick="copiar('0x02E514478AC1Ef604D6aBef12187c4aFD55c6201', this)">Copiar</button>
     </div>
-    <p style="font-size:12px;color:#9E9E9E;margin-top:8px">Una vez realizada la transferencia, hacé clic en "Confirmar" y enviá el comprobante a <strong style="color:#ccc"><a href="/cdn-cgi/l/email-protection" class="__cf_email__" data-cfemail="0175736065686f6665647265646065646f75736e41666c60686d2f626e6c">[email&#160;protected]</a></strong>.</p>
+    <p style="font-size:12px;color:#9E9E9E;margin-top:8px">Una vez realizada la transferencia, hacé clic en "Confirmar" y enviá el comprobante a <strong style="color:#ccc">tradingdesdeadentro@gmail.com</strong>.</p>
     <button class="modal-confirm" onclick="confirmarPago('usdt')">Confirmar envío →</button>
   </div>
 </div>
@@ -814,7 +814,7 @@
   <div style="background:#0D0D0D;border-top:1px solid #1E1E1E;border-bottom:1px solid #1E1E1E;">
     <div class="tradingview-widget-container">
       <div class="tradingview-widget-container__widget"></div>
-      <script data-cfasync="false" src="/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js"></script><script type="text/javascript" src="https://s3.tradingview.com/external-embedding/embed-widget-ticker-tape.js" async>
+      <script type="text/javascript" src="https://s3.tradingview.com/external-embedding/embed-widget-ticker-tape.js" async>
       {
         "symbols": [
           {"proName": "NASDAQ:QQQ", "title": "Nasdaq"},
@@ -2134,10 +2134,19 @@
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;flex-wrap:wrap;gap:10px">
         <span id="journalConteo" style="font-size:14px;font-weight:600">${ops.length} operaciones</span>
         <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
-          <select id="filtroCuenta" onchange="filtrarJournal()" style="background:#0D0D0D;border:1px solid #1E1E1E;color:var(--blanco);padding:7px 12px;border-radius:8px;font-size:13px;cursor:pointer;font-family:'DM Sans',sans-serif">
-            <option value="">Todas las cuentas</option>
-            ${[...new Set(ops.map(o => o.cuenta).filter(Boolean))].map(c => `<option value="${c}">${c}</option>`).join('')}
-          </select>
+          <div style="position:relative" id="cuentasDropdownWrap">
+            <button onclick="toggleCuentasDropdown()" style="background:#0D0D0D;border:1px solid #1E1E1E;color:var(--blanco);padding:7px 12px;border-radius:8px;font-size:13px;cursor:pointer;font-family:'DM Sans',sans-serif;display:flex;align-items:center;gap:6px;min-width:160px;justify-content:space-between">
+              <span id="cuentasDropdownLabel">Todas las cuentas</span>
+              <span style="font-size:10px;color:var(--gris)">▼</span>
+            </button>
+            <div id="cuentasDropdownMenu" style="display:none;position:absolute;top:calc(100% + 4px);left:0;background:#0D0D0D;border:1px solid #2A2A2A;border-radius:8px;z-index:100;min-width:200px;padding:8px 0;box-shadow:0 8px 24px rgba(0,0,0,0.5)">
+              <label style="display:flex;align-items:center;gap:8px;padding:6px 14px;cursor:pointer;font-size:13px;color:var(--gris)">
+                <input type="checkbox" id="chkTodasCuentas" checked style="accent-color:var(--rojo);width:14px;height:14px" onchange="seleccionarTodasCuentas()"> Todas las cuentas
+              </label>
+              <div style="height:1px;background:#1E1E1E;margin:4px 0"></div>
+              <div id="cuentasCheckboxList"></div>
+            </div>
+          </div>
           <select id="filtroEstrategia" onchange="filtrarJournal()" style="background:#0D0D0D;border:1px solid #1E1E1E;color:var(--blanco);padding:7px 12px;border-radius:8px;font-size:13px;cursor:pointer;font-family:'DM Sans',sans-serif">
             <option value="">Todas las estrategias</option>
             ${estrategiasUnicas.map(e => `<option value="${e}">${e}</option>`).join('')}
@@ -2175,6 +2184,29 @@
         <div style="font-size:12px;font-weight:600;letter-spacing:1px;text-transform:uppercase;color:var(--gris);margin-bottom:12px">Equity Curve</div>
         <canvas id="equityCanvas" style="width:100%;height:160px"></canvas>
       </div>
+      <!-- EVALUACIÓN DE FONDEOS -->
+      <div style="background:var(--negro-card);border:1px solid var(--negro-border);border-radius:16px;padding:20px;margin-bottom:16px">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
+          <div>
+            <div style="font-size:12px;font-weight:600;letter-spacing:1px;text-transform:uppercase;color:var(--gris)">Evaluación de Fondeos</div>
+            <div style="font-size:11px;color:#555;margin-top:2px">Calculá cuántos días necesitás para alcanzar tu objetivo</div>
+          </div>
+        </div>
+        <div id="fondeoContent">${renderEvalFondeo(stats, ops)}</div>
+      </div>
+      <!-- TEST DE MONTE CARLO -->
+      <div style="background:var(--negro-card);border:1px solid var(--negro-border);border-radius:16px;padding:20px;margin-bottom:16px">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
+          <div>
+            <div style="font-size:12px;font-weight:600;letter-spacing:1px;text-transform:uppercase;color:var(--gris)">Test de Monte Carlo</div>
+            <div style="font-size:11px;color:#555;margin-top:2px">Simulación de 100 operaciones basada en tu historial real</div>
+          </div>
+          <button onclick="correrMonteCarlo()" style="background:var(--rojo);color:white;border:none;padding:8px 16px;border-radius:8px;cursor:pointer;font-size:12px;font-weight:600;display:flex;align-items:center;gap:6px">
+            🎲 Simular (F9)
+          </button>
+        </div>
+        <div id="monteCarloContent"><div style="text-align:center;color:var(--gris);font-size:13px;padding:20px">Presioná <strong style="color:var(--blanco)">🎲 Simular</strong> o <strong style="color:var(--blanco)">F9</strong> para correr una simulación de Monte Carlo.</div></div>
+      </div>
       <div style="overflow-x:auto;background:var(--negro-card);border:1px solid var(--negro-border);border-radius:16px">
         <table style="width:100%;border-collapse:collapse;font-size:13px">
           <thead>
@@ -2195,6 +2227,7 @@
     _drawEquityAfterRender(ops);
     setTimeout(() => iniciarCalendario(ops), 60);
     setTimeout(() => dibujarRadar(ops), 100);
+    setTimeout(() => iniciarCuentasDropdown(ops), 50);
   }
 
   // Llamar equity curve después de renderizar
@@ -2437,11 +2470,66 @@
     }
   }
 
+  // ── FILTRO MULTICUENTA ──────────────────────────────
+  let _cuentasSeleccionadas = new Set();
+
+  function iniciarCuentasDropdown(ops) {
+    const cuentas = [...new Set(ops.map(o => o.cuenta).filter(Boolean))].sort();
+    const lista = document.getElementById('cuentasCheckboxList');
+    if (!lista) return;
+    lista.innerHTML = cuentas.map(c => `
+      <label style="display:flex;align-items:center;gap:8px;padding:6px 14px;cursor:pointer;font-size:13px;color:var(--blanco)">
+        <input type="checkbox" class="chkCuenta" value="${c}" checked
+          style="accent-color:var(--rojo);width:14px;height:14px"
+          onchange="onCuentaCheckChange()"> ${c}
+      </label>`).join('');
+    _cuentasSeleccionadas = new Set();
+    actualizarLabelCuentas();
+    document.addEventListener('click', function(e) {
+      const wrap = document.getElementById('cuentasDropdownWrap');
+      if (wrap && !wrap.contains(e.target)) {
+        const menu = document.getElementById('cuentasDropdownMenu');
+        if (menu) menu.style.display = 'none';
+      }
+    }, { capture: true });
+  }
+
+  function toggleCuentasDropdown() {
+    const menu = document.getElementById('cuentasDropdownMenu');
+    if (menu) menu.style.display = menu.style.display === 'none' ? 'block' : 'none';
+  }
+
+  function seleccionarTodasCuentas() {
+    const chkTodas = document.getElementById('chkTodasCuentas');
+    document.querySelectorAll('.chkCuenta').forEach(c => c.checked = chkTodas?.checked);
+    _cuentasSeleccionadas = new Set();
+    actualizarLabelCuentas();
+    filtrarJournal();
+  }
+
+  function onCuentaCheckChange() {
+    const checks  = document.querySelectorAll('.chkCuenta');
+    const checked = [...checks].filter(c => c.checked).map(c => c.value);
+    const todas   = checked.length === checks.length;
+    const chkTodas = document.getElementById('chkTodasCuentas');
+    if (chkTodas) chkTodas.checked = todas;
+    _cuentasSeleccionadas = todas ? new Set() : new Set(checked);
+    actualizarLabelCuentas();
+    filtrarJournal();
+  }
+
+  function actualizarLabelCuentas() {
+    const label = document.getElementById('cuentasDropdownLabel');
+    if (!label) return;
+    if (_cuentasSeleccionadas.size === 0) label.textContent = 'Todas las cuentas';
+    else if (_cuentasSeleccionadas.size === 1) label.textContent = [..._cuentasSeleccionadas][0];
+    else label.textContent = _cuentasSeleccionadas.size + ' cuentas';
+  }
+
   function filtrarJournal() {
-    const filtroEst    = document.getElementById('filtroEstrategia')?.value || '';
-    const filtroCta    = document.getElementById('filtroCuenta')?.value || '';
-    const filtroDesde  = document.getElementById('filtroDesde')?.value || '';
-    const filtroHasta  = document.getElementById('filtroHasta')?.value || '';
+    const filtroEst   = document.getElementById('filtroEstrategia')?.value || '';
+    const filtroDesde = document.getElementById('filtroDesde')?.value || '';
+    const filtroHasta = document.getElementById('filtroHasta')?.value || '';
 
     let visible = 0;
     const filas = document.querySelectorAll('#journalTbody tr[id^="row_"]:not([id$="_det"])');
@@ -2449,15 +2537,12 @@
       const est   = tr.dataset.estrategia || '';
       const cta   = tr.dataset.cuenta || '';
       const fecha = tr.dataset.fecha || '';
-
       const okEst   = !filtroEst   || est === filtroEst;
-      const okCta   = !filtroCta   || cta === filtroCta;
+      const okCta   = _cuentasSeleccionadas.size === 0 || _cuentasSeleccionadas.has(cta);
       const okDesde = !filtroDesde || fecha >= filtroDesde;
       const okHasta = !filtroHasta || fecha <= filtroHasta;
       const mostrar = okEst && okCta && okDesde && okHasta;
-
       tr.style.display = mostrar ? '' : 'none';
-      // Sincronizar fila de detalle
       const det = document.getElementById(tr.id + '_det');
       if (det) det.style.display = mostrar ? det.style.display : 'none';
       if (mostrar) visible++;
@@ -2466,28 +2551,30 @@
     const conteo = document.getElementById('journalConteo');
     if (conteo) conteo.textContent = visible + ' operaciones';
 
-    // Actualizar stats y calendario con las ops visibles filtradas
     const opsFiltradas = _todasLasOps.filter(o => {
       const fecha = o.fecha ? o.fecha.substring(0,10) : '';
       return (!filtroEst   || o.estrategia === filtroEst)
-          && (!filtroCta   || o.cuenta === filtroCta)
+          && (_cuentasSeleccionadas.size === 0 || _cuentasSeleccionadas.has(o.cuenta))
           && (!filtroDesde || fecha >= filtroDesde)
           && (!filtroHasta || fecha <= filtroHasta);
     });
-    // Recalcular stats
+
     if (opsFiltradas.length > 0) {
       const s = calcularStats(opsFiltradas);
       actualizarStatCards(s);
     }
-    // Actualizar calendario
     if (typeof iniciarCalendario === 'function') iniciarCalendario(opsFiltradas);
-    // Actualizar equity curve
     if (typeof dibujarEquityCurve === 'function') dibujarEquityCurve(opsFiltradas);
   }
 
   function limpiarFiltros() {
-    const ids = ['filtroEstrategia','filtroCuenta','filtroDesde','filtroHasta'];
+    const ids = ['filtroEstrategia','filtroDesde','filtroHasta'];
     ids.forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
+    _cuentasSeleccionadas = new Set();
+    const chkTodas = document.getElementById('chkTodasCuentas');
+    if (chkTodas) chkTodas.checked = true;
+    document.querySelectorAll('.chkCuenta').forEach(c => c.checked = true);
+    actualizarLabelCuentas();
     filtrarJournal();
   }
 
@@ -2508,6 +2595,282 @@
       if (mapa[key] !== undefined) el.textContent = mapa[key];
     });
   }
+
+  /* ══════════════════════
+     EVALUACIÓN DE FONDEOS
+  ══════════════════════ */
+  function renderEvalFondeo(stats, ops) {
+    const winRate = ops.length > 0 ? (ops.filter(o => o.pnl > 0).length / ops.length * 100) : 0;
+    const ganadoras = ops.filter(o => o.pnl > 0);
+    const perdedoras = ops.filter(o => o.pnl < 0);
+    const avgGan = ganadoras.length ? ganadoras.reduce((a, o) => a + o.pnl, 0) / ganadoras.length : 0;
+    const avgPer = perdedoras.length ? Math.abs(perdedoras.reduce((a, o) => a + o.pnl, 0) / perdedoras.length) : 0;
+    const ratioRB = avgPer > 0 ? (avgGan / avgPer) : 0;
+    const gananciaPromedio = avgPer > 0 ? ratioRB * avgPer : 0;
+    const ev = avgPer > 0 ? ((winRate / 100 * ratioRB) - (1 - winRate / 100)) * avgPer : 0;
+
+    const labelStyle = 'padding:10px 14px;font-size:13px;color:var(--gris);border-bottom:1px solid #1A1A1A;white-space:nowrap';
+    const valStyle = 'padding:10px 14px;font-size:14px;font-weight:600;border-bottom:1px solid #1A1A1A;text-align:center';
+    const notaStyle = 'padding:10px 14px;font-size:12px;color:#555;border-bottom:1px solid #1A1A1A';
+    const inputStyle = 'background:#181818;border:1px solid #2A2A2A;border-radius:6px;padding:6px 10px;color:var(--blanco);font-size:14px;font-family:\'Bebas Neue\',sans-serif;width:100px;text-align:center;outline:none';
+
+    return `
+      <div style="overflow-x:auto">
+        <table style="width:100%;border-collapse:collapse;font-size:13px">
+          <thead>
+            <tr style="border-bottom:1px solid #2A2A2A;background:#0A0A0A">
+              <th style="padding:10px 14px;font-size:11px;text-transform:uppercase;letter-spacing:1px;color:var(--gris);text-align:left;font-weight:600">Parámetro</th>
+              <th style="padding:10px 14px;font-size:11px;text-transform:uppercase;letter-spacing:1px;color:var(--gris);text-align:center;font-weight:600">Valor</th>
+              <th style="padding:10px 14px;font-size:11px;text-transform:uppercase;letter-spacing:1px;color:var(--gris);text-align:left;font-weight:600">Notas</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td style="${labelStyle}">Winrate (%)</td>
+              <td style="${valStyle};color:${winRate >= 50 ? 'var(--verde)' : '#E57373'}">${winRate.toFixed(0)}%</td>
+              <td style="${notaStyle}">% de aciertos</td>
+            </tr>
+            <tr>
+              <td style="${labelStyle}">Ratio R/B</td>
+              <td style="${valStyle};color:${ratioRB >= 1 ? 'var(--verde)' : '#E57373'}">${ratioRB.toFixed(2)}:1</td>
+              <td style="${notaStyle}">Ganancia por cada 1 de riesgo</td>
+            </tr>
+            <tr>
+              <td style="${labelStyle}">Riesgo promedio ($)</td>
+              <td style="${valStyle};color:#E57373">$ ${avgPer.toFixed(2)}</td>
+              <td style="${notaStyle}">Pérdida promedio</td>
+            </tr>
+            <tr>
+              <td style="${labelStyle}">Objetivo de ganancia ($)</td>
+              <td style="${valStyle}"><input type="number" id="fondeoObjetivo" value="3000" style="${inputStyle}" onchange="recalcularFondeo()"></td>
+              <td style="${notaStyle}">Objetivo de ganancia exigido — PNL</td>
+            </tr>
+            <tr>
+              <td style="${labelStyle}">Ganancia promedio ($)</td>
+              <td style="${valStyle};color:var(--verde)">$ ${gananciaPromedio.toFixed(2)}</td>
+              <td style="${notaStyle}">Ratio × Riesgo diario</td>
+            </tr>
+            <tr>
+              <td style="${labelStyle}">Expected Value ($)</td>
+              <td style="${valStyle};color:${ev >= 0 ? 'var(--verde)' : '#E57373'}">$ ${ev.toFixed(2)}</td>
+              <td style="${notaStyle}">Esperanza matemática diaria</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <div id="fondeoResultado" style="margin-top:16px;padding:14px 16px;background:${ev > 0 ? 'rgba(76,175,80,0.08)' : 'rgba(229,115,115,0.08)'};border:1px solid ${ev > 0 ? 'rgba(76,175,80,0.25)' : 'rgba(229,115,115,0.25)'};border-radius:10px">
+        <div style="font-size:11px;color:var(--gris);text-transform:uppercase;letter-spacing:1px;margin-bottom:6px">Según tus datos actuales, suponiendo una operación por día, necesitarías</div>
+        <div style="font-size:32px;font-family:'Bebas Neue',sans-serif;color:${ev > 0 ? 'var(--verde)' : '#E57373'}">${ev > 0 ? Math.ceil(3000 / ev) + ' días de trading' : 'EV negativa — No alcanzable'}</div>
+      </div>`;
+  }
+
+  function recalcularFondeo() {
+    const ops = _todasLasOps;
+    if (!ops.length) return;
+    const objetivo = parseFloat(document.getElementById('fondeoObjetivo')?.value) || 3000;
+    const ganadoras = ops.filter(o => o.pnl > 0);
+    const perdedoras = ops.filter(o => o.pnl < 0);
+    const avgPer = perdedoras.length ? Math.abs(perdedoras.reduce((a, o) => a + o.pnl, 0) / perdedoras.length) : 0;
+    const avgGan = ganadoras.length ? ganadoras.reduce((a, o) => a + o.pnl, 0) / ganadoras.length : 0;
+    const wr = ops.length ? ganadoras.length / ops.length : 0;
+    const ratioRB = avgPer > 0 ? avgGan / avgPer : 0;
+    const ev = avgPer > 0 ? ((wr * ratioRB) - (1 - wr)) * avgPer : 0;
+    const res = document.getElementById('fondeoResultado');
+    if (!res) return;
+    const dias = ev > 0 ? Math.ceil(objetivo / ev) : 0;
+    res.style.background = ev > 0 ? 'rgba(76,175,80,0.08)' : 'rgba(229,115,115,0.08)';
+    res.style.borderColor = ev > 0 ? 'rgba(76,175,80,0.25)' : 'rgba(229,115,115,0.25)';
+    res.innerHTML = `
+      <div style="font-size:11px;color:var(--gris);text-transform:uppercase;letter-spacing:1px;margin-bottom:6px">Según tus datos actuales, suponiendo una operación por día, necesitarías</div>
+      <div style="font-size:32px;font-family:'Bebas Neue',sans-serif;color:${ev > 0 ? 'var(--verde)' : '#E57373'}">${ev > 0 ? dias + ' días de trading' : 'EV negativa — No alcanzable'}</div>`;
+  }
+
+  /* ══════════════════════
+     TEST DE MONTE CARLO
+  ══════════════════════ */
+  let _mcChart = null;
+
+  function correrMonteCarlo() {
+    const ops = _todasLasOps;
+    if (ops.length < 5) {
+      document.getElementById('monteCarloContent').innerHTML = '<div style="text-align:center;color:#E57373;font-size:13px;padding:20px">Necesitás al menos 5 operaciones para correr el test de Monte Carlo.</div>';
+      return;
+    }
+
+    const numSims = 20;
+    const numOps = 100;
+    const pnls = ops.map(o => o.pnl);
+
+    // Run simulations
+    const sims = [];
+    let finalPnls = [];
+    let maxDDs = [];
+
+    for (let s = 0; s < numSims; s++) {
+      const equity = [0];
+      let acum = 0, peak = 0, maxDD = 0;
+      for (let i = 0; i < numOps; i++) {
+        const rnd = pnls[Math.floor(Math.random() * pnls.length)];
+        acum += rnd;
+        equity.push(acum);
+        if (acum > peak) peak = acum;
+        const dd = peak - acum;
+        if (dd > maxDD) maxDD = dd;
+      }
+      sims.push(equity);
+      finalPnls.push(acum);
+      maxDDs.push(maxDD);
+    }
+
+    // Stats
+    finalPnls.sort((a, b) => a - b);
+    maxDDs.sort((a, b) => a - b);
+    const avgFinal = finalPnls.reduce((a, b) => a + b, 0) / numSims;
+    const bestFinal = finalPnls[finalPnls.length - 1];
+    const worstFinal = finalPnls[0];
+    const medianFinal = finalPnls[Math.floor(numSims / 2)];
+    const avgDD = maxDDs.reduce((a, b) => a + b, 0) / numSims;
+    const worstDD = maxDDs[maxDDs.length - 1];
+    const pctPositivo = finalPnls.filter(p => p > 0).length / numSims * 100;
+
+    const cont = document.getElementById('monteCarloContent');
+    cont.innerHTML = `
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:10px;margin-bottom:16px">
+        <div style="background:#0D0D0D;border:1px solid #1E1E1E;border-radius:10px;padding:12px 14px;text-align:center">
+          <div style="font-size:9px;color:var(--gris);text-transform:uppercase;letter-spacing:1px;margin-bottom:4px">Promedio final</div>
+          <div style="font-size:20px;font-family:'Bebas Neue',sans-serif;color:${avgFinal >= 0 ? 'var(--verde)' : '#E57373'}">${avgFinal >= 0 ? '+' : ''}$${Math.abs(avgFinal).toFixed(0)}</div>
+        </div>
+        <div style="background:#0D0D0D;border:1px solid #1E1E1E;border-radius:10px;padding:12px 14px;text-align:center">
+          <div style="font-size:9px;color:var(--gris);text-transform:uppercase;letter-spacing:1px;margin-bottom:4px">Mejor escenario</div>
+          <div style="font-size:20px;font-family:'Bebas Neue',sans-serif;color:var(--verde)">+$${Math.abs(bestFinal).toFixed(0)}</div>
+        </div>
+        <div style="background:#0D0D0D;border:1px solid #1E1E1E;border-radius:10px;padding:12px 14px;text-align:center">
+          <div style="font-size:9px;color:var(--gris);text-transform:uppercase;letter-spacing:1px;margin-bottom:4px">Peor escenario</div>
+          <div style="font-size:20px;font-family:'Bebas Neue',sans-serif;color:${worstFinal >= 0 ? 'var(--verde)' : '#E57373'}">${worstFinal >= 0 ? '+' : '-'}$${Math.abs(worstFinal).toFixed(0)}</div>
+        </div>
+        <div style="background:#0D0D0D;border:1px solid #1E1E1E;border-radius:10px;padding:12px 14px;text-align:center">
+          <div style="font-size:9px;color:var(--gris);text-transform:uppercase;letter-spacing:1px;margin-bottom:4px">Mediana</div>
+          <div style="font-size:20px;font-family:'Bebas Neue',sans-serif;color:${medianFinal >= 0 ? 'var(--verde)' : '#E57373'}">${medianFinal >= 0 ? '+' : '-'}$${Math.abs(medianFinal).toFixed(0)}</div>
+        </div>
+        <div style="background:#0D0D0D;border:1px solid #1E1E1E;border-radius:10px;padding:12px 14px;text-align:center">
+          <div style="font-size:9px;color:var(--gris);text-transform:uppercase;letter-spacing:1px;margin-bottom:4px">% Positivos</div>
+          <div style="font-size:20px;font-family:'Bebas Neue',sans-serif;color:${pctPositivo >= 50 ? 'var(--verde)' : '#E57373'}">${pctPositivo.toFixed(0)}%</div>
+        </div>
+        <div style="background:#0D0D0D;border:1px solid #1E1E1E;border-radius:10px;padding:12px 14px;text-align:center">
+          <div style="font-size:9px;color:var(--gris);text-transform:uppercase;letter-spacing:1px;margin-bottom:4px">DD promedio</div>
+          <div style="font-size:20px;font-family:'Bebas Neue',sans-serif;color:#E57373">-$${avgDD.toFixed(0)}</div>
+        </div>
+        <div style="background:#0D0D0D;border:1px solid #1E1E1E;border-radius:10px;padding:12px 14px;text-align:center">
+          <div style="font-size:9px;color:var(--gris);text-transform:uppercase;letter-spacing:1px;margin-bottom:4px">Peor DD</div>
+          <div style="font-size:20px;font-family:'Bebas Neue',sans-serif;color:#E57373">-$${worstDD.toFixed(0)}</div>
+        </div>
+      </div>
+      <canvas id="mcCanvas" style="width:100%;height:240px"></canvas>
+      <div style="text-align:center;margin-top:10px;font-size:11px;color:#555">
+        ${numSims} simulaciones × ${numOps} operaciones cada una · Presioná <strong style="color:var(--gris)">🎲 Simular</strong> o <strong style="color:var(--gris)">F9</strong> para nueva simulación
+      </div>`;
+
+    // Draw Monte Carlo chart
+    setTimeout(() => dibujarMonteCarlo(sims), 50);
+  }
+
+  function dibujarMonteCarlo(sims) {
+    const canvas = document.getElementById('mcCanvas');
+    if (!canvas) return;
+    const dpr = window.devicePixelRatio || 1;
+    const W = canvas.offsetWidth || canvas.parentElement.offsetWidth || 700;
+    const H = 240;
+    canvas.width = W * dpr;
+    canvas.height = H * dpr;
+    canvas.style.width = W + 'px';
+    canvas.style.height = H + 'px';
+    const ctx = canvas.getContext('2d');
+    ctx.scale(dpr, dpr);
+
+    // Find global min/max
+    let allMin = Infinity, allMax = -Infinity;
+    sims.forEach(eq => {
+      eq.forEach(v => { if (v < allMin) allMin = v; if (v > allMax) allMax = v; });
+    });
+    const rango = allMax - allMin || 1;
+    const pad = { top: 14, bottom: 14, left: 10, right: 10 };
+    const w = W - pad.left - pad.right;
+    const h = H - pad.top - pad.bottom;
+    const numOps = sims[0].length;
+
+    const px = (i) => pad.left + (i / (numOps - 1)) * w;
+    const py = (v) => pad.top + (1 - (v - allMin) / rango) * h;
+
+    // Zero line
+    const y0 = py(0);
+    if (y0 > pad.top && y0 < H - pad.bottom) {
+      ctx.beginPath();
+      ctx.moveTo(pad.left, y0);
+      ctx.lineTo(W - pad.right, y0);
+      ctx.strokeStyle = 'rgba(255,255,255,0.1)';
+      ctx.lineWidth = 1;
+      ctx.setLineDash([4, 4]);
+      ctx.stroke();
+      ctx.setLineDash([]);
+    }
+
+    // Draw each simulation
+    const colors = [
+      'rgba(192,57,43,0.4)', 'rgba(76,175,80,0.4)', 'rgba(52,152,219,0.4)',
+      'rgba(243,156,18,0.4)', 'rgba(155,89,182,0.4)', 'rgba(22,160,133,0.4)',
+      'rgba(230,126,34,0.4)', 'rgba(149,165,166,0.4)', 'rgba(231,76,60,0.4)',
+      'rgba(46,204,113,0.4)', 'rgba(41,128,185,0.4)', 'rgba(241,196,15,0.4)',
+      'rgba(142,68,173,0.4)', 'rgba(39,174,96,0.4)', 'rgba(211,84,0,0.4)',
+      'rgba(127,140,141,0.4)', 'rgba(192,57,43,0.3)', 'rgba(44,62,80,0.4)',
+      'rgba(26,188,156,0.4)', 'rgba(230,126,34,0.3)'
+    ];
+
+    sims.forEach((eq, idx) => {
+      ctx.beginPath();
+      eq.forEach((v, i) => {
+        if (i === 0) ctx.moveTo(px(i), py(v));
+        else ctx.lineTo(px(i), py(v));
+      });
+      ctx.strokeStyle = colors[idx % colors.length];
+      ctx.lineWidth = 1.5;
+      ctx.stroke();
+    });
+
+    // Draw average line thicker
+    const avgEquity = [];
+    for (let i = 0; i < numOps; i++) {
+      let sum = 0;
+      sims.forEach(eq => sum += eq[i]);
+      avgEquity.push(sum / sims.length);
+    }
+    ctx.beginPath();
+    avgEquity.forEach((v, i) => {
+      if (i === 0) ctx.moveTo(px(i), py(v));
+      else ctx.lineTo(px(i), py(v));
+    });
+    ctx.strokeStyle = 'rgba(255,255,255,0.9)';
+    ctx.lineWidth = 2.5;
+    ctx.stroke();
+
+    // Labels
+    ctx.fillStyle = 'rgba(255,255,255,0.3)';
+    ctx.font = '10px DM Sans, sans-serif';
+    ctx.fillText('$' + allMax.toFixed(0), pad.left + 2, pad.top + 10);
+    ctx.fillText('$' + allMin.toFixed(0), pad.left + 2, H - pad.bottom - 4);
+    ctx.fillText('Op #1', pad.left, H - 2);
+    ctx.textAlign = 'right';
+    ctx.fillText('Op #100', W - pad.right, H - 2);
+    ctx.textAlign = 'left';
+  }
+
+  // F9 shortcut
+  document.addEventListener('keydown', function(e) {
+    if (e.key === 'F9') {
+      e.preventDefault();
+      const mcContent = document.getElementById('monteCarloContent');
+      if (mcContent) correrMonteCarlo();
+    }
+  });
 
   /* ══════════════════════
      CONFIG JOURNAL (modal)
@@ -2840,24 +3203,11 @@
     }
 
     if (cargarSesionGuardada()) {
-      const navBtn = document.querySelector('.nav-btn.primary');
-      if (navBtn) { navBtn.textContent = 'Mi Panel →'; navBtn.onclick = () => irA('panel'); }
-      // Validar token y entrar directo
-      refrescarToken().then(ok => {
-        if (ok) {
-          irA('panel');
-        } else {
-          irA('auth', 'login');
-        }
-      });
-      return;
-    }
-
-    // Sin sesión guardada
-    if (hash === '#panel') {
-      irA('auth', 'login');
+      const navBtn = document.querySelector('#navTop .nav-btn.primary');
+      if (navBtn) navBtn.textContent = 'Mi Panel →';
+      irA('panel');
     } else {
-      irA('auth', 'login');
+      irA('auth');
     }
   })();
 </script>

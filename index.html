@@ -647,7 +647,7 @@
 
   <section class="features">
     <h2 class="section-title">¿Qué incluye?</h2>
-    <div class="features-grid">
+    <div class="features-grid" id="featuresGrid">
       <div class="feature-card"><div class="feature-icon">🔒</div><h3>Bloqueo automático</h3><p>Cancela nuevas órdenes automáticamente cuando alcanzás el límite de pérdida configurado.</p></div>
       <div class="feature-card"><div class="feature-icon">💻</div><h3>Múltiples cuentas</h3><p>Monitoreá varias cuentas simultáneamente, cada una con su propio límite independiente.</p></div>
       <div class="feature-card"><div class="feature-icon">🔑</div><h3>Protección por contraseña</h3><p>El operador no puede desactivar el limitador sin la contraseña. Ideal para prop firms.</p></div>
@@ -1537,6 +1537,24 @@
       ? 'Realizá backtests a libro abierto de forma rápida y sencilla. Dibujá tus Risk/Reward en el gráfico y obtené estadísticas completas en tiempo real.'
       : 'Protegé tu capital con un bloqueador automático de pérdidas diarias. Inviolable, persistente y con licencia por equipo.';
     if (formTitle) formTitle.textContent = esMBA ? 'Obtener Manual Backtest Analyzer' : 'Obtener licencia';
+
+    // Actualizar feature cards según producto
+    const fg = document.getElementById('featuresGrid');
+    if (fg) {
+      fg.innerHTML = esMBA
+        ? '<div class="feature-card"><div class="feature-icon">📊</div><h3>Risk/Reward en el gráfico</h3><p>Dibujá directamente en el chart tu entrada, stop loss y take profit. Visualizá el ratio de forma clara e instantánea.</p></div>'
+        + '<div class="feature-card"><div class="feature-icon">📈</div><h3>Estadísticas en tiempo real</h3><p>Win rate, profit factor, ratio R:R, racha máxima y más. Todo se actualiza automáticamente con cada operación.</p></div>'
+        + '<div class="feature-card"><div class="feature-icon">📖</div><h3>Backtesting a libro abierto</h3><p>Recorré el gráfico vela por vela y registrá tus operaciones como si estuvieras en vivo. Sin replay ni simulador.</p></div>'
+        + '<div class="feature-card"><div class="feature-icon">⚡</div><h3>Rápido y sencillo</h3><p>Sin configuraciones complicadas. Agregá el indicador al gráfico y empezá a testear tu estrategia en segundos.</p></div>'
+        + '<div class="feature-card"><div class="feature-icon">🎯</div><h3>Registro de operaciones</h3><p>Cada trade queda registrado con fecha, dirección, entrada, stop, target y resultado. Exportable para análisis.</p></div>'
+        + '<div class="feature-card"><div class="feature-icon">🛡️</div><h3>Licencia por equipo</h3><p>Licencia vinculada a tu MAC Address. No se puede compartir ni usar en otra PC.</p></div>'
+        : '<div class="feature-card"><div class="feature-icon">🔒</div><h3>Bloqueo automático</h3><p>Cancela nuevas órdenes automáticamente cuando alcanzás el límite de pérdida configurado.</p></div>'
+        + '<div class="feature-card"><div class="feature-icon">💻</div><h3>Múltiples cuentas</h3><p>Monitoreá varias cuentas simultáneamente, cada una con su propio límite independiente.</p></div>'
+        + '<div class="feature-card"><div class="feature-icon">🔑</div><h3>Protección por contraseña</h3><p>El operador no puede desactivar el limitador sin la contraseña. Ideal para prop firms.</p></div>'
+        + '<div class="feature-card"><div class="feature-icon">💾</div><h3>Persistente al reinicio</h3><p>El estado se guarda en disco. Si reiniciás NT8 con cuentas bloqueadas, siguen bloqueadas.</p></div>'
+        + '<div class="feature-card"><div class="feature-icon">🔄</div><h3>Desbloqueo inteligente</h3><p>Se desbloquea automáticamente cuando el P&L vuelve a $0. Sin intervención manual.</p></div>'
+        + '<div class="feature-card"><div class="feature-icon">🛡️</div><h3>Licencia por equipo</h3><p>Licencia vinculada a tu MAC Address. No se puede compartir ni usar en otra PC.</p></div>';
+    }
 
     // Ir a la landing y hacer scroll al formulario de compra
     irA('landing');

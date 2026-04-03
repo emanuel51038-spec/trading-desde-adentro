@@ -3,7 +3,8 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Trading desde Adentro — Daily Loss Limiter</title>
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <title>Trading desde Adentro</title>
   <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
   <script>emailjs.init("rp9MNqIfMeyq1q0lG");</script>
@@ -728,7 +729,7 @@
 
   <footer>
     <p style="margin-bottom:8px">
-      <a href="https://instagram.com/tradingdesdeadentro" target="_blank">@tradingdesdeadentro</a>
+      <a href="https://instagram.com/tradingdesdeadentro" target="_blank" rel="noopener noreferrer">@tradingdesdeadentro</a>
       &nbsp;·&nbsp; Trading desde Adentro
     </p>
     <p style="font-size:11px;color:#444">Daily Loss Limiter es un Add-On para NinjaTrader 8. No nos hacemos responsables por pérdidas de trading.</p>
@@ -929,7 +930,7 @@
       </div>
     </div>
     <div style="text-align:right;margin-top:6px">
-      <a href="https://www.tradingview.com" target="_blank" style="font-size:11px;color:#444;text-decoration:none">
+      <a href="https://www.tradingview.com" target="_blank" rel="noopener noreferrer" style="font-size:11px;color:#444;text-decoration:none">
         Datos provistos por TradingView
       </a>
     </div>
@@ -1013,7 +1014,7 @@
   <!-- FOOTER -->
   <footer class="home-footer">
     <span>© 2026 Trading desde Adentro</span>
-    <a href="https://instagram.com/tradingdesdeadentro" target="_blank">@tradingdesdeadentro</a>
+    <a href="https://instagram.com/tradingdesdeadentro" target="_blank" rel="noopener noreferrer">@tradingdesdeadentro</a>
     <span style="font-size:11px;color:#444">Daily Loss Limiter es un Add-On para NinjaTrader 8. No nos responsabilizamos por perdidas de trading.</span>
   </footer>
 
@@ -1122,6 +1123,21 @@
   let productoSeleccionado = 'DailyLossLimiter'; // producto activo en el formulario de compra
 
   /* ══════════════════════
+     SEGURIDAD: Sanitización
+  ══════════════════════ */
+  function esc(str) {
+    if (!str) return '';
+    const div = document.createElement('div');
+    div.textContent = String(str);
+    return div.innerHTML;
+  }
+
+  function escAttr(str) {
+    if (!str) return '';
+    return String(str).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/'/g,'&#39;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  }
+
+  /* ══════════════════════
      NAVEGACIÓN DE VISTAS
   ══════════════════════ */
   function irA(vista, tab) {
@@ -1198,6 +1214,8 @@
 
     msg.style.display = 'none';
     if (!nombre || !email || !pass) { showAuthMsg(msg, 'Completá todos los campos.', 'err'); return; }
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { showAuthMsg(msg, 'El formato del email no es válido.', 'err'); return; }
+    if (nombre.length > 100) { showAuthMsg(msg, 'El nombre es demasiado largo.', 'err'); return; }
     if (pass !== pass2) { showAuthMsg(msg, 'Las contraseñas no coinciden.', 'err'); return; }
     if (pass.length < 6) { showAuthMsg(msg, 'La contraseña debe tener al menos 6 caracteres.', 'err'); return; }
 
@@ -1211,8 +1229,6 @@
 
     btn.disabled = false;
     btn.textContent = 'Crear cuenta';
-
-    console.log('Signup response:', r.status, JSON.stringify(r.data));
 
     // status 200 con user = creado OK
     // status 200 con user null o sin id = email ya registrado (Supabase oculta esto)
@@ -1253,9 +1269,9 @@
     }
     btn.disabled=true; btn.textContent='Enviando...'; msg.style.display='none';
     try {
-      const res = await fetch('https://pjrwdseaomijkgytbglh.supabase.co/auth/v1/recover', {
+      const res = await fetch(SUPABASE_URL + '/auth/v1/recover', {
         method:'POST',
-        headers:{'Content-Type':'application/json','apikey':'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBqcndkc2Vhb21pamtneXRiZ2xoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQyMDgxNjIsImV4cCI6MjA4OTc4NDE2Mn0.5Nmyu8TwBRVWBL2zDOfFTeEZBMLOyQVu_dDhas07jDI'},
+        headers:{'Content-Type':'application/json','apikey':SUPABASE_ANON},
         body:JSON.stringify({email})
       });
       msg.style.display='block';
@@ -1283,9 +1299,9 @@
     }
     btn.disabled=true; btn.textContent='Guardando...';
     try {
-      const res = await fetch('https://pjrwdseaomijkgytbglh.supabase.co/auth/v1/user', {
+      const res = await fetch(SUPABASE_URL + '/auth/v1/user', {
         method:'PUT',
-        headers:{'Content-Type':'application/json','apikey':'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBqcndkc2Vhb21pamtneXRiZ2xoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQyMDgxNjIsImV4cCI6MjA4OTc4NDE2Mn0.5Nmyu8TwBRVWBL2zDOfFTeEZBMLOyQVu_dDhas07jDI','Authorization':'Bearer '+(window._recoveryToken||'')},
+        headers:{'Content-Type':'application/json','apikey':SUPABASE_ANON,'Authorization':'Bearer '+(window._recoveryToken||'')},
         body:JSON.stringify({password:pass1})
       });
       if (res.ok) {
@@ -1311,6 +1327,9 @@
     btn.disabled=false; btn.textContent='Guardar nueva contraseña →';
   }
 
+  let _loginAttempts = 0;
+  let _loginLockUntil = 0;
+
   async function login() {
     const email = document.getElementById('loginEmail').value.trim();
     const pass  = document.getElementById('loginPass').value;
@@ -1318,6 +1337,14 @@
     const btn   = document.getElementById('loginBtn');
 
     msg.style.display = 'none';
+
+    // Rate limiting: bloquear después de 5 intentos fallidos por 60 segundos
+    if (Date.now() < _loginLockUntil) {
+      const segsRestantes = Math.ceil((_loginLockUntil - Date.now()) / 1000);
+      showAuthMsg(msg, `Demasiados intentos. Esperá ${segsRestantes} segundos.`, 'err');
+      return;
+    }
+
     if (!email || !pass) { showAuthMsg(msg, 'Ingresá email y contraseña.', 'err'); return; }
 
     btn.disabled = true;
@@ -1332,12 +1359,20 @@
     btn.textContent = 'Ingresar a Mi Panel →';
 
     if (r.ok && r.data.access_token) {
+      _loginAttempts = 0;
       sesiónActual = r.data;
       guardarSesion(r.data);
       irA('panel');
     } else {
-      const errMsg = r.data?.error_description || r.data?.message || 'Email o contraseña incorrectos.';
-      showAuthMsg(msg, traducirError(errMsg), 'err');
+      _loginAttempts++;
+      if (_loginAttempts >= 5) {
+        _loginLockUntil = Date.now() + 60000;
+        _loginAttempts = 0;
+        showAuthMsg(msg, 'Demasiados intentos fallidos. Esperá 60 segundos.', 'err');
+      } else {
+        const errMsg = r.data?.error_description || r.data?.message || 'Email o contraseña incorrectos.';
+        showAuthMsg(msg, traducirError(errMsg), 'err');
+      }
     }
   }
 
@@ -1348,13 +1383,27 @@
   }
 
   function guardarSesion(s) {
-    localStorage.setItem('tda_session', JSON.stringify({ access_token: s.access_token, user: s.user }));
+    localStorage.setItem('tda_session', JSON.stringify({
+      access_token: s.access_token,
+      user: s.user,
+      _ts: Date.now()
+    }));
   }
+
+  const SESSION_TTL = 24 * 60 * 60 * 1000; // 24 horas
 
   function cargarSesionGuardada() {
     try {
       const s = JSON.parse(localStorage.getItem('tda_session'));
-      if (s?.access_token) { sesiónActual = s; return true; }
+      if (!s?.access_token) return false;
+      // Verificar expiración
+      if (s._ts && (Date.now() - s._ts > SESSION_TTL)) {
+        localStorage.removeItem('tda_session');
+        sesiónActual = null;
+        return false;
+      }
+      sesiónActual = s;
+      return true;
     } catch {}
     return false;
   }
@@ -1500,7 +1549,7 @@
         </div>
         <div style="padding:0 24px 20px">
           <p style="font-size:13px;color:var(--gris);margin-bottom:14px;line-height:1.6">${r.desc}</p>
-          <a href="${r.url}" class="action-btn primary" target="_blank" style="display:inline-flex;width:auto;padding:10px 20px">
+          <a href="${r.url}" class="action-btn primary" target="_blank" rel="noopener noreferrer" style="display:inline-flex;width:auto;padding:10px 20px">
             <span class="ab-icon">⬇️</span> Descargar gratis
           </a>
         </div>
@@ -1654,17 +1703,17 @@
         <div class="licencia-actions">
           <div class="licencia-field-label">Acciones</div>
           ${esActiva && installerUrl
-            ? `<a href="${installerUrl}" class="action-btn primary" target="_blank"><span class="ab-icon">⬇️</span> Descargar ZIP</a>
+            ? `<a href="${installerUrl}" class="action-btn primary" target="_blank" rel="noopener noreferrer"><span class="ab-icon">⬇️</span> Descargar ZIP</a>
                <p style="font-size:11px;color:#9E9E9E;margin-top:6px;line-height:1.5">📦 Importá el ZIP directamente en NT8: <strong style="color:#ccc">Herramientas → Importar NinjaScript</strong>.</p>`
             : esActiva && !installerUrl
             ? `<div class="action-btn" style="opacity:0.4;cursor:not-allowed"><span class="ab-icon">⬇️</span> Preparando descarga...</div>`
             : `<div class="action-btn" style="opacity:0.4;cursor:not-allowed"><span class="ab-icon">⬇️</span> Disponible al activar licencia</div>`
           }
           ${esActiva
-            ? `<a href="${guideUrl}" class="action-btn" target="_blank"><span class="ab-icon">📄</span> Guía de instalación (PDF)</a>`
+            ? `<a href="${guideUrl}" class="action-btn" target="_blank" rel="noopener noreferrer"><span class="ab-icon">📄</span> Guía de instalación (PDF)</a>`
             : `<div class="action-btn" style="opacity:0.4;cursor:not-allowed"><span class="ab-icon">📄</span> Guía de instalación (PDF)</div>`
           }
-          <a href="https://instagram.com/tradingdesdeadentro" target="_blank" class="action-btn">
+          <a href="https://instagram.com/tradingdesdeadentro" target="_blank" rel="noopener noreferrer" class="action-btn">
             <span class="ab-icon">📸</span> Soporte en Instagram
           </a>
         </div>
@@ -1790,7 +1839,7 @@
         },
         body: JSON.stringify({ machine_id: nuevaMac })
       });
-      console.log('PATCH status:', patchRes.status, await patchRes.text());
+      
       patchOk = patchRes.ok || patchRes.status === 204;
     } catch(e) { console.error(e); }
 
@@ -1868,7 +1917,7 @@
       if (!res.ok) {
         console.error('Error al guardar licencia:', res.status, responseText);
       } else {
-        console.log('Licencia guardada:', responseText);
+        
       }
     } catch(e) { console.error('guardarPreRegistro exception:', e); }
   }
@@ -2012,7 +2061,7 @@
           chgEl.className = 'ticker-change ' + (up ? 'up' : 'down');
         }
         if (dotEl) dotEl.className = 'ticker-dot ' + (up ? 'up' : 'down');
-      } catch(e) { console.log('Price error:', s.id, e); }
+      } catch(e) { console.error('Price fetch failed'); }
     }
   }
 
@@ -2035,16 +2084,17 @@
       if (items.length === 0) throw new Error('sin items');
 
       grid.innerHTML = items.map(item => {
-        const title = item.querySelector('title')?.textContent || '';
+        const title = esc(item.querySelector('title')?.textContent || '');
         const link  = item.querySelector('link')?.textContent || '#';
+        const safeLink = escAttr(link.startsWith('http') ? link : '#');
         const date  = item.querySelector('pubDate')?.textContent || '';
         const fecha = date ? new Date(date).toLocaleDateString('es-AR', { day: '2-digit', month: 'short', year: 'numeric' }) : '';
         return `
-        <a href="${link}" target="_blank" class="noticia-card">
+        <a href="${safeLink}" target="_blank" rel="noopener noreferrer" class="noticia-card">
           <div style="flex:1">
             <div class="noticia-source">MarketWatch</div>
             <div class="noticia-title">${title}</div>
-            <div class="noticia-date">${fecha}</div>
+            <div class="noticia-date">${esc(fecha)}</div>
           </div>
           <span style="font-size:18px;opacity:0.3">→</span>
         </a>`;
@@ -2077,8 +2127,8 @@
           <p style="font-size:13px;color:var(--gris)">Registro cuantitativo y cualitativo de tus operaciones.</p>
         </div>
         <div style="display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end">
-          <a href="https://pjrwdseaomijkgytbglh.supabase.co/storage/v1/object/public/Instaladores/TradingJournal.zip" target="_blank" style="display:inline-flex;align-items:center;gap:6px;background:#1A1A1A;border:1px solid #2A2A2A;color:var(--gris);padding:10px 14px;border-radius:8px;text-decoration:none;font-size:12px;font-weight:600">⬇ Descargar ZIP</a>
-          <a href="https://pjrwdseaomijkgytbglh.supabase.co/storage/v1/object/public/Instaladores/GUIA_INSTALACION_TRADINGJOURNALTDA.pdf" target="_blank" style="display:inline-flex;align-items:center;gap:6px;background:#1A1A1A;border:1px solid #2A2A2A;color:var(--gris);padding:10px 14px;border-radius:8px;text-decoration:none;font-size:12px;font-weight:600">📄 Guía</a>
+          <a href="https://pjrwdseaomijkgytbglh.supabase.co/storage/v1/object/public/Instaladores/TradingJournal.zip" target="_blank" rel="noopener noreferrer" style="display:inline-flex;align-items:center;gap:6px;background:#1A1A1A;border:1px solid #2A2A2A;color:var(--gris);padding:10px 14px;border-radius:8px;text-decoration:none;font-size:12px;font-weight:600">⬇ Descargar ZIP</a>
+          <a href="https://pjrwdseaomijkgytbglh.supabase.co/storage/v1/object/public/Instaladores/GUIA_INSTALACION_TRADINGJOURNALTDA.pdf" target="_blank" rel="noopener noreferrer" style="display:inline-flex;align-items:center;gap:6px;background:#1A1A1A;border:1px solid #2A2A2A;color:var(--gris);padding:10px 14px;border-radius:8px;text-decoration:none;font-size:12px;font-weight:600">📄 Guía</a>
           <button onclick="eliminarHistorialJournal()" style="background:rgba(139,26,26,0.15);border:1px solid rgba(139,26,26,0.3);color:#E57373;padding:10px 14px;border-radius:8px;cursor:pointer;font-size:12px;font-weight:600;display:flex;align-items:center;gap:6px">
             🗑️ Eliminar historial
           </button>
@@ -2103,9 +2153,9 @@
                 <div style="font-size:13px;font-weight:600;color:var(--blanco);margin-bottom:3px">Descargá el instalador y la guía</div>
                 <div style="font-size:12px;color:var(--gris);line-height:1.5">Instalá el AddOn de NinjaTrader 8 siguiendo las instrucciones de la guía.</div>
                 <div style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap">
-                  <a href="https://pjrwdseaomijkgytbglh.supabase.co/storage/v1/object/public/Instaladores/TradingJournal.zip" target="_blank" style="display:inline-flex;align-items:center;gap:6px;background:var(--rojo);color:white;padding:7px 14px;border-radius:7px;text-decoration:none;font-size:12px;font-weight:600">⬇ Descargar ZIP</a>
-                  <a href="https://pjrwdseaomijkgytbglh.supabase.co/storage/v1/object/public/Instaladores/GUIA_INSTALACION_TRADINGJOURNALTDA.pdf" target="_blank" style="display:inline-flex;align-items:center;gap:6px;background:#1A1A1A;border:1px solid #2A2A2A;color:var(--gris);padding:7px 14px;border-radius:7px;text-decoration:none;font-size:12px;font-weight:600">📄 Guía de instalación</a>
-                  <a href="https://pjrwdseaomijkgytbglh.supabase.co/storage/v1/object/public/Instaladores/GUIA_INSTALACION_TRADINGJOURNALTDA.pdf" target="_blank" style="display:inline-flex;align-items:center;gap:6px;background:#1A1A1A;border:1px solid #2A2A2A;color:var(--gris);padding:7px 14px;border-radius:7px;text-decoration:none;font-size:12px;font-weight:600">📄 Ver guía PDF</a>
+                  <a href="https://pjrwdseaomijkgytbglh.supabase.co/storage/v1/object/public/Instaladores/TradingJournal.zip" target="_blank" rel="noopener noreferrer" style="display:inline-flex;align-items:center;gap:6px;background:var(--rojo);color:white;padding:7px 14px;border-radius:7px;text-decoration:none;font-size:12px;font-weight:600">⬇ Descargar ZIP</a>
+                  <a href="https://pjrwdseaomijkgytbglh.supabase.co/storage/v1/object/public/Instaladores/GUIA_INSTALACION_TRADINGJOURNALTDA.pdf" target="_blank" rel="noopener noreferrer" style="display:inline-flex;align-items:center;gap:6px;background:#1A1A1A;border:1px solid #2A2A2A;color:var(--gris);padding:7px 14px;border-radius:7px;text-decoration:none;font-size:12px;font-weight:600">📄 Guía de instalación</a>
+                  <a href="https://pjrwdseaomijkgytbglh.supabase.co/storage/v1/object/public/Instaladores/GUIA_INSTALACION_TRADINGJOURNALTDA.pdf" target="_blank" rel="noopener noreferrer" style="display:inline-flex;align-items:center;gap:6px;background:#1A1A1A;border:1px solid #2A2A2A;color:var(--gris);padding:7px 14px;border-radius:7px;text-decoration:none;font-size:12px;font-weight:600">📄 Ver guía PDF</a>
                 </div>
               </div>
             </div>
@@ -2170,7 +2220,7 @@
           </div>
           <select id="filtroEstrategia" onchange="filtrarJournal()" style="background:#0D0D0D;border:1px solid #1E1E1E;color:var(--blanco);padding:7px 12px;border-radius:8px;font-size:13px;cursor:pointer;font-family:'DM Sans',sans-serif">
             <option value="">Todas las estrategias</option>
-            ${estrategiasUnicas.map(e => `<option value="${e}">${e}</option>`).join('')}
+            ${estrategiasUnicas.map(e => `<option value="${escAttr(e)}">${esc(e)}</option>`).join('')}
           </select>
           <div style="display:flex;align-items:center;gap:4px;background:#0D0D0D;border:1px solid #1E1E1E;border-radius:8px;padding:4px 10px">
             <span style="font-size:11px;color:var(--gris);white-space:nowrap">Desde</span>
@@ -2388,29 +2438,29 @@
     const tieneDetalle = tieneNotas || total > 0;
     const rowId = 'row_' + (o.id || Math.random().toString(36).substr(2,6));
 
-    // Construir detalle de reglas
+    // Construir detalle de reglas (sanitizado)
     const reglasDetalle = reglas.length > 0 ? reglas.map(r => {
       const nc = r.startsWith('NO:');
-      const nombre = nc ? r.replace('NO:','') : r;
+      const nombre = esc(nc ? r.replace('NO:','') : r);
       return `<span style="display:inline-block;margin:2px 4px;padding:3px 8px;border-radius:4px;font-size:11px;background:${nc?'rgba(229,115,115,0.12)':'rgba(76,175,80,0.12)'};color:${nc?'#E57373':'var(--verde)'}">${nc?'✗':'✓'} ${nombre}</span>`;
     }).join('') : '';
 
-    return `<tr id="${rowId}" style="border-bottom:${tieneDetalle?'none':'1px solid #1A1A1A'}" data-estrategia="${o.estrategia || ''}" data-cuenta="${o.cuenta || ''}" data-fecha="${o.fecha ? o.fecha.substring(0,10) : ''}"
-      onclick="${tieneDetalle ? `toggleDetalle('${rowId}')` : ''}"
+    return `<tr id="${escAttr(rowId)}" style="border-bottom:${tieneDetalle?'none':'1px solid #1A1A1A'}" data-estrategia="${escAttr(o.estrategia || '')}" data-cuenta="${escAttr(o.cuenta || '')}" data-fecha="${escAttr(o.fecha ? o.fecha.substring(0,10) : '')}"
+      onclick="${tieneDetalle ? `toggleDetalle('${escAttr(rowId)}')` : ''}"
       style="cursor:${tieneDetalle?'pointer':'default'}"
       onmouseover="this.style.background='#111'" onmouseout="this.style.background='transparent'">
-      <td style="padding:12px 16px;color:var(--gris)">${fecha}</td>
-      <td style="padding:12px 16px;font-weight:600">${o.instrumento || '—'}</td>
+      <td style="padding:12px 16px;color:var(--gris)">${esc(fecha)}</td>
+      <td style="padding:12px 16px;font-weight:600">${esc(o.instrumento) || '—'}</td>
       <td style="padding:12px 16px">${dir}</td>
       <td style="padding:12px 16px;font-weight:600;color:${pnlColor}">${pnlStr}</td>
-      <td style="padding:12px 16px;color:var(--gris)">${o.estrategia || '—'}</td>
+      <td style="padding:12px 16px;color:var(--gris)">${esc(o.estrategia) || '—'}</td>
       <td style="padding:12px 16px;font-weight:600;color:${reglasColor}">${reglasStr}</td>
-      <td style="padding:12px 16px;color:var(--gris);max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${o.emocion && !o.emocion.startsWith('__') ? o.emocion : '—'}</td>
+      <td style="padding:12px 16px;color:var(--gris);max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${o.emocion && !o.emocion.startsWith('__') ? esc(o.emocion) : '—'}</td>
       <td style="padding:12px 16px;color:var(--gris)">${tieneDetalle ? '<span style="font-size:11px;color:#555">▼ ver</span>' : '—'}</td>
-    </tr>${tieneDetalle ? `<tr id="${rowId}_det" style="display:none;border-bottom:1px solid #1A1A1A;background:#0A0A0A" data-estrategia="${o.estrategia || ''}">
+    </tr>${tieneDetalle ? `<tr id="${escAttr(rowId)}_det" style="display:none;border-bottom:1px solid #1A1A1A;background:#0A0A0A" data-estrategia="${escAttr(o.estrategia || '')}">
       <td colspan="8" style="padding:12px 16px">
         ${reglasDetalle ? `<div style="margin-bottom:${tieneNotas?'10px':'0'}">${reglasDetalle}</div>` : ''}
-        ${tieneNotas ? `<div style="font-size:13px;color:var(--gris);line-height:1.6"><span style="color:#555;font-size:11px;text-transform:uppercase;letter-spacing:1px;margin-right:8px">Nota</span>${o.notas}</div>` : ''}
+        ${tieneNotas ? `<div style="font-size:13px;color:var(--gris);line-height:1.6"><span style="color:#555;font-size:11px;text-transform:uppercase;letter-spacing:1px;margin-right:8px">Nota</span>${esc(o.notas)}</div>` : ''}
       </td>
     </tr>` : ''}`;
   }
@@ -2501,9 +2551,9 @@
     if (!lista) return;
     lista.innerHTML = cuentas.map(c => `
       <label style="display:flex;align-items:center;gap:8px;padding:6px 14px;cursor:pointer;font-size:13px;color:var(--blanco)">
-        <input type="checkbox" class="chkCuenta" value="${c}" checked
+        <input type="checkbox" class="chkCuenta" value="${escAttr(c)}" checked
           style="accent-color:var(--rojo);width:14px;height:14px"
-          onchange="onCuentaCheckChange()"> ${c}
+          onchange="onCuentaCheckChange()"> ${esc(c)}
       </label>`).join('');
     _cuentasSeleccionadas = new Set();
     actualizarLabelCuentas();
@@ -2967,7 +3017,7 @@
             <span style="font-size:20px">✅</span>
             <div style="flex:1">
               <div style="font-size:13px;font-weight:600">Vinculado</div>
-              <div style="font-size:12px;color:var(--gris)">@${tg.telegram_username || 'usuario'}</div>
+              <div style="font-size:12px;color:var(--gris)">@${esc(tg.telegram_username || 'usuario')}</div>
             </div>
             <button onclick="desvincularTelegram()" style="background:rgba(139,26,26,0.2);border:1px solid rgba(139,26,26,0.4);color:#E57373;padding:6px 12px;border-radius:6px;cursor:pointer;font-size:12px">Desvincular</button>
           </div>` : `
@@ -2977,7 +3027,7 @@
             <div id="tgLinkBox" style="display:none;margin-top:14px">
               <p style="font-size:12px;color:var(--gris);margin-bottom:8px">1. Abrí Telegram → buscá <strong style="color:var(--blanco)">@journalTDA_bot</strong></p>
               <p style="font-size:12px;color:var(--gris);margin-bottom:10px">2. Hacé clic acá:</p>
-              <a id="tgStartLink" href="#" target="_blank" style="display:inline-block;background:rgba(139,26,26,0.2);border:1px solid rgba(139,26,26,0.4);color:#E57373;padding:9px 14px;border-radius:8px;text-decoration:none;font-size:13px;font-weight:600">Abrir @journalTDA_bot →</a>
+              <a id="tgStartLink" href="#" target="_blank" rel="noopener noreferrer" style="display:inline-block;background:rgba(139,26,26,0.2);border:1px solid rgba(139,26,26,0.4);color:#E57373;padding:9px 14px;border-radius:8px;text-decoration:none;font-size:13px;font-weight:600">Abrir @journalTDA_bot →</a>
               <p style="font-size:11px;color:#555;margin-top:10px">Expira en 15 min. Después de vincular, cerrá y volvé a abrir esta ventana.</p>
             </div>
           </div>`}
@@ -2995,15 +3045,15 @@
               <div style="background:#0D0D0D;border:1px solid #1E1E1E;border-radius:10px;padding:14px 16px;margin-bottom:8px">
                 <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:${(e.reglas||[]).length>0?'8px':'0'}">
                   <div>
-                    <span style="font-size:14px;font-weight:600">${e.nombre}</span>
+                    <span style="font-size:14px;font-weight:600">${esc(e.nombre)}</span>
                     <span style="font-size:11px;color:var(--gris);margin-left:8px">${(e.reglas||[]).length} regla${(e.reglas||[]).length!==1?'s':''}</span>
                   </div>
                   <div style="display:flex;gap:6px">
-                    <button onclick='editarEstrategia("${e.id}","${e.nombre}",${JSON.stringify(e.reglas||[])})' style="background:#1E1E1E;border:1px solid #2A2A2A;color:var(--gris);padding:5px 10px;border-radius:6px;cursor:pointer;font-size:11px">Editar</button>
-                    <button onclick="eliminarEstrategia('${e.id}')" style="background:rgba(139,26,26,0.15);border:1px solid rgba(139,26,26,0.3);color:#E57373;padding:5px 10px;border-radius:6px;cursor:pointer;font-size:11px">✕</button>
+                    <button onclick='editarEstrategia("${escAttr(e.id)}","${escAttr(e.nombre)}",${JSON.stringify(e.reglas||[])})' style="background:#1E1E1E;border:1px solid #2A2A2A;color:var(--gris);padding:5px 10px;border-radius:6px;cursor:pointer;font-size:11px">Editar</button>
+                    <button onclick="eliminarEstrategia('${escAttr(e.id)}')" style="background:rgba(139,26,26,0.15);border:1px solid rgba(139,26,26,0.3);color:#E57373;padding:5px 10px;border-radius:6px;cursor:pointer;font-size:11px">✕</button>
                   </div>
                 </div>
-                ${(e.reglas||[]).map(r=>`<div style="font-size:11px;color:var(--gris);padding:3px 0;border-top:1px solid #1A1A1A">· ${r}</div>`).join('')}
+                ${(e.reglas||[]).map(r=>`<div style="font-size:11px;color:var(--gris);padding:3px 0;border-top:1px solid #1A1A1A">· ${esc(r)}</div>`).join('')}
               </div>`).join('')}
         </div>
         <!-- Form estrategia (oculto) -->
@@ -3031,7 +3081,7 @@
         <div id="listaReglasGenerales">
           ${reglasGenerales.length === 0
             ? '<div style=\"text-align:center;padding:20px;color:var(--gris);font-size:13px;background:#0D0D0D;border:1px solid #1E1E1E;border-radius:10px\">Sin reglas generales. Ej: Gestion emocional, R/B positivo...</div>'
-            : reglasGenerales.map((rg,i) => '<div style=\"background:#0D0D0D;border:1px solid #1E1E1E;border-radius:10px;padding:12px 16px;margin-bottom:6px;display:flex;align-items:center;justify-content:space-between\"><span style=\"font-size:13px\">' + rg + '</span><button onclick=\"eliminarReglaGeneral(' + i + ')\" style=\"background:rgba(139,26,26,0.15);border:1px solid rgba(139,26,26,0.3);color:#E57373;padding:4px 10px;border-radius:6px;cursor:pointer;font-size:11px\">x</button></div>').join('')}
+            : reglasGenerales.map((rg,i) => '<div style=\"background:#0D0D0D;border:1px solid #1E1E1E;border-radius:10px;padding:12px 16px;margin-bottom:6px;display:flex;align-items:center;justify-content:space-between\"><span style=\"font-size:13px\">' + esc(rg) + '</span><button onclick=\"eliminarReglaGeneral(' + i + ')\" style=\"background:rgba(139,26,26,0.15);border:1px solid rgba(139,26,26,0.3);color:#E57373;padding:4px 10px;border-radius:6px;cursor:pointer;font-size:11px\">x</button></div>').join('')}
         </div>
         <div id="formReglaGeneral" style="display:none;background:#0D0D0D;border:1px solid #1E1E1E;border-radius:10px;padding:14px;margin-top:10px">
           <input type="text" id="inputReglaGeneral" placeholder="Ej: Gestion emocional" style="width:100%;background:#181818;border:1px solid #2A2A2A;color:var(--blanco);padding:9px 12px;border-radius:7px;font-size:13px;outline:none;font-family:'DM Sans',sans-serif;margin-bottom:10px">
@@ -3226,9 +3276,9 @@
         // Limpiar la URL
         history.replaceState(null, '', window.location.pathname);
         // Necesitamos obtener el user con el token
-        fetch('https://pjrwdseaomijkgytbglh.supabase.co/auth/v1/user', {
+        fetch(SUPABASE_URL + '/auth/v1/user', {
           headers: {
-            'apikey': 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBqcndkc2Vhb21pamtneXRiZ2xoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQyMDgxNjIsImV4cCI6MjA4OTc4NDE2Mn0.5Nmyu8TwBRVWBL2zDOfFTeEZBMLOyQVu_dDhas07jDI',
+            'apikey': SUPABASE_ANON,
             'Authorization': 'Bearer ' + token
           }
         })

@@ -624,7 +624,7 @@
 <!-- ══════════════════════════════
      VISTA: LANDING
 ══════════════════════════════ -->
-<div id="vista-landing" class="vista activa">
+<div id="vista-landing" class="vista">
 
   <!-- Nav top -->
   <div class="nav-top" id="navTop">
@@ -663,7 +663,7 @@
       <p class="form-desc">
         Completá el formulario y elegí tu método de pago.<br><br>
         Una vez realizado el pago, enviá el comprobante a
-        <strong style="color:#E57373">tradingdesdeadentro@gmail.com</strong>.
+        <strong style="color:#E57373"><a href="/cdn-cgi/l/email-protection" class="__cf_email__" data-cfemail="32464053565b5c5556574156575356575c46405d72555f535b5e1c515d5f">[email&#160;protected]</a></strong>.
         Recibirás la herramienta en el correo electrónico proporcionado
         en un plazo máximo de <strong style="color:#fff">24 horas</strong>.
       </p>
@@ -740,7 +740,7 @@
   <div class="modal">
     <button class="modal-close" onclick="cerrarModal('modalUsdt')">✕</button>
     <h3>Pago con USDT</h3>
-    <p class="modal-desc">Enviá exactamente <strong id="usdtModalAmount">30 USDT</strong> a la siguiente dirección en la red <strong>BNB Smart Chain (BEP20)</strong>. Cualquier otra red resultará en pérdida de fondos.<br><br>Una vez enviado, enviá el comprobante a <strong>tradingdesdeadentro@gmail.com</strong>.</p>
+    <p class="modal-desc">Enviá exactamente <strong id="usdtModalAmount">30 USDT</strong> a la siguiente dirección en la red <strong>BNB Smart Chain (BEP20)</strong>. Cualquier otra red resultará en pérdida de fondos.<br><br>Una vez enviado, enviá el comprobante a <strong><a href="/cdn-cgi/l/email-protection" class="__cf_email__" data-cfemail="95e1e7f4f1fcfbf2f1f0e6f1f0f4f1f0fbe1e7fad5f2f8f4fcf9bbf6faf8">[email&#160;protected]</a></strong>.</p>
     <div class="copy-row">
       <div><div class="copy-label">Red</div><div class="copy-value">BNB Smart Chain (BEP20)</div></div>
     </div>
@@ -751,7 +751,7 @@
       </div>
       <button onclick="copiar('0x02E514478AC1Ef604D6aBef12187c4aFD55c6201', this)">Copiar</button>
     </div>
-    <p style="font-size:12px;color:#9E9E9E;margin-top:8px">Una vez realizada la transferencia, hacé clic en "Confirmar" y enviá el comprobante a <strong style="color:#ccc">tradingdesdeadentro@gmail.com</strong>.</p>
+    <p style="font-size:12px;color:#9E9E9E;margin-top:8px">Una vez realizada la transferencia, hacé clic en "Confirmar" y enviá el comprobante a <strong style="color:#ccc"><a href="/cdn-cgi/l/email-protection" class="__cf_email__" data-cfemail="43373122272a2d2427263027262227262d37312c03242e222a2f6d202c2e">[email&#160;protected]</a></strong>.</p>
     <button class="modal-confirm" onclick="confirmarPago('usdt')">Confirmar envío →</button>
   </div>
 </div>
@@ -783,7 +783,7 @@
 <!-- ══════════════════════════════
      VISTA: AUTH (HOME + LOGIN)
 ══════════════════════════════ -->
-<div id="vista-auth" class="vista">
+<div id="vista-auth" class="vista activa">
 
   <!-- NAV FIJA -->
   <nav class="home-nav">
@@ -803,9 +803,6 @@
         <button class="home-btn-primary" onclick="document.getElementById('loginSection').scrollIntoView({behavior:'smooth'})">
           Acceder a mi cuenta →
         </button>
-        <button class="home-btn-secondary" onclick="irA('landing')">
-          Ver Daily Loss Limiter
-        </button>
       </div>
     </div>
   </section>
@@ -814,7 +811,7 @@
   <div style="background:#0D0D0D;border-top:1px solid #1E1E1E;border-bottom:1px solid #1E1E1E;">
     <div class="tradingview-widget-container">
       <div class="tradingview-widget-container__widget"></div>
-      <script data-cfasync="false" src="/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js"></script><script type="text/javascript" src="https://s3.tradingview.com/external-embedding/embed-widget-ticker-tape.js" async>
+      <script data-cfasync="false" src="/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js"></script><script data-cfasync="false" src="/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js"></script><script type="text/javascript" src="https://s3.tradingview.com/external-embedding/embed-widget-ticker-tape.js" async>
       {
         "symbols": [
           {"proName": "NASDAQ:QQQ", "title": "Nasdaq"},
@@ -2904,26 +2901,4 @@
     }
 
     if (cargarSesionGuardada()) {
-      const navBtn = document.querySelector('.nav-btn.primary');
-      if (navBtn) { navBtn.textContent = 'Mi Panel →'; navBtn.onclick = () => irA('panel'); }
-      // Validar token y entrar directo
-      refrescarToken().then(ok => {
-        if (ok) {
-          irA('panel');
-        } else {
-          irA('auth', 'login');
-        }
-      });
-      return;
-    }
-
-    // Sin sesión guardada
-    if (hash === '#panel') {
-      irA('auth', 'login');
-    } else {
-      irA('auth', 'login');
-    }
-  })();
-</script>
-</body>
-</html>
+      const navBtn = document.q

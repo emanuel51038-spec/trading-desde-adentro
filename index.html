@@ -2066,6 +2066,7 @@
     if (!r.ok || !Array.isArray(r.data)) { cont.innerHTML = '<div style="color:#E57373;padding:20px">Error cargando el journal.</div>'; return; }
 
     _todasLasOps = r.data.filter(o => o.pnl !== null && o.estrategia && !o.estrategia.includes('__'));
+    _opsFiltradas = _todasLasOps;
     const ops = _todasLasOps;
 
     // Header con botón configurar (engranaje)
@@ -2078,6 +2079,9 @@
         <div style="display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end">
           <a href="https://pjrwdseaomijkgytbglh.supabase.co/storage/v1/object/public/Instaladores/TradingJournal.zip" target="_blank" style="display:inline-flex;align-items:center;gap:6px;background:#1A1A1A;border:1px solid #2A2A2A;color:var(--gris);padding:10px 14px;border-radius:8px;text-decoration:none;font-size:12px;font-weight:600">⬇ Descargar ZIP</a>
           <a href="https://pjrwdseaomijkgytbglh.supabase.co/storage/v1/object/public/Instaladores/GUIA_INSTALACION_TRADINGJOURNALTDA.pdf" target="_blank" style="display:inline-flex;align-items:center;gap:6px;background:#1A1A1A;border:1px solid #2A2A2A;color:var(--gris);padding:10px 14px;border-radius:8px;text-decoration:none;font-size:12px;font-weight:600">📄 Guía</a>
+          <button onclick="eliminarHistorialJournal()" style="background:rgba(139,26,26,0.15);border:1px solid rgba(139,26,26,0.3);color:#E57373;padding:10px 14px;border-radius:8px;cursor:pointer;font-size:12px;font-weight:600;display:flex;align-items:center;gap:6px">
+            🗑️ Eliminar historial
+          </button>
           <button onclick="abrirConfigJournal()" style="background:#1A1A1A;border:1px solid #2A2A2A;color:var(--gris);padding:10px 16px;border-radius:8px;cursor:pointer;font-size:13px;font-weight:600;display:flex;align-items:center;gap:8px">
             ⚙️ Configurar
           </button>
@@ -2250,6 +2254,7 @@
   // Llamar equity curve después de renderizar
   // ── CALENDARIO ──────────────────────────────────────
   let _todasLasOps = [];
+  let _opsFiltradas = [];
   let _calOps = [];
   let _calMes = new Date().getMonth();
   let _calAnio = new Date().getFullYear();
@@ -2579,9 +2584,18 @@
     if (opsFiltradas.length > 0) {
       const s = calcularStats(opsFiltradas);
       actualizarStatCards(s);
+      // Actualizar fondeo con ops filtradas
+      const fondeoEl = document.getElementById('fondeoContent');
+      if (fondeoEl) fondeoEl.innerHTML = renderEvalFondeo(s, opsFiltradas);
     }
+    _opsFiltradas = opsFiltradas;
     if (typeof iniciarCalendario === 'function') iniciarCalendario(opsFiltradas);
     if (typeof dibujarEquityCurve === 'function') dibujarEquityCurve(opsFiltradas);
+    // Resetear monte carlo al cambiar filtro
+    const mcEl = document.getElementById('monteCarloContent');
+    if (mcEl && mcEl.querySelector('canvas')) {
+      mcEl.innerHTML = '<div style="text-align:center;color:var(--gris);font-size:13px;padding:20px">Filtros actualizados. Presioná <strong style="color:var(--blanco)">🎲 Simular</strong> o <strong style="color:var(--blanco)">F9</strong> para nueva simulación con los datos filtrados.</div>';
+    }
   }
 
   function limpiarFiltros() {
@@ -2682,7 +2696,7 @@
   }
 
   function recalcularFondeo() {
-    const ops = _todasLasOps;
+    const ops = _opsFiltradas.length > 0 ? _opsFiltradas : _todasLasOps;
     if (!ops.length) return;
     const objetivo = parseFloat(document.getElementById('fondeoObjetivo')?.value) || 3000;
     const ganadoras = ops.filter(o => o.pnl > 0);
@@ -2708,7 +2722,7 @@
   let _mcChart = null;
 
   function correrMonteCarlo() {
-    const ops = _todasLasOps;
+    const ops = _opsFiltradas.length > 0 ? _opsFiltradas : _todasLasOps;
     if (ops.length < 5) {
       document.getElementById('monteCarloContent').innerHTML = '<div style="text-align:center;color:#E57373;font-size:13px;padding:20px">Necesitás al menos 5 operaciones para correr el test de Monte Carlo.</div>';
       return;
@@ -2888,6 +2902,26 @@
       if (mcContent) correrMonteCarlo();
     }
   });
+
+  /* ══════════════════════
+     ELIMINAR HISTORIAL
+  ══════════════════════ */
+  async function eliminarHistorialJournal() {
+    if (!confirm('⚠️ ¿Estás seguro de que querés eliminar TODAS tus operaciones del journal?\n\nEsta acción no se puede deshacer.')) return;
+    if (!confirm('🔴 ÚLTIMA CONFIRMACIÓN\n\nSe van a eliminar permanentemente todas las operaciones registradas.\n\n¿Confirmar eliminación?')) return;
+
+    const cont = document.getElementById('journalContainer');
+    cont.innerHTML = '<div style="text-align:center;padding:40px;color:var(--gris)"><span class="spinner"></span> Eliminando operaciones...</div>';
+
+    const r = await sbFetch('/rest/v1/operaciones_journal?user_id=eq.' + sesiónActual.user.id, { method: 'DELETE' }, sesiónActual.access_token);
+    if (r.ok) {
+      _todasLasOps = [];
+      _opsFiltradas = [];
+      cargarJournal();
+    } else {
+      cont.innerHTML = '<div style="color:#E57373;padding:20px;text-align:center">Error al eliminar. Intentá de nuevo.</div>';
+    }
+  }
 
   /* ══════════════════════
      CONFIG JOURNAL (modal)

@@ -624,7 +624,7 @@
 <!-- ══════════════════════════════
      VISTA: LANDING
 ══════════════════════════════ -->
-<div id="vista-landing" class="vista">
+<div id="vista-landing" class="vista activa">
 
   <!-- Nav top -->
   <div class="nav-top" id="navTop">
@@ -783,7 +783,7 @@
 <!-- ══════════════════════════════
      VISTA: AUTH (HOME + LOGIN)
 ══════════════════════════════ -->
-<div id="vista-auth" class="vista activa">
+<div id="vista-auth" class="vista">
 
   <!-- NAV FIJA -->
   <nav class="home-nav">
@@ -2838,6 +2838,8 @@
   }
 
   (function init() {
+    // Siempre arrancar en la home, no en la landing del producto
+    irA('auth');
     obtenerCotizacion();
     if (document.getElementById('tickerBar')) {
       cargarPrecios();

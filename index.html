@@ -663,7 +663,7 @@
       <p class="form-desc">
         Completá el formulario y elegí tu método de pago.<br><br>
         Una vez realizado el pago, enviá el comprobante a
-        <strong style="color:#E57373">tradingdesdeadentro@gmail.com</strong>.
+        <strong style="color:#E57373"><a href="/cdn-cgi/l/email-protection" class="__cf_email__" data-cfemail="45313724212c2b2221203621202421202b31372a052228242c296b262a28">[email&#160;protected]</a></strong>.
         Recibirás la herramienta en el correo electrónico proporcionado
         en un plazo máximo de <strong style="color:#fff">24 horas</strong>.
       </p>
@@ -740,7 +740,7 @@
   <div class="modal">
     <button class="modal-close" onclick="cerrarModal('modalUsdt')">✕</button>
     <h3>Pago con USDT</h3>
-    <p class="modal-desc">Enviá exactamente <strong id="usdtModalAmount">30 USDT</strong> a la siguiente dirección en la red <strong>BNB Smart Chain (BEP20)</strong>. Cualquier otra red resultará en pérdida de fondos.<br><br>Una vez enviado, enviá el comprobante a <strong>tradingdesdeadentro@gmail.com</strong>.</p>
+    <p class="modal-desc">Enviá exactamente <strong id="usdtModalAmount">30 USDT</strong> a la siguiente dirección en la red <strong>BNB Smart Chain (BEP20)</strong>. Cualquier otra red resultará en pérdida de fondos.<br><br>Una vez enviado, enviá el comprobante a <strong><a href="/cdn-cgi/l/email-protection" class="__cf_email__" data-cfemail="88fcfae9ece1e6efecedfbecede9ecede6fcfae7c8efe5e9e1e4a6ebe7e5">[email&#160;protected]</a></strong>.</p>
     <div class="copy-row">
       <div><div class="copy-label">Red</div><div class="copy-value">BNB Smart Chain (BEP20)</div></div>
     </div>
@@ -751,7 +751,7 @@
       </div>
       <button onclick="copiar('0x02E514478AC1Ef604D6aBef12187c4aFD55c6201', this)">Copiar</button>
     </div>
-    <p style="font-size:12px;color:#9E9E9E;margin-top:8px">Una vez realizada la transferencia, hacé clic en "Confirmar" y enviá el comprobante a <strong style="color:#ccc">tradingdesdeadentro@gmail.com</strong>.</p>
+    <p style="font-size:12px;color:#9E9E9E;margin-top:8px">Una vez realizada la transferencia, hacé clic en "Confirmar" y enviá el comprobante a <strong style="color:#ccc"><a href="/cdn-cgi/l/email-protection" class="__cf_email__" data-cfemail="47333526232e292023223423222623222933352807202a262e2b6924282a">[email&#160;protected]</a></strong>.</p>
     <button class="modal-confirm" onclick="confirmarPago('usdt')">Confirmar envío →</button>
   </div>
 </div>
@@ -811,7 +811,7 @@
   <div style="background:#0D0D0D;border-top:1px solid #1E1E1E;border-bottom:1px solid #1E1E1E;">
     <div class="tradingview-widget-container">
       <div class="tradingview-widget-container__widget"></div>
-      <script data-cfasync="false" src="/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js"></script><script type="text/javascript" src="https://s3.tradingview.com/external-embedding/embed-widget-ticker-tape.js" async>
+      <script data-cfasync="false" src="/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js"></script><script data-cfasync="false" src="/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js"></script><script type="text/javascript" src="https://s3.tradingview.com/external-embedding/embed-widget-ticker-tape.js" async>
       {
         "symbols": [
           {"proName": "NASDAQ:QQQ", "title": "Nasdaq"},
@@ -2153,10 +2153,19 @@
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;flex-wrap:wrap;gap:10px">
         <span id="journalConteo" style="font-size:14px;font-weight:600">${ops.length} operaciones</span>
         <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
-          <select id="filtroCuenta" onchange="filtrarJournal()" style="background:#0D0D0D;border:1px solid #1E1E1E;color:var(--blanco);padding:7px 12px;border-radius:8px;font-size:13px;cursor:pointer;font-family:'DM Sans',sans-serif">
-            <option value="">Todas las cuentas</option>
-            ${[...new Set(ops.map(o => o.cuenta).filter(Boolean))].map(c => `<option value="${c}">${c}</option>`).join('')}
-          </select>
+          <div style="position:relative" id="cuentasDropdownWrap">
+            <button onclick="toggleCuentasDropdown()" style="background:#0D0D0D;border:1px solid #1E1E1E;color:var(--blanco);padding:7px 12px;border-radius:8px;font-size:13px;cursor:pointer;font-family:'DM Sans',sans-serif;display:flex;align-items:center;gap:6px;min-width:160px;justify-content:space-between">
+              <span id="cuentasDropdownLabel">Todas las cuentas</span>
+              <span style="font-size:10px;color:var(--gris)">▼</span>
+            </button>
+            <div id="cuentasDropdownMenu" style="display:none;position:absolute;top:calc(100% + 4px);left:0;background:#0D0D0D;border:1px solid #2A2A2A;border-radius:8px;z-index:100;min-width:200px;padding:8px 0;box-shadow:0 8px 24px rgba(0,0,0,0.5)">
+              <label style="display:flex;align-items:center;gap:8px;padding:6px 14px;cursor:pointer;font-size:13px;color:var(--gris)">
+                <input type="checkbox" id="chkTodasCuentas" checked style="accent-color:var(--rojo);width:14px;height:14px" onchange="seleccionarTodasCuentas()"> Todas las cuentas
+              </label>
+              <div style="height:1px;background:#1E1E1E;margin:4px 0"></div>
+              <div id="cuentasCheckboxList"></div>
+            </div>
+          </div>
           <select id="filtroEstrategia" onchange="filtrarJournal()" style="background:#0D0D0D;border:1px solid #1E1E1E;color:var(--blanco);padding:7px 12px;border-radius:8px;font-size:13px;cursor:pointer;font-family:'DM Sans',sans-serif">
             <option value="">Todas las estrategias</option>
             ${estrategiasUnicas.map(e => `<option value="${e}">${e}</option>`).join('')}
@@ -2214,6 +2223,7 @@
     _drawEquityAfterRender(ops);
     setTimeout(() => iniciarCalendario(ops), 60);
     setTimeout(() => dibujarRadar(ops), 100);
+    setTimeout(() => iniciarCuentasDropdown(ops), 50);
   }
 
   // Llamar equity curve después de renderizar
@@ -2456,11 +2466,66 @@
     }
   }
 
+  // ── FILTRO MULTICUENTA ──────────────────────────────
+  let _cuentasSeleccionadas = new Set();
+
+  function iniciarCuentasDropdown(ops) {
+    const cuentas = [...new Set(ops.map(o => o.cuenta).filter(Boolean))].sort();
+    const lista = document.getElementById('cuentasCheckboxList');
+    if (!lista) return;
+    lista.innerHTML = cuentas.map(c => `
+      <label style="display:flex;align-items:center;gap:8px;padding:6px 14px;cursor:pointer;font-size:13px;color:var(--blanco)">
+        <input type="checkbox" class="chkCuenta" value="${c}" checked
+          style="accent-color:var(--rojo);width:14px;height:14px"
+          onchange="onCuentaCheckChange()"> ${c}
+      </label>`).join('');
+    _cuentasSeleccionadas = new Set();
+    actualizarLabelCuentas();
+    document.addEventListener('click', function(e) {
+      const wrap = document.getElementById('cuentasDropdownWrap');
+      if (wrap && !wrap.contains(e.target)) {
+        const menu = document.getElementById('cuentasDropdownMenu');
+        if (menu) menu.style.display = 'none';
+      }
+    }, { capture: true });
+  }
+
+  function toggleCuentasDropdown() {
+    const menu = document.getElementById('cuentasDropdownMenu');
+    if (menu) menu.style.display = menu.style.display === 'none' ? 'block' : 'none';
+  }
+
+  function seleccionarTodasCuentas() {
+    const chkTodas = document.getElementById('chkTodasCuentas');
+    document.querySelectorAll('.chkCuenta').forEach(c => c.checked = chkTodas?.checked);
+    _cuentasSeleccionadas = new Set();
+    actualizarLabelCuentas();
+    filtrarJournal();
+  }
+
+  function onCuentaCheckChange() {
+    const checks  = document.querySelectorAll('.chkCuenta');
+    const checked = [...checks].filter(c => c.checked).map(c => c.value);
+    const todas   = checked.length === checks.length;
+    const chkTodas = document.getElementById('chkTodasCuentas');
+    if (chkTodas) chkTodas.checked = todas;
+    _cuentasSeleccionadas = todas ? new Set() : new Set(checked);
+    actualizarLabelCuentas();
+    filtrarJournal();
+  }
+
+  function actualizarLabelCuentas() {
+    const label = document.getElementById('cuentasDropdownLabel');
+    if (!label) return;
+    if (_cuentasSeleccionadas.size === 0) label.textContent = 'Todas las cuentas';
+    else if (_cuentasSeleccionadas.size === 1) label.textContent = [..._cuentasSeleccionadas][0];
+    else label.textContent = _cuentasSeleccionadas.size + ' cuentas';
+  }
+
   function filtrarJournal() {
-    const filtroEst    = document.getElementById('filtroEstrategia')?.value || '';
-    const filtroCta    = document.getElementById('filtroCuenta')?.value || '';
-    const filtroDesde  = document.getElementById('filtroDesde')?.value || '';
-    const filtroHasta  = document.getElementById('filtroHasta')?.value || '';
+    const filtroEst   = document.getElementById('filtroEstrategia')?.value || '';
+    const filtroDesde = document.getElementById('filtroDesde')?.value || '';
+    const filtroHasta = document.getElementById('filtroHasta')?.value || '';
 
     let visible = 0;
     const filas = document.querySelectorAll('#journalTbody tr[id^="row_"]:not([id$="_det"])');
@@ -2468,15 +2533,12 @@
       const est   = tr.dataset.estrategia || '';
       const cta   = tr.dataset.cuenta || '';
       const fecha = tr.dataset.fecha || '';
-
       const okEst   = !filtroEst   || est === filtroEst;
-      const okCta   = !filtroCta   || cta === filtroCta;
+      const okCta   = _cuentasSeleccionadas.size === 0 || _cuentasSeleccionadas.has(cta);
       const okDesde = !filtroDesde || fecha >= filtroDesde;
       const okHasta = !filtroHasta || fecha <= filtroHasta;
       const mostrar = okEst && okCta && okDesde && okHasta;
-
       tr.style.display = mostrar ? '' : 'none';
-      // Sincronizar fila de detalle
       const det = document.getElementById(tr.id + '_det');
       if (det) det.style.display = mostrar ? det.style.display : 'none';
       if (mostrar) visible++;
@@ -2485,28 +2547,30 @@
     const conteo = document.getElementById('journalConteo');
     if (conteo) conteo.textContent = visible + ' operaciones';
 
-    // Actualizar stats y calendario con las ops visibles filtradas
     const opsFiltradas = _todasLasOps.filter(o => {
       const fecha = o.fecha ? o.fecha.substring(0,10) : '';
       return (!filtroEst   || o.estrategia === filtroEst)
-          && (!filtroCta   || o.cuenta === filtroCta)
+          && (_cuentasSeleccionadas.size === 0 || _cuentasSeleccionadas.has(o.cuenta))
           && (!filtroDesde || fecha >= filtroDesde)
           && (!filtroHasta || fecha <= filtroHasta);
     });
-    // Recalcular stats
+
     if (opsFiltradas.length > 0) {
       const s = calcularStats(opsFiltradas);
       actualizarStatCards(s);
     }
-    // Actualizar calendario
     if (typeof iniciarCalendario === 'function') iniciarCalendario(opsFiltradas);
-    // Actualizar equity curve
     if (typeof dibujarEquityCurve === 'function') dibujarEquityCurve(opsFiltradas);
   }
 
   function limpiarFiltros() {
-    const ids = ['filtroEstrategia','filtroCuenta','filtroDesde','filtroHasta'];
+    const ids = ['filtroEstrategia','filtroDesde','filtroHasta'];
     ids.forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
+    _cuentasSeleccionadas = new Set();
+    const chkTodas = document.getElementById('chkTodasCuentas');
+    if (chkTodas) chkTodas.checked = true;
+    document.querySelectorAll('.chkCuenta').forEach(c => c.checked = true);
+    actualizarLabelCuentas();
     filtrarJournal();
   }
 
@@ -2859,26 +2923,4 @@
     }
 
     if (cargarSesionGuardada()) {
-      const navBtn = document.querySelector('.nav-btn.primary');
-      if (navBtn) { navBtn.textContent = 'Mi Panel →'; navBtn.onclick = () => irA('panel'); }
-      // Validar token y entrar directo
-      refrescarToken().then(ok => {
-        if (ok) {
-          irA('panel');
-        } else {
-          irA('auth', 'login');
-        }
-      });
-      return;
-    }
-
-    // Sin sesión guardada
-    if (hash === '#panel') {
-      irA('auth', 'login');
-    } else {
-      irA('auth', 'login');
-    }
-  })();
-</script>
-</body>
-</html>
+      const navBtn = document.q

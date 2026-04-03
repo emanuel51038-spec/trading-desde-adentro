@@ -1753,7 +1753,7 @@
 
     const userEmail2 = sesiónActual.user?.email || '';
     const r = await sbFetch(
-      '/rest/v1/licencias?select=nombre,email,estado,monto,metodo_pago,fecha_pago,created_at&email=eq.' + userEmail2 + '',
+      '/rest/v1/licencias?select=nombre,email,estado,monto,metodo_pago,fecha_pago,created_at,producto&email=eq.' + userEmail2 + '',
       {},
       sesiónActual.access_token
     );

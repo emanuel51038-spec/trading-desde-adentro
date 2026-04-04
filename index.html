@@ -664,7 +664,7 @@
       <p class="form-desc">
         Completá el formulario y elegí tu método de pago.<br><br>
         Una vez realizado el pago, enviá el comprobante a
-        <strong style="color:#E57373"><a href="/cdn-cgi/l/email-protection" class="__cf_email__" data-cfemail="5024223134393e3734352334353134353e24223f10373d31393c7e333f3d">[email&#160;protected]</a></strong>.
+        <strong style="color:#E57373">tradingdesdeadentro&#64;gmail.com</strong>.
         Recibirás la herramienta en el correo electrónico proporcionado
         en un plazo máximo de <strong style="color:#fff">24 horas</strong>.
       </p>
@@ -741,7 +741,7 @@
   <div class="modal">
     <button class="modal-close" onclick="cerrarModal('modalUsdt')">✕</button>
     <h3>Pago con USDT</h3>
-    <p class="modal-desc">Enviá exactamente <strong id="usdtModalAmount">30 USDT</strong> a la siguiente dirección en la red <strong>BNB Smart Chain (BEP20)</strong>. Cualquier otra red resultará en pérdida de fondos.<br><br>Una vez enviado, enviá el comprobante a <strong><a href="/cdn-cgi/l/email-protection" class="__cf_email__" data-cfemail="80f4f2e1e4e9eee7e4e5f3e4e5e1e4e5eef4f2efc0e7ede1e9ecaee3efed">[email&#160;protected]</a></strong>.</p>
+    <p class="modal-desc">Enviá exactamente <strong id="usdtModalAmount">30 USDT</strong> a la siguiente dirección en la red <strong>BNB Smart Chain (BEP20)</strong>. Cualquier otra red resultará en pérdida de fondos.<br><br>Una vez enviado, enviá el comprobante a <strong>tradingdesdeadentro&#64;gmail.com</strong>.</p>
     <div class="copy-row">
       <div><div class="copy-label">Red</div><div class="copy-value">BNB Smart Chain (BEP20)</div></div>
     </div>
@@ -752,7 +752,7 @@
       </div>
       <button onclick="copiar('0x02E514478AC1Ef604D6aBef12187c4aFD55c6201', this)">Copiar</button>
     </div>
-    <p style="font-size:12px;color:#9E9E9E;margin-top:8px">Una vez realizada la transferencia, hacé clic en "Confirmar" y enviá el comprobante a <strong style="color:#ccc"><a href="/cdn-cgi/l/email-protection" class="__cf_email__" data-cfemail="99edebf8fdf0f7fefdfceafdfcf8fdfcf7edebf6d9fef4f8f0f5b7faf6f4">[email&#160;protected]</a></strong>.</p>
+    <p style="font-size:12px;color:#9E9E9E;margin-top:8px">Una vez realizada la transferencia, hacé clic en "Confirmar" y enviá el comprobante a <strong style="color:#ccc">tradingdesdeadentro&#64;gmail.com</strong>.</p>
     <button class="modal-confirm" onclick="confirmarPago('usdt')">Confirmar envío →</button>
   </div>
 </div>
@@ -804,7 +804,9 @@
         <button class="home-btn-primary" onclick="document.getElementById('loginSection').scrollIntoView({behavior:'smooth'})">
           Acceder a mi cuenta →
         </button>
-
+        <button class="home-btn-secondary" onclick="irA('landing')">
+          Ver Daily Loss Limiter
+        </button>
       </div>
     </div>
   </section>
@@ -813,7 +815,7 @@
   <div style="background:#0D0D0D;border-top:1px solid #1E1E1E;border-bottom:1px solid #1E1E1E;">
     <div class="tradingview-widget-container">
       <div class="tradingview-widget-container__widget"></div>
-      <script data-cfasync="false" src="/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js"></script><script type="text/javascript" src="https://s3.tradingview.com/external-embedding/embed-widget-ticker-tape.js" async>
+      <script type="text/javascript" src="https://s3.tradingview.com/external-embedding/embed-widget-ticker-tape.js" async>
       {
         "symbols": [
           {"proName": "NASDAQ:QQQ", "title": "Nasdaq"},
@@ -1996,7 +1998,7 @@
     cerrarModal('modalArs');
     const msg = document.getElementById('msg');
     msg.className = 'msg ok';
-    msg.innerHTML = 'Hemos recibido tu solicitud correctamente. Te enviamos un email de confirmación.<br><strong>Revisá tu carpeta de spam</strong> si no lo encontrás.<br>Recordá enviar el comprobante a <strong>tradingdesdeadentro@gmail.com</strong>.';
+    msg.innerHTML = 'Hemos recibido tu solicitud correctamente. Te enviamos un email de confirmación.<br><strong>Revisá tu carpeta de spam</strong> si no lo encontrás.<br>Recordá enviar el comprobante a <strong>tradingdesdeadentro&#64;gmail.com</strong>.';
     const nombreProductoEmail = productoSeleccionado === 'ManualBacktestAnalyzer'
       ? 'Manual Backtest Analyzer'
       : 'Daily Loss Limiter';
@@ -2180,7 +2182,7 @@
             </div>
           </div>
 
-          <p style="font-size:11px;color:#444;text-align:center">¿Dudas? Escribinos a <a href="mailto:tradingdesdeadentro@gmail.com" style="color:var(--rojo);text-decoration:none">tradingdesdeadentro@gmail.com</a></p>
+          <p style="font-size:11px;color:#444;text-align:center">¿Dudas? Escribinos a <a href="mailto:tradingdesdeadentro&#64;gmail.com" style="color:var(--rojo);text-decoration:none">tradingdesdeadentro&#64;gmail.com</a></p>
         </div>`;
       return;
     }
@@ -3291,11 +3293,10 @@
           }
         })
         .catch(() => irA('landing'));
-        return; // esperar la Promise
+        return;
       }
     }
 
-    // Revisar si hay sesión guardada -> ir al panel directo
     if (hash === '#landing') {
       irA('landing');
       return;

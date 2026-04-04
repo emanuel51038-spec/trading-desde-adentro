@@ -3288,3 +3288,27 @@
             irA('panel');
           } else {
             irA('landing');
+          }
+        })
+        .catch(() => irA('landing'));
+        return; // esperar la Promise
+      }
+    }
+
+    // Revisar si hay sesión guardada -> ir al panel directo
+    if (hash === '#landing') {
+      irA('landing');
+      return;
+    }
+
+    if (cargarSesionGuardada()) {
+      const navBtn = document.querySelector('#navTop .nav-btn.primary');
+      if (navBtn) navBtn.textContent = 'Mi Panel →';
+      irA('panel');
+    } else {
+      irA('auth');
+    }
+  })();
+</script>
+</body>
+</html>

@@ -2137,7 +2137,7 @@
       </div>`;
 
     if (ops.length === 0) {
-      cont.innerHTML = header + `
+      cont.innerHTML = header + renderJournalTabs('real') + `
         <div style="background:#0D0D0D;border:1px solid #1E1E1E;border-radius:16px;padding:36px 32px;max-width:680px;margin:0 auto">
           <div style="font-size:36px;margin-bottom:12px">📒</div>
           <h3 style="font-size:20px;font-weight:700;color:var(--blanco);margin-bottom:6px">¡Bienvenido al Trading Journal!</h3>
@@ -2188,7 +2188,8 @@
     const stats = calcularStats(ops);
     const estrategiasUnicas = [...new Set(ops.map(o => o.estrategia).filter(Boolean))];
 
-    cont.innerHTML = header + `
+    cont.innerHTML = header + renderJournalTabs('real') + `
+      <div id="journalRealContent">
       <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:12px;margin-bottom:28px">
         ${renderStatCard('Acumulado', (stats.acumulado >= 0 ? '+' : '') + '$' + Math.abs(stats.acumulado).toFixed(2), stats.acumulado >= 0 ? 'var(--verde)' : '#E57373')}
         ${renderStatCard('Win Rate', stats.winRate + '%', stats.winRate >= 50 ? 'var(--verde)' : '#E57373')}
@@ -2294,6 +2295,8 @@
         </table>
       </div>`;
     _drawEquityAfterRender(ops);
+    // Cerrar el wrapper journalRealContent
+    cont.innerHTML += '</div>';
     setTimeout(() => iniciarCalendario(ops), 60);
     setTimeout(() => dibujarRadar(ops), 100);
     setTimeout(() => iniciarCuentasDropdown(ops), 50);
@@ -2537,6 +2540,238 @@
       ctx.setLineDash([4, 4]);
       ctx.stroke();
       ctx.setLineDash([]);
+    }
+  }
+
+  // ═══════════════════════════════════════════════════════════
+  // TAB SWITCHER JOURNAL REAL ↔ BACKTEST
+  // ═══════════════════════════════════════════════════════════
+  function renderJournalTabs(active) {
+    const tabStyle = (isActive) => `
+      padding:10px 20px;
+      background:${isActive ? 'var(--negro-card)' : 'transparent'};
+      border:1px solid ${isActive ? 'var(--rojo)' : '#1E1E1E'};
+      border-bottom:${isActive ? '1px solid var(--negro-card)' : '1px solid #1E1E1E'};
+      color:${isActive ? 'var(--blanco)' : 'var(--gris)'};
+      font-size:13px;
+      font-weight:600;
+      cursor:pointer;
+      border-radius:8px 8px 0 0;
+      font-family:'DM Sans',sans-serif;
+      transition:all 0.15s ease;
+    `;
+    return `
+      <div style="display:flex;gap:4px;border-bottom:1px solid #1E1E1E;margin-bottom:20px;margin-top:-8px">
+        <button onclick="cambiarTabJournal('real')" style="${tabStyle(active === 'real')}">📒 Journal</button>
+        <button onclick="cambiarTabJournal('backtest')" style="${tabStyle(active === 'backtest')}">📊 Backtest</button>
+      </div>`;
+  }
+
+  function cambiarTabJournal(tab) {
+    if (tab === 'real') cargarJournal();
+    else cargarJournalBacktest();
+  }
+
+  // ═══════════════════════════════════════════════════════════
+  // CARGAR OPERACIONES DE BACKTEST
+  // ═══════════════════════════════════════════════════════════
+  async function cargarJournalBacktest() {
+    const cont = document.getElementById('journalContainer');
+    cont.innerHTML = '<div style="text-align:center;padding:40px;color:var(--gris)"><span class="spinner"></span> Cargando backtest...</div>';
+
+    const r = await sbFetch(
+      '/rest/v1/operaciones_backtest?select=*&user_id=eq.' + sesiónActual.user.id + '&order=created_at.desc',
+      {},
+      sesiónActual.access_token
+    );
+    if (!r.ok || !Array.isArray(r.data)) {
+      cont.innerHTML = '<div style="color:#E57373;padding:20px">Error cargando el backtest.</div>';
+      return;
+    }
+
+    const ops = r.data;
+
+    const header = `
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:24px">
+        <div>
+          <h2 style="font-family:'Bebas Neue',sans-serif;font-size:28px;letter-spacing:2px;margin-bottom:4px">TRADING JOURNAL</h2>
+          <p style="font-size:13px;color:var(--gris)">Operaciones registradas desde ManualBacktestAnalyzer (NT8).</p>
+        </div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end">
+          <button onclick="eliminarHistorialBacktest()" style="background:rgba(139,26,26,0.15);border:1px solid rgba(139,26,26,0.3);color:#E57373;padding:10px 14px;border-radius:8px;cursor:pointer;font-size:12px;font-weight:600;display:flex;align-items:center;gap:6px">
+            🗑️ Eliminar backtest
+          </button>
+        </div>
+      </div>`;
+
+    if (ops.length === 0) {
+      cont.innerHTML = header + renderJournalTabs('backtest') + `
+        <div style="background:#0D0D0D;border:1px solid #1E1E1E;border-radius:16px;padding:36px 32px;max-width:680px;margin:0 auto;text-align:center">
+          <div style="font-size:36px;margin-bottom:12px">📊</div>
+          <h3 style="font-size:20px;font-weight:700;color:var(--blanco);margin-bottom:6px">Sin operaciones de backtest</h3>
+          <p style="font-size:13px;color:var(--gris);line-height:1.6">Dibujá herramientas Risk/Reward en NinjaTrader 8 usando el indicador <strong style="color:var(--blanco)">ManualBacktestAnalyzer</strong>, luego presioná <strong style="color:var(--blanco)">"Enviar al Journal"</strong> desde el panel del gráfico.</p>
+        </div>`;
+      return;
+    }
+
+    const stats = calcularStatsBacktest(ops);
+
+    cont.innerHTML = header + renderJournalTabs('backtest') + `
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:12px;margin-bottom:28px">
+        ${renderStatCard('R Acumulado', (stats.accR >= 0 ? '+' : '') + stats.accR.toFixed(2) + 'R', stats.accR >= 0 ? 'var(--verde)' : '#E57373')}
+        ${renderStatCard('Win Rate', stats.winRate + '%', stats.winRate >= 50 ? 'var(--verde)' : '#E57373')}
+        ${renderStatCard('Profit Factor', stats.pf, parseFloat(stats.pf) >= 1 ? 'var(--verde)' : '#E57373')}
+        ${renderStatCard('Expected Value', stats.ev + 'R', parseFloat(stats.ev) >= 0 ? 'var(--verde)' : '#E57373')}
+        ${renderStatCard('RR Promedio', '1:' + stats.avgRR, 'var(--blanco)')}
+        ${renderStatCard('Max Drawdown', stats.maxDD + 'R', '#E57373')}
+        ${renderStatCard('Total ops', stats.total + ' (W:' + stats.wins + ' L:' + stats.losses + ')', 'var(--blanco)')}
+      </div>
+
+      <div style="background:var(--negro-card);border:1px solid var(--negro-border);border-radius:12px;padding:18px 20px;margin-bottom:24px">
+        <div style="font-size:10px;color:var(--gris);text-transform:uppercase;letter-spacing:1px;margin-bottom:10px">Equity Curve (R acumulado)</div>
+        <canvas id="equityCanvasBacktest" style="width:100%;height:160px"></canvas>
+      </div>
+
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+        <span style="font-size:14px;font-weight:600">${ops.length} operaciones de backtest</span>
+      </div>
+
+      <div style="background:var(--negro-card);border:1px solid var(--negro-border);border-radius:12px;overflow:hidden;overflow-x:auto">
+        <table style="width:100%;border-collapse:collapse;font-size:13px;min-width:720px">
+          <thead>
+            <tr style="background:#0A0A0A;border-bottom:1px solid #1E1E1E;color:var(--gris);font-size:11px;text-transform:uppercase;letter-spacing:1px">
+              <th style="padding:12px 16px;text-align:left;font-weight:600">Fecha</th>
+              <th style="padding:12px 16px;text-align:left;font-weight:600">Instrumento</th>
+              <th style="padding:12px 16px;text-align:left;font-weight:600">TF</th>
+              <th style="padding:12px 16px;text-align:left;font-weight:600">Dir</th>
+              <th style="padding:12px 16px;text-align:left;font-weight:600">Entry</th>
+              <th style="padding:12px 16px;text-align:left;font-weight:600">SL</th>
+              <th style="padding:12px 16px;text-align:left;font-weight:600">TP</th>
+              <th style="padding:12px 16px;text-align:left;font-weight:600">RR</th>
+              <th style="padding:12px 16px;text-align:left;font-weight:600">Resultado</th>
+            </tr>
+          </thead>
+          <tbody>${ops.map(renderOpBacktestFila).join('')}</tbody>
+        </table>
+      </div>
+    `;
+
+    setTimeout(() => dibujarEquityCurveBacktest(ops), 50);
+  }
+
+  function calcularStatsBacktest(ops) {
+    const wins = ops.filter(o => o.resultado === 'win').length;
+    const losses = ops.filter(o => o.resultado === 'loss').length;
+    const total = ops.length;
+    const winRate = total ? Math.round(wins / total * 100) : 0;
+    const accR = ops.reduce((a, o) => a + (o.resultado === 'win' ? Number(o.rr) : -1), 0);
+    const grossWin = ops.filter(o => o.resultado === 'win').reduce((a, o) => a + Number(o.rr), 0);
+    const grossLoss = losses;
+    const pf = grossLoss > 0 ? (grossWin / grossLoss).toFixed(2) : (grossWin > 0 ? '∞' : '—');
+    const avgRR = total ? (ops.reduce((a, o) => a + Number(o.rr), 0) / total).toFixed(2) : '0.00';
+    const wr = total ? wins / total : 0;
+    const avgRRNum = total ? ops.reduce((a, o) => a + Number(o.rr), 0) / total : 0;
+    const ev = ((wr * avgRRNum) - (1 - wr)).toFixed(2);
+    let equity = 0, peak = 0, maxDD = 0;
+    [...ops].reverse().forEach(o => {
+      equity += o.resultado === 'win' ? Number(o.rr) : -1;
+      if (equity > peak) peak = equity;
+      const dd = peak - equity;
+      if (dd > maxDD) maxDD = dd;
+    });
+    return { winRate, pf, ev, avgRR, accR, maxDD: maxDD.toFixed(2), total, wins, losses };
+  }
+
+  function renderOpBacktestFila(o) {
+    const fecha = new Date(o.created_at).toLocaleDateString('es-AR', { day: '2-digit', month: '2-digit', year: '2-digit' });
+    const dir = o.es_long ? '🟢 Long' : '🔴 Short';
+    const rr = Number(o.rr).toFixed(2);
+    const resColor = o.resultado === 'win' ? 'var(--verde)' : '#E57373';
+    const resLabel = o.resultado === 'win' ? '✓ WIN (+' + rr + 'R)' : '✗ LOSS (-1R)';
+    return `<tr style="border-bottom:1px solid #1A1A1A" onmouseover="this.style.background='#111'" onmouseout="this.style.background='transparent'">
+      <td style="padding:12px 16px;color:var(--gris)">${esc(fecha)}</td>
+      <td style="padding:12px 16px;font-weight:600">${esc(o.instrumento) || '—'}</td>
+      <td style="padding:12px 16px;color:var(--gris);font-size:12px">${esc(o.timeframe) || '—'}</td>
+      <td style="padding:12px 16px">${dir}</td>
+      <td style="padding:12px 16px;color:var(--gris)">${Number(o.entry).toFixed(2)}</td>
+      <td style="padding:12px 16px;color:#E57373">${Number(o.stop_loss).toFixed(2)}</td>
+      <td style="padding:12px 16px;color:var(--verde)">${Number(o.take_profit).toFixed(2)}</td>
+      <td style="padding:12px 16px;color:var(--gris)">1:${rr}</td>
+      <td style="padding:12px 16px;font-weight:600;color:${resColor}">${resLabel}</td>
+    </tr>`;
+  }
+
+  function dibujarEquityCurveBacktest(ops) {
+    const canvas = document.getElementById('equityCanvasBacktest');
+    if (!canvas) return;
+    const dpr = window.devicePixelRatio || 1;
+    const W = canvas.offsetWidth || canvas.parentElement.offsetWidth || 600;
+    const H = 160;
+    canvas.width  = W * dpr;
+    canvas.height = H * dpr;
+    canvas.style.width  = W + 'px';
+    canvas.style.height = H + 'px';
+    const ctx = canvas.getContext('2d');
+    ctx.scale(dpr, dpr);
+
+    const sorted = [...ops].reverse();
+    const puntos = [0];
+    let acum = 0;
+    sorted.forEach(o => { acum += o.resultado === 'win' ? Number(o.rr) : -1; puntos.push(acum); });
+
+    const minV = Math.min(...puntos);
+    const maxV = Math.max(...puntos);
+    const rango = maxV - minV || 1;
+    const pad = { top: 10, bottom: 10, left: 8, right: 8 };
+    const w = W - pad.left - pad.right;
+    const h = H - pad.top - pad.bottom;
+
+    const px = (i) => pad.left + (i / (puntos.length - 1)) * w;
+    const py = (v) => pad.top + (1 - (v - minV) / rango) * h;
+
+    const grad = ctx.createLinearGradient(0, pad.top, 0, H - pad.bottom);
+    const color = acum >= 0 ? '76,175,80' : '229,115,115';
+    grad.addColorStop(0, `rgba(${color},0.3)`);
+    grad.addColorStop(1, `rgba(${color},0)`);
+
+    ctx.beginPath();
+    ctx.moveTo(px(0), py(puntos[0]));
+    puntos.forEach((v, i) => { if (i > 0) ctx.lineTo(px(i), py(v)); });
+    ctx.lineTo(px(puntos.length - 1), H - pad.bottom);
+    ctx.lineTo(px(0), H - pad.bottom);
+    ctx.closePath();
+    ctx.fillStyle = grad;
+    ctx.fill();
+
+    ctx.beginPath();
+    ctx.moveTo(px(0), py(puntos[0]));
+    puntos.forEach((v, i) => { if (i > 0) ctx.lineTo(px(i), py(v)); });
+    ctx.strokeStyle = acum >= 0 ? '#4CAF50' : '#E57373';
+    ctx.lineWidth = 2;
+    ctx.stroke();
+
+    const y0 = py(0);
+    if (y0 > pad.top && y0 < H - pad.bottom) {
+      ctx.beginPath();
+      ctx.moveTo(pad.left, y0);
+      ctx.lineTo(W - pad.right, y0);
+      ctx.strokeStyle = 'rgba(255,255,255,0.1)';
+      ctx.lineWidth = 1;
+      ctx.setLineDash([4, 4]);
+      ctx.stroke();
+      ctx.setLineDash([]);
+    }
+  }
+
+  async function eliminarHistorialBacktest() {
+    if (!confirm('⚠️ ¿Estás seguro de que querés eliminar TODAS tus operaciones de backtest?\n\nEsta acción no se puede deshacer.')) return;
+    const cont = document.getElementById('journalContainer');
+    cont.innerHTML = '<div style="text-align:center;padding:40px;color:var(--gris)"><span class="spinner"></span> Eliminando...</div>';
+    const r = await sbFetch('/rest/v1/operaciones_backtest?user_id=eq.' + sesiónActual.user.id, { method: 'DELETE' }, sesiónActual.access_token);
+    if (r.ok) {
+      cargarJournalBacktest();
+    } else {
+      cont.innerHTML = '<div style="color:#E57373;padding:20px">Error al eliminar el historial.</div>';
     }
   }
 

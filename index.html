@@ -866,7 +866,7 @@
         <img src="ManualBacktestAnalyzer.png" alt="Backtest Manual">
         <div class="screenshot-card-body">
           <div class="screenshot-card-title">Backtest Manual</div>
-          <div class="screenshot-card-desc">Indicador para hacer backtesting manual directamente en el grafico de NinjaTrader 8. Estadisticas en tiempo real.</div>
+          <div class="screenshot-card-desc">Indicador para hacer backtesting manual directamente en el grafico de NinjaTrader 8. Estadisticas en tiempo real y envio de operaciones al Trading Journal con un click.</div>
         </div>
       </div>
       <div class="screenshot-card">
@@ -1581,7 +1581,7 @@
     if (badge)    badge.textContent = esMBA ? 'NinjaTrader 8 · Indicador' : 'NinjaTrader 8 · Add-On Profesional';
     if (title)    title.innerHTML   = esMBA ? 'BACKTEST<br><span>ANALYZER</span>' : 'DAILY LOSS<br><span>LIMITER</span>';
     if (subtitle) subtitle.textContent = esMBA
-      ? 'Realizá backtests a libro abierto de forma rápida y sencilla. Dibujá tus Risk/Reward en el gráfico y obtené estadísticas completas en tiempo real.'
+      ? 'Realizá backtests a libro abierto de forma rápida y sencilla. Dibujá tus Risk/Reward en el gráfico, obtené estadísticas completas en tiempo real y enviá las operaciones al Trading Journal con un solo click.'
       : 'Protegé tu capital con un bloqueador automático de pérdidas diarias. Inviolable, persistente y con licencia por equipo.';
     if (formTitle) formTitle.textContent = esMBA ? 'Obtener Manual Backtest Analyzer' : 'Obtener licencia';
 
@@ -1592,7 +1592,8 @@
         ? '<div class="feature-card"><div class="feature-icon">📊</div><h3>Risk/Reward en el gráfico</h3><p>Dibujá directamente en el chart tu entrada, stop loss y take profit. Visualizá el ratio de forma clara e instantánea.</p></div>'
         + '<div class="feature-card"><div class="feature-icon">📈</div><h3>Estadísticas en tiempo real</h3><p>Win rate, profit factor, ratio R:R, racha máxima y más. Todo se actualiza automáticamente con cada operación.</p></div>'
         + '<div class="feature-card"><div class="feature-icon">📖</div><h3>Backtesting a libro abierto</h3><p>Recorré el gráfico vela por vela y registrá tus operaciones como si estuvieras en vivo. Sin replay ni simulador.</p></div>'
-        + '<div class="feature-card"><div class="feature-icon">⚡</div><h3>Rápido y sencillo</h3><p>Sin configuraciones complicadas. Agregá el indicador al gráfico y empezá a testear tu estrategia en segundos.</p></div>'
+        + '<div class="feature-card"><div class="feature-icon">🚀</div><h3>Integración con Trading Journal</h3><p>Enviá todas las operaciones del backtest al Trading Journal con un solo click. Quedan guardadas en tu panel web para analizarlas cuando quieras.</p></div>'
+        + '<div class="feature-card"><div class="feature-icon">📉</div><h3>Analytics web avanzado</h3><p>Accedé desde tu panel web a R Acumulado, Win Rate, Profit Factor, Expected Value, Max Drawdown y equity curve de todos tus backtests.</p></div>'
         + '<div class="feature-card"><div class="feature-icon">🛡️</div><h3>Licencia por equipo</h3><p>Licencia vinculada a tu MAC Address. No se puede compartir ni usar en otra PC.</p></div>'
         : '<div class="feature-card"><div class="feature-icon">🔒</div><h3>Bloqueo automático</h3><p>Cancela nuevas órdenes automáticamente cuando alcanzás el límite de pérdida configurado.</p></div>'
         + '<div class="feature-card"><div class="feature-icon">💻</div><h3>Múltiples cuentas</h3><p>Monitoreá varias cuentas simultáneamente, cada una con su propio límite independiente.</p></div>'
@@ -1738,7 +1739,7 @@
           <div class="empty-product-icon">📊</div>
           <div class="empty-product-info">
             <div class="empty-product-name">Manual Backtest Analyzer</div>
-            <div class="empty-product-desc">Analizador de backtests manuales · NT8</div>
+            <div class="empty-product-desc">Backtests con envío al Trading Journal · NT8</div>
           </div>
           <div class="empty-product-price">USD 20</div>
         </a>

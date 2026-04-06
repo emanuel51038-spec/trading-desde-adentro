@@ -3229,7 +3229,7 @@
               <div style="background:var(--rojo);color:white;border-radius:50%;width:22px;height:22px;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;flex-shrink:0;margin-top:1px">3</div>
               <div>
                 <div style="font-size:13px;font-weight:600;color:var(--blanco);margin-bottom:3px">Exportá el CSV</div>
-                <div style="font-size:12px;color:var(--gris);line-height:1.5">Hacé clic en <strong style="color:var(--blanco)">Descargar CSV</strong> y guardalo en cualquier carpeta</div>
+                <div style="font-size:12px;color:var(--gris);line-height:1.5">Hacé clic en <strong style="color:var(--blanco)">Descargar CSV</strong> y guardalo en cualquier carpeta. <strong style="color:#FFD700">⚠ Asegurate de que el modo sea "Trades ($)" (no "Análisis")</strong></div>
               </div>
             </div>
             <div style="display:flex;gap:12px">
@@ -3244,7 +3244,7 @@
           <div style="background:#0D0D0D;border:1px dashed #2A2A2A;border-radius:10px;padding:20px;text-align:center;margin-bottom:16px;cursor:pointer" onclick="document.getElementById('csvFileInput').click()">
             <div style="font-size:28px;margin-bottom:8px">📂</div>
             <div style="font-size:13px;font-weight:600;color:var(--blanco);margin-bottom:4px">Seleccioná el archivo CSV</div>
-            <div style="font-size:11px;color:var(--gris)">El archivo se llama NinjaTrader_Grid_...csv</div>
+            <div style="font-size:11px;color:var(--gris)">Modo "Trades ($)" → Descargar CSV → seleccioná el archivo</div>
           </div>
 
           <div id="csvImportMsg" style="display:none;padding:10px 14px;border-radius:8px;font-size:13px;margin-bottom:12px"></div>
@@ -3275,13 +3275,25 @@
       const sep = lineas[0].includes(';') ? ';' : ',';
       const headers = lineas[0].split(sep).map(h => h.trim());
 
-      // Encontrar columnas — formato NT8 español
-      // Periodo;#;Con ganancia neto;Ganancia neto;Ganancia bruto;Perdida bruto;Comisión;...
-      let iDate = headers.findIndex(h => h.includes('Periodo') || h.includes('Period') || h.includes('Fecha'));
-      let iPnl  = headers.findIndex(h => h.includes('Ganancia neto') || h.includes('Net Profit'));
-      // Si no encuentra por nombre exacto, posiciones por defecto del CSV de NT8
-      if (iDate < 0) iDate = 0;
-      if (iPnl  < 0) iPnl  = 3;
+      // Columnas del CSV "Trades ($)" de NT8 en español:
+      // 0=Número, 1=Instrumento, 2=Cuenta, 3=Estrategia, 4=Mercado pos., 5=Cant.,
+      // 6=Precio entrada, 7=Precio salida, 8=Tiempo entrada, 9=Tiempo salida,
+      // 10=Nombre entrada, 11=Nombre salida, 12=Ganancias (PnL NETO con comisión), ...
+      const iInst  = headers.findIndex(h => h.includes('Instrumento') || h.includes('Instrument'));
+      const iCuenta= headers.findIndex(h => h.includes('Cuenta') || h.includes('Account'));
+      const iDir   = headers.findIndex(h => h.includes('Mercado pos') || h.includes('Market pos'));
+      const iQty   = headers.findIndex(h => h.includes('Cant') || h.includes('Qty') || h.includes('Quantity'));
+      const iEntry = headers.findIndex(h => h.includes('Tiempo de entrada') || h.includes('Entry time') || h.includes('Entrada'));
+      const iExit  = headers.findIndex(h => h.includes('Tiempo de salida') || h.includes('Exit time') || h.includes('Salida') && h.includes('Tiempo'));
+      const iPnl   = headers.findIndex(h => h === 'Ganancias' || h.includes('Profit') && !h.includes('Con'));
+
+      // Fallback a posiciones fijas si no encuentra por nombre
+      const colInst  = iInst  >= 0 ? iInst  : 1;
+      const colCuenta= iCuenta>= 0 ? iCuenta: 2;
+      const colDir   = iDir   >= 0 ? iDir   : 4;
+      const colEntry = iEntry >= 0 ? iEntry : 8;
+      const colExit  = iExit  >= 0 ? iExit  : 9;
+      const colPnl   = iPnl   >= 0 ? iPnl   : 12;
 
       let importadas = 0;
       let omitidas   = 0;
@@ -3289,51 +3301,73 @@
 
       for (let i = 1; i < lineas.length; i++) {
         const cols = lineas[i].split(sep);
-        if (cols.length < 4) continue;
+        if (cols.length < 10) continue;
 
-        const fechaStr = cols[iDate]?.trim();
-        const pnlStr   = cols[iPnl]?.trim();
-        if (!fechaStr || !pnlStr) continue;
+        const instrRaw = cols[colInst]?.trim() || '';
+        const cuenta   = cols[colCuenta]?.trim() || '';
+        const dirRaw   = cols[colDir]?.trim() || '';
+        const entryStr = cols[colEntry]?.trim() || '';
+        const exitStr  = cols[colExit]?.trim() || '';
+        const pnlStr   = cols[colPnl]?.trim() || '';
 
-        // Parsear fecha formato d/M/yyyy (argentino)
-        const partesFecha = fechaStr.split('/');
+        if (!instrRaw || !pnlStr || !entryStr) continue;
+
+        // Instrumento: quitar el vencimiento (MNQ 06-26 → MNQ)
+        const inst = instrRaw.split(' ')[0];
+
+        // Dirección
+        const dir = dirRaw.toLowerCase().includes('short') ? 'Short' : 'Long';
+
+        // Parsear fecha de entrada — formato "d/M/yyyy H:mm:ss"
+        const partesFecha = entryStr.split(' ')[0].split('/');
         if (partesFecha.length !== 3) continue;
         const fechaISO = `${partesFecha[2]}-${partesFecha[1].padStart(2,'0')}-${partesFecha[0].padStart(2,'0')}`;
-        const fechaObj = new Date(fechaISO + 'T12:00:00Z');
+        const horaEntry = entryStr.split(' ')[1] || '12:00:00';
+        const fechaObj = new Date(`${fechaISO}T${horaEntry}Z`);
         if (isNaN(fechaObj.getTime())) continue;
 
-        // Parsear PnL — quitar $, espacios, cambiar coma decimal por punto
+        // Duración en segundos
+        let durSeg = 60;
+        if (exitStr) {
+          const exitParts = exitStr.split(' ');
+          const exitFecha = exitParts[0].split('/');
+          if (exitFecha.length === 3) {
+            const exitISO = `${exitFecha[2]}-${exitFecha[1].padStart(2,'0')}-${exitFecha[0].padStart(2,'0')}`;
+            const exitObj = new Date(`${exitISO}T${exitParts[1] || '12:00:00'}Z`);
+            if (!isNaN(exitObj.getTime())) durSeg = Math.max(1, Math.round((exitObj - fechaObj) / 1000));
+          }
+        }
+
+        // Parsear PnL — quitar $, espacios, puntos de miles, cambiar coma por punto
         const pnlClean = pnlStr.replace(/\$/g,'').replace(/\s/g,'').replace(/\./g,'').replace(',','.');
         const pnl = parseFloat(pnlClean);
         if (isNaN(pnl)) continue;
 
-        // Hash único para deduplicación
-        const execHash = `csv_${sesiónActual.user.id}_${fechaISO}_${pnl.toFixed(2)}`;
+        // Hash único basado en cuenta + fecha exacta de entrada + PnL
+        const execHash = `csv_${cuenta}_${fechaISO}_${horaEntry.replace(/:/g,'')}_${pnl.toFixed(2)}`;
 
         // Insertar directo en Supabase
         const r = await sbFetch('/rest/v1/operaciones_journal', {
           method: 'POST',
           body: JSON.stringify({
             user_id:           sesiónActual.user.id,
-            instrumento:       'CSV',
-            direccion:         pnl >= 0 ? 'Long' : 'Short',
+            instrumento:       inst,
+            direccion:         dir,
             pnl:               pnl,
-            duracion_segundos: 60,
-            cuenta:            'CSV',
+            duracion_segundos: durSeg,
+            cuenta:            cuenta,
             fecha:             fechaObj.toISOString(),
             exec_hash:         execHash
           }),
           headers: { 'Prefer': 'return=minimal' }
         }, sesiónActual.access_token);
 
-        if (r.status === 409 || r.status === 201 && false) {
+        if (r.status === 409) {
           omitidas++;
         } else if (r.ok || r.status === 201) {
           importadas++;
-        } else if (r.status === 409) {
-          omitidas++;
         } else {
-          console.error('Error importando fila', i, r);
+          console.error('Error importando fila', i, r.status, r.data);
           errores++;
         }
       }

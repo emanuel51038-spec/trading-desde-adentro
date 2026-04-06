@@ -2458,7 +2458,7 @@
       <td style="padding:12px 16px;color:var(--gris)">${esc(o.estrategia) || '—'}</td>
       <td style="padding:12px 16px;font-weight:600;color:${reglasColor}">${reglasStr}</td>
       <td style="padding:12px 16px;color:var(--gris);max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${o.emocion && !o.emocion.startsWith('__') ? esc(o.emocion) : '—'}</td>
-      <td style="padding:12px 16px;color:var(--gris)">${tieneDetalle ? '<span style="font-size:11px;color:#555">▼ ver</span>' : '—'}</td>
+      <td style="padding:12px 16px;color:var(--gris)">${tieneDetalle ? '<span style="font-size:11px;color:#555">▼ ver</span>' : '—'}&nbsp;<button onclick="event.stopPropagation();abrirEditarOp('${escAttr(o.id)}')" title="Editar" style="background:none;border:1px solid #2A2A2A;color:#666;padding:2px 8px;border-radius:5px;cursor:pointer;font-size:11px;margin-left:4px">✏️</button></td>
     </tr>${tieneDetalle ? `<tr id="${escAttr(rowId)}_det" style="display:none;border-bottom:1px solid #1A1A1A;background:#0A0A0A" data-estrategia="${escAttr(o.estrategia || '')}">
       <td colspan="8" style="padding:12px 16px">
         ${reglasDetalle ? `<div style="margin-bottom:${tieneNotas?'10px':'0'}">${reglasDetalle}</div>` : ''}
@@ -3204,6 +3204,142 @@
       cargarJournal();
     } else {
       cont.innerHTML = '<div style="color:#E57373;padding:20px;text-align:center">Error al eliminar. Intentá de nuevo.</div>';
+    }
+  }
+
+  /* ══════════════════════
+     EDITAR OPERACIÓN
+  ══════════════════════ */
+
+  async function abrirEditarOp(opId) {
+    const op = _todasLasOps.find(o => String(o.id) === String(opId));
+    if (!op) return;
+
+    const [estRes, rgRes] = await Promise.all([
+      sbFetch('/rest/v1/estrategias?select=*&user_id=eq.' + sesiónActual.user.id + '&order=created_at', {}, sesiónActual.access_token),
+      sbFetch('/rest/v1/reglas_generales_sesion?select=reglas&user_id=eq.' + sesiónActual.user.id + '&limit=1', {}, sesiónActual.access_token)
+    ]);
+    const estrategias    = estRes.ok && Array.isArray(estRes.data) ? estRes.data : [];
+    const reglasGenerales= rgRes.ok && Array.isArray(rgRes.data) && rgRes.data.length > 0 ? (rgRes.data[0].reglas || []) : [];
+
+    const estrategiaActual = op.estrategia || '';
+    const emocionActual    = (op.emocion && !op.emocion.startsWith('__')) ? op.emocion : '';
+    const reglasActuales   = op.reglas_cumplidas || [];
+    const notasActuales    = (op.notas && !op.notas.startsWith('__')) ? op.notas : '';
+    const estObj           = estrategias.find(e => e.nombre === estrategiaActual);
+    const reglasDeEst      = estObj ? (estObj.reglas || []) : [];
+    const emociones        = ['Disciplinado','Ansioso','Confiado','Miedoso','Neutral','Revanchista','Eufórico','Frustrado','Paciente','Impulsivo'];
+
+    const fecha   = new Date(op.fecha).toLocaleDateString('es-AR',{day:'2-digit',month:'2-digit',year:'2-digit'});
+    const pnl     = Number(op.pnl);
+    const pnlStr  = (pnl>=0?'+':'')+'\$'+pnl.toFixed(2);
+    const pnlCol  = pnl>=0?'var(--verde)':'#E57373';
+
+    let modal = document.getElementById('modalEditarOp');
+    if (!modal) { modal = document.createElement('div'); modal.id='modalEditarOp'; modal.className='modal-overlay'; document.body.appendChild(modal); }
+
+    modal.innerHTML = `
+      <div class="modal" style="max-width:500px;max-height:90vh;overflow-y:auto">
+        <button class="modal-close" onclick="cerrarModal('modalEditarOp')">✕</button>
+        <h3 style="margin-bottom:4px">Editar Operación</h3>
+        <div style="display:flex;gap:12px;align-items:center;margin-bottom:20px;flex-wrap:wrap">
+          <span style="font-size:13px;color:var(--gris)">${esc(fecha)}</span>
+          <span style="font-size:13px;font-weight:600">${esc(op.instrumento||'—')}</span>
+          <span style="font-size:13px">${op.direccion==='Long'?'🟢 Long':'🔴 Short'}</span>
+          <span style="font-size:14px;font-weight:700;color:${pnlCol}">${pnlStr}</span>
+        </div>
+
+        <label style="font-size:11px;color:var(--gris);display:block;margin-bottom:6px;text-transform:uppercase;letter-spacing:1px">Estrategia</label>
+        <select id="editOpEstrategia" onchange="actualizarReglasEdicion(${JSON.stringify(estrategias)})"
+          style="width:100%;background:#181818;border:1px solid #2A2A2A;color:var(--blanco);padding:9px 12px;border-radius:7px;font-size:13px;margin-bottom:16px;outline:none;font-family:'DM Sans',sans-serif">
+          <option value="">— Sin estrategia —</option>
+          ${estrategias.map(e=>`<option value="${escAttr(e.nombre)}" ${e.nombre===estrategiaActual?'selected':''}>${esc(e.nombre)}</option>`).join('')}
+        </select>
+
+        <div id="editOpReglasContainer" style="margin-bottom:16px">${renderReglasEdicion(reglasDeEst,reglasActuales)}</div>
+
+        ${reglasGenerales.length>0?`
+        <label style="font-size:11px;color:var(--gris);display:block;margin-bottom:6px;text-transform:uppercase;letter-spacing:1px">Reglas generales</label>
+        <div id="editOpReglasGenContainer" style="margin-bottom:16px">${renderReglasEdicion(reglasGenerales,reglasActuales,true)}</div>`:''}
+
+        <label style="font-size:11px;color:var(--gris);display:block;margin-bottom:6px;text-transform:uppercase;letter-spacing:1px">Emoción</label>
+        <select id="editOpEmocion" style="width:100%;background:#181818;border:1px solid #2A2A2A;color:var(--blanco);padding:9px 12px;border-radius:7px;font-size:13px;margin-bottom:16px;outline:none;font-family:'DM Sans',sans-serif">
+          <option value="">— Sin registrar —</option>
+          ${emociones.map(em=>`<option value="${escAttr(em)}" ${em===emocionActual?'selected':''}>${esc(em)}</option>`).join('')}
+        </select>
+
+        <label style="font-size:11px;color:var(--gris);display:block;margin-bottom:6px;text-transform:uppercase;letter-spacing:1px">Notas</label>
+        <textarea id="editOpNotas" placeholder="Observaciones..." style="width:100%;background:#181818;border:1px solid #2A2A2A;color:var(--blanco);padding:9px 12px;border-radius:7px;font-size:13px;min-height:80px;resize:vertical;outline:none;font-family:'DM Sans',sans-serif;margin-bottom:16px">${escAttr(notasActuales)}</textarea>
+
+        <label style="font-size:11px;color:var(--gris);display:block;margin-bottom:6px;text-transform:uppercase;letter-spacing:1px">PnL (ajustar si incluye comisión)</label>
+        <input type="number" id="editOpPnl" step="0.01" value="${pnl.toFixed(2)}"
+          style="width:100%;background:#181818;border:1px solid #2A2A2A;color:var(--blanco);padding:9px 12px;border-radius:7px;font-size:13px;margin-bottom:16px;outline:none;font-family:'DM Sans',sans-serif">
+
+        <div id="editOpMsg" style="display:none;margin-bottom:12px;font-size:12px;padding:8px 12px;border-radius:6px"></div>
+        <div style="display:flex;gap:8px">
+          <button id="btnGuardarEdicionOp" onclick="guardarEdicionOp('${escAttr(String(opId))}')" class="modal-confirm" style="flex:1">Guardar cambios</button>
+          <button onclick="cerrarModal('modalEditarOp')" style="background:#1E1E1E;border:1px solid #2A2A2A;color:var(--gris);padding:12px 18px;border-radius:8px;cursor:pointer;font-size:13px;font-weight:600">Cancelar</button>
+        </div>
+      </div>`;
+    modal.classList.add('active');
+  }
+
+  function renderReglasEdicion(reglas, reglasActuales, esGen=false) {
+    if (!reglas || !reglas.length) return '<div style="font-size:12px;color:#444;padding:6px 0">Sin reglas configuradas.</div>';
+    return reglas.map(r => {
+      const cumplida = reglasActuales.includes(r);
+      return `<div style="display:flex;align-items:center;gap:10px;padding:6px 0;border-bottom:1px solid #1A1A1A">
+        <label style="display:flex;align-items:center;gap:8px;cursor:pointer;flex:1">
+          <input type="checkbox" class="editReglaCheck" data-regla="${escAttr(r)}" data-gen="${esGen}" ${cumplida?'checked':''} style="accent-color:var(--verde);width:14px;height:14px">
+          <span style="font-size:12px;color:var(--gris)">${esc(r)}</span>
+        </label>
+      </div>`;
+    }).join('');
+  }
+
+  function actualizarReglasEdicion(estrategias) {
+    const sel = document.getElementById('editOpEstrategia');
+    if (!sel) return;
+    const estObj = estrategias.find(e => e.nombre === sel.value);
+    const cont = document.getElementById('editOpReglasContainer');
+    if (cont) cont.innerHTML = renderReglasEdicion(estObj ? (estObj.reglas||[]) : [], []);
+  }
+
+  async function guardarEdicionOp(opId) {
+    const btn = document.getElementById('btnGuardarEdicionOp');
+    const msg = document.getElementById('editOpMsg');
+    if (btn) { btn.disabled=true; btn.textContent='Guardando...'; }
+
+    const estrategia = document.getElementById('editOpEstrategia')?.value || '';
+    const emocion    = document.getElementById('editOpEmocion')?.value || '';
+    const notas      = document.getElementById('editOpNotas')?.value?.trim() || '';
+    const pnlEdit    = parseFloat(document.getElementById('editOpPnl')?.value || '0');
+
+    const reglasCumplidas = [];
+    document.querySelectorAll('#modalEditarOp .editReglaCheck').forEach(cb => {
+      reglasCumplidas.push(cb.checked ? cb.dataset.regla : 'NO:' + cb.dataset.regla);
+    });
+
+    const payload = { pnl: pnlEdit };
+    if (estrategia) payload.estrategia = estrategia;
+    if (emocion)    payload.emocion    = emocion;
+    if (notas)      payload.notas      = notas;
+    if (reglasCumplidas.length) payload.reglas_cumplidas = reglasCumplidas;
+
+    const r = await sbFetch(
+      '/rest/v1/operaciones_journal?id=eq.' + encodeURIComponent(opId),
+      { method: 'PATCH', body: JSON.stringify(payload) },
+      sesiónActual.access_token
+    );
+
+    if (r.ok) {
+      const idx = _todasLasOps.findIndex(o => String(o.id) === String(opId));
+      if (idx >= 0) Object.assign(_todasLasOps[idx], payload);
+      if (msg) { msg.style.display='block'; msg.style.background='rgba(76,175,80,0.1)'; msg.style.color='var(--verde)'; msg.style.border='1px solid rgba(76,175,80,0.3)'; msg.textContent='✓ Guardado'; }
+      setTimeout(() => { cerrarModal('modalEditarOp'); cargarJournal(); }, 700);
+    } else {
+      if (msg) { msg.style.display='block'; msg.style.background='rgba(229,115,115,0.1)'; msg.style.color='#E57373'; msg.style.border='1px solid rgba(229,115,115,0.3)'; msg.textContent='Error al guardar.'; }
+      if (btn) { btn.disabled=false; btn.textContent='Guardar cambios'; }
     }
   }
 

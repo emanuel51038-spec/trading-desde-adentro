@@ -2114,7 +2114,7 @@
     const r = await sbFetch('/rest/v1/operaciones_journal?select=*&user_id=eq.' + sesiónActual.user.id + '&order=fecha.desc', {}, sesiónActual.access_token);
     if (!r.ok || !Array.isArray(r.data)) { cont.innerHTML = '<div style="color:#E57373;padding:20px">Error cargando el journal.</div>'; return; }
 
-    _todasLasOps = r.data.filter(o => o.pnl !== null && o.estrategia && !o.estrategia.includes('__'));
+    _todasLasOps = r.data.filter(o => o.pnl !== null);
     _opsFiltradas = _todasLasOps;
     const ops = _todasLasOps;
 

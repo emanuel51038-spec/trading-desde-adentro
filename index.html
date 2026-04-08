@@ -3299,11 +3299,7 @@
         <label style="font-size:11px;color:var(--gris);display:block;margin-bottom:6px;text-transform:uppercase;letter-spacing:1px">Notas</label>
         <textarea id="editOpNotas" placeholder="Observaciones..." style="width:100%;background:#181818;border:1px solid #2A2A2A;color:var(--blanco);padding:9px 12px;border-radius:7px;font-size:13px;min-height:80px;resize:vertical;outline:none;font-family:'DM Sans',sans-serif;margin-bottom:16px">${escAttr(notasActuales)}</textarea>
 
-        <label style="font-size:11px;color:var(--gris);display:block;margin-bottom:6px;text-transform:uppercase;letter-spacing:1px">Cantidad de contratos</label>
-        <input type="number" id="editOpCantidad" step="1" min="1" value="${op.cantidad || 1}"
-          style="width:100%;background:#181818;border:1px solid #2A2A2A;color:var(--blanco);padding:9px 12px;border-radius:7px;font-size:13px;margin-bottom:16px;outline:none;font-family:'DM Sans',sans-serif">
-
-        <label style="font-size:11px;color:var(--gris);display:block;margin-bottom:6px;text-transform:uppercase;letter-spacing:1px">PnL bruto (sin comisión)</label>
+        <label style="font-size:11px;color:var(--gris);display:block;margin-bottom:6px;text-transform:uppercase;letter-spacing:1px">PnL (ajustar si incluye comisión)</label>
         <input type="number" id="editOpPnl" step="0.01" value="${pnl.toFixed(2)}"
           style="width:100%;background:#181818;border:1px solid #2A2A2A;color:var(--blanco);padding:9px 12px;border-radius:7px;font-size:13px;margin-bottom:16px;outline:none;font-family:'DM Sans',sans-serif">
 
@@ -3345,15 +3341,14 @@
     const estrategia = document.getElementById('editOpEstrategia')?.value || '';
     const emocion    = document.getElementById('editOpEmocion')?.value || '';
     const notas      = document.getElementById('editOpNotas')?.value?.trim() || '';
-    const pnlEdit      = parseFloat(document.getElementById('editOpPnl')?.value || '0');
-    const cantidadEdit = parseInt(document.getElementById('editOpCantidad')?.value || '1');
+    const pnlEdit    = parseFloat(document.getElementById('editOpPnl')?.value || '0');
 
     const reglasCumplidas = [];
     document.querySelectorAll('#modalEditarOp .editReglaCheck').forEach(cb => {
       reglasCumplidas.push(cb.checked ? cb.dataset.regla : 'NO:' + cb.dataset.regla);
     });
 
-    const payload = { pnl: pnlEdit, cantidad: cantidadEdit };
+    const payload = { pnl: pnlEdit };
     if (estrategia) payload.estrategia = estrategia;
     if (emocion)    payload.emocion    = emocion;
     if (notas)      payload.notas      = notas;
@@ -3403,9 +3398,9 @@
           <div id="comisionesCuentasList"></div>
           <div style="font-size:10px;color:#444;margin-top:12px;line-height:1.5">Las cuentas se detectan automáticamente de tus operaciones.</div>
           <div style="margin-top:16px;padding-top:12px;border-top:1px solid #1E1E1E">
-            <div style="font-size:10px;color:#444;text-transform:uppercase;letter-spacing:1px;margin-bottom:8px">Agregar cuenta manual</div>
-            <input id="nuevaCuentaComision" type="text" placeholder="Nombre de cuenta" style="width:100%;background:#111;border:1px solid #2A2A2A;color:var(--blanco);padding:6px 10px;border-radius:6px;font-size:12px;outline:none;font-family:'DM Sans',sans-serif;margin-bottom:6px">
-            <button onclick="agregarCuentaManualComision()" style="width:100%;background:#1E1E1E;border:1px solid #2A2A2A;color:var(--gris);padding:6px;border-radius:6px;cursor:pointer;font-size:12px">+ Agregar</button>
+            <div style="font-size:10px;color:#444;text-transform:uppercase;letter-spacing:1px;margin-bottom:6px">Agregar cuenta</div>
+            <input id="nuevaCuentaComision" type="text" placeholder="Nombre de cuenta" style="width:100%;background:#111;border:1px solid #2A2A2A;color:var(--blanco);padding:6px 10px;border-radius:6px;font-size:11px;outline:none;font-family:'DM Sans',sans-serif;margin-bottom:6px;box-sizing:border-box">
+            <button onclick="agregarCuentaManualComision()" style="width:100%;background:#1E1E1E;border:1px solid #2A2A2A;color:var(--gris);padding:5px;border-radius:6px;cursor:pointer;font-size:11px">+ Agregar</button>
           </div>
         </div>
         <!-- Panel derecho: instrumentos -->
@@ -3521,9 +3516,8 @@
     const input = document.getElementById('nuevoInstComision');
     const inst = input?.value?.trim().toUpperCase();
     if (!inst || !cuenta) return;
-    // Re-render panel incluyendo el nuevo instrumento
     if (!_comisionesData[cuenta]) _comisionesData[cuenta] = {};
-    if (_comisionesData[cuenta][inst] === undefined) _comisionesData[cuenta][inst] = '';
+    if (_comisionesData[cuenta][inst] === undefined) _comisionesData[cuenta][inst] = 0;
     input.value = '';
     seleccionarCuentaComision(cuenta);
   }
@@ -3536,6 +3530,7 @@
       _cuentasJournal.push(nombre);
       _cuentasJournal.sort();
     }
+    if (!_comisionesData[nombre]) _comisionesData[nombre] = {};
     input.value = '';
     renderCuentasListComisiones();
     seleccionarCuentaComision(nombre);
@@ -3543,8 +3538,8 @@
 
   async function guardarComision(cuenta, instrumento) {
     const input = document.getElementById('comm_' + instrumento);
-    const val = parseFloat(input?.value || '0');
-    if (isNaN(val) || val < 0) return;
+    const val = parseFloat((input?.value || '0').replace(',', '.'));
+    if (isNaN(val) || val < 0) { document.getElementById('comisionMsg') && (document.getElementById('comisionMsg').style.display='block', document.getElementById('comisionMsg').textContent='Valor inválido'); return; }
 
     const msg = document.getElementById('comisionMsg');
 

@@ -3522,6 +3522,10 @@
         <input type="number" id="editOpPnl" step="0.01" value="${pnl.toFixed(2)}"
           style="width:100%;background:#181818;border:1px solid #2A2A2A;color:var(--blanco);padding:9px 12px;border-radius:7px;font-size:13px;margin-bottom:16px;outline:none;font-family:'DM Sans',sans-serif">
 
+        <label style="font-size:11px;color:var(--gris);display:block;margin-bottom:6px;text-transform:uppercase;letter-spacing:1px">Cantidad de contratos</label>
+        <input type="number" id="editOpCantidad" step="1" min="1" value="${op.cantidad || 1}"
+          style="width:100%;background:#181818;border:1px solid #2A2A2A;color:var(--blanco);padding:9px 12px;border-radius:7px;font-size:13px;margin-bottom:16px;outline:none;font-family:'DM Sans',sans-serif">
+
         <div id="editOpMsg" style="display:none;margin-bottom:12px;font-size:12px;padding:8px 12px;border-radius:6px"></div>
         <div style="display:flex;gap:8px">
           <button id="btnGuardarEdicionOp" onclick="guardarEdicionOp('${escAttr(String(opId))}')" class="modal-confirm" style="flex:1">Guardar cambios</button>
@@ -3561,13 +3565,14 @@
     const emocion    = document.getElementById('editOpEmocion')?.value || '';
     const notas      = document.getElementById('editOpNotas')?.value?.trim() || '';
     const pnlEdit    = parseFloat(document.getElementById('editOpPnl')?.value || '0');
+    const cantEdit   = parseInt(document.getElementById('editOpCantidad')?.value || '1') || 1;
 
     const reglasCumplidas = [];
     document.querySelectorAll('#modalEditarOp .editReglaCheck').forEach(cb => {
       reglasCumplidas.push(cb.checked ? cb.dataset.regla : 'NO:' + cb.dataset.regla);
     });
 
-    const payload = { pnl: pnlEdit };
+    const payload = { pnl: pnlEdit, cantidad: cantEdit };
     if (estrategia) payload.estrategia = estrategia;
     if (emocion)    payload.emocion    = emocion;
     if (notas)      payload.notas      = notas;

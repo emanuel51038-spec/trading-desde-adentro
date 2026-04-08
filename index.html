@@ -2319,6 +2319,7 @@
   let _todasLasOps = [];
   let _opsFiltradas = [];
   let _comisiones = {};
+  let _editStrategias = [];
   let _calOps = [];
   let _calMes = new Date().getMonth();
   let _calAnio = new Date().getFullYear();
@@ -3478,6 +3479,7 @@
     ]);
     const estrategias     = estRes.ok && Array.isArray(estRes.data) ? estRes.data : [];
     const reglasGenerales = rgRes.ok && Array.isArray(rgRes.data) && rgRes.data.length > 0 ? (rgRes.data[0].reglas || []) : [];
+    _editStrategias = estrategias;
 
     const estrategiaActual = op.estrategia || '';
     const emocionActual    = (op.emocion && !op.emocion.startsWith('__')) ? op.emocion : '';
@@ -3508,7 +3510,7 @@
         </div>
 
         <label style="font-size:11px;color:var(--gris);display:block;margin-bottom:6px;text-transform:uppercase;letter-spacing:1px">Estrategia</label>
-        <select id="editOpEstrategia" onchange="actualizarReglasEdicion(${JSON.stringify(estrategias)})"
+        <select id="editOpEstrategia" onchange="actualizarReglasEdicion(_editStrategias)"
           style="width:100%;background:#181818;border:1px solid #2A2A2A;color:var(--blanco);padding:9px 12px;border-radius:7px;font-size:13px;margin-bottom:16px;outline:none;font-family:'DM Sans',sans-serif">
           <option value="">— Sin estrategia —</option>
           ${estrategias.map(e=>`<option value="${escAttr(e.nombre)}" ${e.nombre===estrategiaActual?'selected':''}>${esc(e.nombre)}</option>`).join('')}

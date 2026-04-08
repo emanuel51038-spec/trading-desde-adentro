@@ -3575,8 +3575,12 @@
     const cantEdit   = parseInt(document.getElementById('editOpCantidad')?.value || '1') || 1;
 
     const reglasCumplidas = [];
+    const reglasGenerales = [];
     document.querySelectorAll('#modalEditarOp .editReglaCheck').forEach(cb => {
-      reglasCumplidas.push(cb.checked ? cb.dataset.regla : 'NO:' + cb.dataset.regla);
+      const esGen = cb.dataset.gen === 'true';
+      const valor = cb.checked ? cb.dataset.regla : 'NO:' + cb.dataset.regla;
+      if (esGen) reglasGenerales.push(valor);
+      else reglasCumplidas.push(valor);
     });
 
     const payload = { pnl: pnlEdit, cantidad: cantEdit };
@@ -3584,6 +3588,7 @@
     if (emocion)    payload.emocion    = emocion;
     if (notas)      payload.notas      = notas;
     if (reglasCumplidas.length) payload.reglas_cumplidas = reglasCumplidas;
+    if (reglasGenerales.length) payload.reglas_generales = reglasGenerales;
 
     const r = await sbFetch(
       '/rest/v1/operaciones_journal?id=eq.' + encodeURIComponent(opId),

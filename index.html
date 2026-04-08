@@ -3478,7 +3478,8 @@
 
     const estrategiaActual = op.estrategia || '';
     const emocionActual    = (op.emocion && !op.emocion.startsWith('__')) ? op.emocion : '';
-    const reglasActuales   = op.reglas_cumplidas || [];
+    const reglasActuales        = op.reglas_cumplidas || [];
+    const reglasGeneralesActuales = op.reglas_generales || [];
     const notasActuales    = (op.notas && !op.notas.startsWith('__')) ? op.notas : '';
     const estObj           = estrategias.find(e => e.nombre === estrategiaActual);
     const reglasDeEst      = estObj ? (estObj.reglas || []) : [];
@@ -3514,7 +3515,7 @@
 
         ${reglasGenerales.length>0?`
         <label style="font-size:11px;color:var(--gris);display:block;margin-bottom:6px;text-transform:uppercase;letter-spacing:1px">Reglas generales</label>
-        <div id="editOpReglasGenContainer" style="margin-bottom:16px">${renderReglasEdicion(reglasGenerales,reglasActuales,true)}</div>`:''}
+        <div id="editOpReglasGenContainer" style="margin-bottom:16px">${renderReglasEdicion(reglasGenerales,reglasGeneralesActuales,true)}</div>`:''}
 
         <label style="font-size:11px;color:var(--gris);display:block;margin-bottom:6px;text-transform:uppercase;letter-spacing:1px">Emoción</label>
         <select id="editOpEmocion" style="width:100%;background:#181818;border:1px solid #2A2A2A;color:var(--blanco);padding:9px 12px;border-radius:7px;font-size:13px;margin-bottom:16px;outline:none;font-family:'DM Sans',sans-serif">

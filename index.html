@@ -2464,9 +2464,9 @@
       return `<span style="display:inline-block;margin:2px 4px;padding:3px 8px;border-radius:4px;font-size:11px;background:${nc?'rgba(229,115,115,0.12)':'rgba(76,175,80,0.12)'};color:${nc?'#E57373':'var(--verde)'}">${nc?'✗':'✓'} ${nombre}</span>`;
     }).join('') : '';
 
-    return `<tr id="${escAttr(rowId)}" style="border-bottom:${tieneDetalle?'none':'1px solid #1A1A1A'}" data-estrategia="${escAttr(o.estrategia || '')}" data-cuenta="${escAttr(o.cuenta || '')}" data-fecha="${escAttr(o.fecha ? o.fecha.substring(0,10) : '')}"
-      onclick="${tieneDetalle ? `toggleDetalle('${escAttr(rowId)}')` : ''}"
-      style="cursor:${tieneDetalle?'pointer':'default'}"
+    return `<tr id="${escAttr(rowId)}" data-estrategia="${escAttr(o.estrategia || '')}" data-cuenta="${escAttr(o.cuenta || '')}" data-fecha="${escAttr(o.fecha ? o.fecha.substring(0,10) : '')}"
+      style="border-bottom:${tieneDetalle?'none':'1px solid #1A1A1A'};cursor:${tieneDetalle?'pointer':'default'}"
+      ${tieneDetalle ? `onclick="toggleDetalle('${escAttr(rowId)}')"` : ''}
       onmouseover="this.style.background='#111'" onmouseout="this.style.background='transparent'">
       <td style="padding:12px 16px;color:var(--gris)">${esc(fecha)}</td>
       <td style="padding:12px 16px;font-weight:600">${esc(o.instrumento) || '—'}</td>

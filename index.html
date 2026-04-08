@@ -2455,17 +2455,20 @@
     const pnlStr = (pnl >= 0 ? '+' : '') + '$' + pnl.toFixed(2);
     const comStr = comTotal > 0 ? `<span style="font-size:10px;color:#555;display:block">bruto ${(pnlBruto>=0?'+':'') + '$' + pnlBruto.toFixed(2)}</span>` : '';
     const dir = o.direccion === 'Long' ? '🟢' : '🔴';
-    const reglas = o.reglas_cumplidas || [];
-    const cumplidas = reglas.filter(r => !r.startsWith('NO:')).length;
-    const total = reglas.length;
+    // Si la op ya tiene reglas_generales separadas, reglas_cumplidas son solo de estrategia
+    // Si no, reglas_cumplidas puede contener todo mezclado (legado)
+    const reglasCumplidas = o.reglas_cumplidas || [];
+    const reglasGen = o.reglas_generales || [];
+    const cumplidas = reglasCumplidas.filter(r => !r.startsWith('NO:')).length;
+    const total = reglasCumplidas.length;
     const reglasStr = total > 0 ? `${cumplidas}/${total}` : '—';
     const reglasColor = total > 0 && cumplidas === total ? 'var(--verde)' : total > 0 ? '#E57373' : 'var(--gris)';
     const tieneNotas = o.notas && !o.notas.startsWith('__');
-    const tieneDetalle = tieneNotas || total > 0;
+    const tieneDetalle = tieneNotas || total > 0 || reglasGen.length > 0;
     const rowId = 'row_' + (o.id || Math.random().toString(36).substr(2,6));
 
     // Construir detalle de reglas (sanitizado)
-    const reglasDetalle = reglas.length > 0 ? reglas.map(r => {
+    const reglasDetalle = reglasCumplidas.length > 0 ? reglasCumplidas.map(r => {
       const nc = r.startsWith('NO:');
       const nombre = esc(nc ? r.replace('NO:','') : r);
       return `<span style="display:inline-block;margin:2px 4px;padding:3px 8px;border-radius:4px;font-size:11px;background:${nc?'rgba(229,115,115,0.12)':'rgba(76,175,80,0.12)'};color:${nc?'#E57373':'var(--verde)'}">${nc?'✗':'✓'} ${nombre}</span>`;

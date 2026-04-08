@@ -2128,10 +2128,9 @@
         <div style="display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end">
           <a href="https://pjrwdseaomijkgytbglh.supabase.co/storage/v1/object/public/Instaladores/TraderJournalTDA-%20V2.zip" target="_blank" rel="noopener noreferrer" style="display:inline-flex;align-items:center;gap:6px;background:#1A1A1A;border:1px solid #2A2A2A;color:var(--gris);padding:10px 14px;border-radius:8px;text-decoration:none;font-size:12px;font-weight:600">⬇ Descargar ZIP</a>
           <a href="https://pjrwdseaomijkgytbglh.supabase.co/storage/v1/object/public/Instaladores/GUIA_INSTALACION_TRADINGJOURNALTDA-V2.pdf" target="_blank" rel="noopener noreferrer" style="display:inline-flex;align-items:center;gap:6px;background:#1A1A1A;border:1px solid #2A2A2A;color:var(--gris);padding:10px 14px;border-radius:8px;text-decoration:none;font-size:12px;font-weight:600">📄 Guía</a>
-          <button onclick="abrirImportarCSV()" style="background:#1A1A1A;border:1px solid #2A2A2A;color:var(--gris);padding:10px 14px;border-radius:8px;cursor:pointer;font-size:12px;font-weight:600;display:flex;align-items:center;gap:6px">
-            📥 Importar CSV
+          <button onclick="exportarHistorialJournal()" style="background:#1A1A1A;border:1px solid #2A2A2A;color:var(--gris);padding:10px 14px;border-radius:8px;cursor:pointer;font-size:12px;font-weight:600;display:flex;align-items:center;gap:6px">
+            📤 Exportar historial
           </button>
-          <input type="file" id="csvFileInput" accept=".csv" style="display:none" onchange="procesarCSV(this)">
           <button onclick="eliminarHistorialJournal()" style="background:rgba(139,26,26,0.15);border:1px solid rgba(139,26,26,0.3);color:#E57373;padding:10px 14px;border-radius:8px;cursor:pointer;font-size:12px;font-weight:600;display:flex;align-items:center;gap:6px">
             🗑️ Eliminar historial
           </button>
@@ -3200,6 +3199,35 @@
   /* ══════════════════════
      IMPORTAR CSV DE NT8
   ══════════════════════ */
+
+  async function exportarHistorialJournal() {
+    const { data, error } = await sbFetch(
+      '/rest/v1/operaciones_journal?select=*&order=fecha.desc',
+      { method: 'GET' },
+      sesiónActual.access_token
+    );
+    if (error || !data || data.length === 0) {
+      alert('No hay operaciones para exportar.');
+      return;
+    }
+    const cols = ['fecha','instrumento','direccion','pnl','duracion_segundos','cuenta','estrategia','emocion','notas','reglas_cumplidas'];
+    const header = cols.join(',');
+    const rows = data.map(op =>
+      cols.map(c => {
+        let v = op[c];
+        if (Array.isArray(v)) v = v.join('|');
+        if (v === null || v === undefined) v = '';
+        v = String(v).replace(/"/g, '""');
+        return `"${v}"`;
+      }).join(',')
+    );
+    const csv = [header, ...rows].join('\n');
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const url  = URL.createObjectURL(blob);
+    const a    = document.createElement('a');
+    a.href = url; a.download = 'journal_tda.csv'; a.click();
+    URL.revokeObjectURL(url);
+  }
 
   function abrirImportarCSV() {
     let modal = document.getElementById('modalImportarCSV');

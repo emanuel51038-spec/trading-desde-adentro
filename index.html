@@ -2111,8 +2111,15 @@
     const cont = document.getElementById('journalContainer');
     cont.innerHTML = '<div style="text-align:center;padding:40px;color:var(--gris)"><span class="spinner"></span> Cargando journal...</div>';
 
-    const r = await sbFetch('/rest/v1/operaciones_journal?select=*&user_id=eq.' + sesiónActual.user.id + '&order=fecha.desc', {}, sesiónActual.access_token);
+    const [r, rCom] = await Promise.all([
+      sbFetch('/rest/v1/operaciones_journal?select=*&user_id=eq.' + sesiónActual.user.id + '&order=fecha.desc', {}, sesiónActual.access_token),
+      sbFetch('/rest/v1/comisiones_journal?select=instrumento,comision_por_contrato&user_id=eq.' + sesiónActual.user.id, {}, sesiónActual.access_token)
+    ]);
     if (!r.ok || !Array.isArray(r.data)) { cont.innerHTML = '<div style="color:#E57373;padding:20px">Error cargando el journal.</div>'; return; }
+
+    // Mapa instrumento → comisión por contrato por lado
+    _comisiones = {};
+    if (rCom.ok && Array.isArray(rCom.data)) rCom.data.forEach(c => { _comisiones[c.instrumento] = Number(c.comision_por_contrato); });
 
     _todasLasOps = r.data.filter(o => o.pnl !== null);
     _opsFiltradas = _todasLasOps;
@@ -2128,6 +2135,9 @@
         <div style="display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end">
           <a href="https://pjrwdseaomijkgytbglh.supabase.co/storage/v1/object/public/Instaladores/TraderJournalTDA-%20V2.zip" target="_blank" rel="noopener noreferrer" style="display:inline-flex;align-items:center;gap:6px;background:#1A1A1A;border:1px solid #2A2A2A;color:var(--gris);padding:10px 14px;border-radius:8px;text-decoration:none;font-size:12px;font-weight:600">⬇ Descargar ZIP</a>
           <a href="https://pjrwdseaomijkgytbglh.supabase.co/storage/v1/object/public/Instaladores/GUIA_INSTALACION_TRADINGJOURNALTDA-V2.pdf" target="_blank" rel="noopener noreferrer" style="display:inline-flex;align-items:center;gap:6px;background:#1A1A1A;border:1px solid #2A2A2A;color:var(--gris);padding:10px 14px;border-radius:8px;text-decoration:none;font-size:12px;font-weight:600">📄 Guía</a>
+          <button onclick="abrirComisiones()" style="background:#1A1A1A;border:1px solid #2A2A2A;color:var(--gris);padding:10px 14px;border-radius:8px;cursor:pointer;font-size:12px;font-weight:600;display:flex;align-items:center;gap:6px">
+            💲 Comisiones
+          </button>
           <button onclick="eliminarHistorialJournal()" style="background:rgba(139,26,26,0.15);border:1px solid rgba(139,26,26,0.3);color:#E57373;padding:10px 14px;border-radius:8px;cursor:pointer;font-size:12px;font-weight:600;display:flex;align-items:center;gap:6px">
             🗑️ Eliminar historial
           </button>
@@ -2308,6 +2318,7 @@
   // ── CALENDARIO ──────────────────────────────────────
   let _todasLasOps = [];
   let _opsFiltradas = [];
+  let _comisiones = {};
   let _calOps = [];
   let _calMes = new Date().getMonth();
   let _calAnio = new Date().getFullYear();
@@ -2428,9 +2439,14 @@
 
   function renderOpFila(o) {
     const fecha = new Date(o.fecha).toLocaleDateString('es-AR', { day: '2-digit', month: '2-digit', year: '2-digit' });
-    const pnl = Number(o.pnl);
+    const pnlBruto = Number(o.pnl);
+    const qty = o.cantidad || 1;
+    const comPorContrato = (_comisiones && _comisiones[o.instrumento]) ? _comisiones[o.instrumento] : 0;
+    const comTotal = comPorContrato * 2 * qty;
+    const pnl = pnlBruto - comTotal;
     const pnlColor = pnl >= 0 ? 'var(--verde)' : '#E57373';
     const pnlStr = (pnl >= 0 ? '+' : '') + '$' + pnl.toFixed(2);
+    const comStr = comTotal > 0 ? `<span style="font-size:10px;color:#555;display:block">bruto ${(pnlBruto>=0?'+':'') + '$' + pnlBruto.toFixed(2)}</span>` : '';
     const dir = o.direccion === 'Long' ? '🟢' : '🔴';
     const reglas = o.reglas_cumplidas || [];
     const cumplidas = reglas.filter(r => !r.startsWith('NO:')).length;
@@ -2455,7 +2471,7 @@
       <td style="padding:12px 16px;color:var(--gris)">${esc(fecha)}</td>
       <td style="padding:12px 16px;font-weight:600">${esc(o.instrumento) || '—'}</td>
       <td style="padding:12px 16px">${dir}</td>
-      <td style="padding:12px 16px;font-weight:600;color:${pnlColor}">${pnlStr}</td>
+      <td style="padding:12px 16px;font-weight:600;color:${pnlColor}">${pnlStr}${comStr}</td>
       <td style="padding:12px 16px;color:var(--gris);font-size:11px">${esc(o.cuenta) || '—'}</td>
       <td style="padding:12px 16px;color:var(--gris)">${esc(o.estrategia) || '—'}</td>
       <td style="padding:12px 16px;font-weight:600;color:${reglasColor}">${reglasStr}</td>
@@ -3577,6 +3593,94 @@
   /* ══════════════════════
      CONFIG JOURNAL (modal)
   ══════════════════════ */
+
+  async function abrirComisiones() {
+    let modal = document.getElementById('modalComisiones');
+    if (!modal) {
+      modal = document.createElement('div');
+      modal.id = 'modalComisiones';
+      modal.className = 'modal-overlay';
+      modal.innerHTML = `
+        <div class="modal" style="max-width:480px">
+          <button class="modal-close" onclick="cerrarModal('modalComisiones')">✕</button>
+          <h3 style="margin-bottom:4px">Comisiones por instrumento</h3>
+          <p class="modal-desc" style="margin-bottom:20px">Ingresá la comisión por contrato por lado. Se aplica como: comisión × 2 × cantidad de contratos.</p>
+          <div id="comisionesContent"><span class="spinner"></span> Cargando...</div>
+        </div>`;
+      document.body.appendChild(modal);
+    }
+    modal.classList.add('active');
+    await cargarComisiones();
+  }
+
+  async function cargarComisiones() {
+    const cont = document.getElementById('comisionesContent');
+    const res = await sbFetch('/rest/v1/comisiones_journal?select=*&user_id=eq.' + sesiónActual.user.id + '&order=instrumento', {}, sesiónActual.access_token);
+    const lista = res.ok && Array.isArray(res.data) ? res.data : [];
+
+    cont.innerHTML = `
+      <!-- Lista -->
+      <div id="listaComisiones" style="margin-bottom:20px">
+        ${lista.length === 0
+          ? '<div style="text-align:center;padding:20px;color:var(--gris);font-size:13px;background:#0D0D0D;border:1px solid #1E1E1E;border-radius:10px">Sin comisiones configuradas.</div>'
+          : lista.map(c => `
+            <div style="background:#0D0D0D;border:1px solid #1E1E1E;border-radius:10px;padding:12px 16px;margin-bottom:8px;display:flex;align-items:center;justify-content:space-between">
+              <div>
+                <span style="font-size:14px;font-weight:700">${esc(c.instrumento)}</span>
+                <span style="font-size:12px;color:var(--gris);margin-left:10px">$${Number(c.comision_por_contrato).toFixed(4)} / contrato / lado</span>
+                <span style="font-size:11px;color:#555;margin-left:6px">→ $${(Number(c.comision_por_contrato)*2).toFixed(4)} / contrato (R/T)</span>
+              </div>
+              <button onclick="eliminarComision('${escAttr(c.id)}')" style="background:rgba(139,26,26,0.15);border:1px solid rgba(139,26,26,0.3);color:#E57373;padding:4px 10px;border-radius:6px;cursor:pointer;font-size:11px">✕</button>
+            </div>`).join('')}
+      </div>
+      <!-- Form agregar -->
+      <div style="background:#0D0D0D;border:1px solid #1E1E1E;border-radius:10px;padding:16px">
+        <div style="font-size:11px;font-weight:600;letter-spacing:1px;text-transform:uppercase;color:var(--gris);margin-bottom:12px">Agregar / actualizar instrumento</div>
+        <div style="display:flex;gap:8px;margin-bottom:10px">
+          <div style="flex:1">
+            <label style="font-size:11px;color:#666;display:block;margin-bottom:4px">INSTRUMENTO</label>
+            <input type="text" id="comInstInput" placeholder="Ej: MNQ, NQ, ES..." style="width:100%;background:#181818;border:1px solid #2A2A2A;color:var(--blanco);padding:9px 12px;border-radius:7px;font-size:13px;outline:none;font-family:'DM Sans',sans-serif;text-transform:uppercase">
+          </div>
+          <div style="flex:1">
+            <label style="font-size:11px;color:#666;display:block;margin-bottom:4px">COMISIÓN / CONTRATO / LADO</label>
+            <input type="number" id="comValorInput" placeholder="Ej: 0.95" step="0.0001" min="0" style="width:100%;background:#181818;border:1px solid #2A2A2A;color:var(--blanco);padding:9px 12px;border-radius:7px;font-size:13px;outline:none;font-family:'DM Sans',sans-serif">
+          </div>
+        </div>
+        <div id="comMsg" style="display:none;margin-bottom:10px;font-size:12px;padding:8px 12px;border-radius:6px"></div>
+        <button onclick="guardarComision()" style="width:100%;background:var(--rojo);color:white;border:none;padding:10px;border-radius:7px;cursor:pointer;font-size:13px;font-weight:600">Guardar</button>
+      </div>`;
+  }
+
+  async function guardarComision() {
+    const inst  = (document.getElementById('comInstInput').value || '').trim().toUpperCase();
+    const valor = parseFloat(document.getElementById('comValorInput').value);
+    const msg   = document.getElementById('comMsg');
+
+    if (!inst || isNaN(valor) || valor < 0) {
+      msg.style.display = 'block'; msg.style.background = 'rgba(229,115,115,0.1)'; msg.style.color = '#E57373'; msg.style.border = '1px solid rgba(229,115,115,0.3)';
+      msg.textContent = 'Completá instrumento y valor válido.'; return;
+    }
+
+    const res = await sbFetch('/rest/v1/comisiones_journal', {
+      method: 'POST',
+      body: JSON.stringify({ user_id: sesiónActual.user.id, instrumento: inst, comision_por_contrato: valor }),
+      headers: { 'Prefer': 'resolution=merge-duplicates,return=minimal' }
+    }, sesiónActual.access_token);
+
+    if (res.ok || res.status === 201 || res.status === 200) {
+      msg.style.display = 'block'; msg.style.background = 'rgba(76,175,80,0.1)'; msg.style.color = 'var(--verde)'; msg.style.border = '1px solid rgba(76,175,80,0.3)';
+      msg.textContent = '✅ Guardado.';
+      setTimeout(() => cargarComisiones(), 800);
+    } else {
+      msg.style.display = 'block'; msg.style.background = 'rgba(229,115,115,0.1)'; msg.style.color = '#E57373'; msg.style.border = '1px solid rgba(229,115,115,0.3)';
+      msg.textContent = 'Error al guardar.';
+    }
+  }
+
+  async function eliminarComision(id) {
+    const res = await sbFetch('/rest/v1/comisiones_journal?id=eq.' + id, { method: 'DELETE' }, sesiónActual.access_token);
+    if (res.ok) cargarComisiones();
+  }
 
   function abrirConfigJournal() {
     // Crear modal si no existe

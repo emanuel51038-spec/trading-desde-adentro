@@ -2445,12 +2445,14 @@
   function renderOpFila(o) {
     const fecha = new Date(o.fecha).toLocaleDateString('es-AR', { day: '2-digit', month: '2-digit', year: '2-digit' });
     const pnlBruto = Number(o.pnl);
-    // Aplicar comisión si está configurada
+    // Aplicar comisión: commision/contrato × cantidad × 2 (entrada + salida)
     const commPorContrato = (_comisionesData[o.cuenta] && _comisionesData[o.cuenta][o.instrumento]) || 0;
-    const pnl = commPorContrato > 0 ? pnlBruto - commPorContrato : pnlBruto;
+    const cantidad = o.cantidad || 1;
+    const commTotal = commPorContrato > 0 ? commPorContrato * cantidad * 2 : 0;
+    const pnl = commTotal > 0 ? pnlBruto - commTotal : pnlBruto;
     const pnlColor = pnl >= 0 ? 'var(--verde)' : '#E57373';
     const pnlStr = (pnl >= 0 ? '+' : '') + '$' + pnl.toFixed(2);
-    const commStr = commPorContrato > 0 ? ` <span style="font-size:10px;color:#555" title="PnL bruto: $${pnlBruto.toFixed(2)} - comisión: $${commPorContrato.toFixed(2)}">(-$${commPorContrato.toFixed(2)})</span>` : '';
+    const commStr = commTotal > 0 ? ` <span style="font-size:10px;color:#555" title="PnL bruto: $${pnlBruto.toFixed(2)} | comisión: $${commPorContrato.toFixed(2)}/cont × ${cantidad} × 2 = $${commTotal.toFixed(2)}">(-$${commTotal.toFixed(2)})</span>` : '';
     const dir = o.direccion === 'Long' ? '🟢' : '🔴';
     const reglas = o.reglas_cumplidas || [];
     const cumplidas = reglas.filter(r => !r.startsWith('NO:')).length;
@@ -3297,7 +3299,11 @@
         <label style="font-size:11px;color:var(--gris);display:block;margin-bottom:6px;text-transform:uppercase;letter-spacing:1px">Notas</label>
         <textarea id="editOpNotas" placeholder="Observaciones..." style="width:100%;background:#181818;border:1px solid #2A2A2A;color:var(--blanco);padding:9px 12px;border-radius:7px;font-size:13px;min-height:80px;resize:vertical;outline:none;font-family:'DM Sans',sans-serif;margin-bottom:16px">${escAttr(notasActuales)}</textarea>
 
-        <label style="font-size:11px;color:var(--gris);display:block;margin-bottom:6px;text-transform:uppercase;letter-spacing:1px">PnL (ajustar si incluye comisión)</label>
+        <label style="font-size:11px;color:var(--gris);display:block;margin-bottom:6px;text-transform:uppercase;letter-spacing:1px">Cantidad de contratos</label>
+        <input type="number" id="editOpCantidad" step="1" min="1" value="${op.cantidad || 1}"
+          style="width:100%;background:#181818;border:1px solid #2A2A2A;color:var(--blanco);padding:9px 12px;border-radius:7px;font-size:13px;margin-bottom:16px;outline:none;font-family:'DM Sans',sans-serif">
+
+        <label style="font-size:11px;color:var(--gris);display:block;margin-bottom:6px;text-transform:uppercase;letter-spacing:1px">PnL bruto (sin comisión)</label>
         <input type="number" id="editOpPnl" step="0.01" value="${pnl.toFixed(2)}"
           style="width:100%;background:#181818;border:1px solid #2A2A2A;color:var(--blanco);padding:9px 12px;border-radius:7px;font-size:13px;margin-bottom:16px;outline:none;font-family:'DM Sans',sans-serif">
 
@@ -3339,14 +3345,15 @@
     const estrategia = document.getElementById('editOpEstrategia')?.value || '';
     const emocion    = document.getElementById('editOpEmocion')?.value || '';
     const notas      = document.getElementById('editOpNotas')?.value?.trim() || '';
-    const pnlEdit    = parseFloat(document.getElementById('editOpPnl')?.value || '0');
+    const pnlEdit      = parseFloat(document.getElementById('editOpPnl')?.value || '0');
+    const cantidadEdit = parseInt(document.getElementById('editOpCantidad')?.value || '1');
 
     const reglasCumplidas = [];
     document.querySelectorAll('#modalEditarOp .editReglaCheck').forEach(cb => {
       reglasCumplidas.push(cb.checked ? cb.dataset.regla : 'NO:' + cb.dataset.regla);
     });
 
-    const payload = { pnl: pnlEdit };
+    const payload = { pnl: pnlEdit, cantidad: cantidadEdit };
     if (estrategia) payload.estrategia = estrategia;
     if (emocion)    payload.emocion    = emocion;
     if (notas)      payload.notas      = notas;
@@ -3395,6 +3402,11 @@
           <div style="font-size:10px;color:#444;text-transform:uppercase;letter-spacing:1px;margin-bottom:8px">Cuentas</div>
           <div id="comisionesCuentasList"></div>
           <div style="font-size:10px;color:#444;margin-top:12px;line-height:1.5">Las cuentas se detectan automáticamente de tus operaciones.</div>
+          <div style="margin-top:16px;padding-top:12px;border-top:1px solid #1E1E1E">
+            <div style="font-size:10px;color:#444;text-transform:uppercase;letter-spacing:1px;margin-bottom:8px">Agregar cuenta manual</div>
+            <input id="nuevaCuentaComision" type="text" placeholder="Nombre de cuenta" style="width:100%;background:#111;border:1px solid #2A2A2A;color:var(--blanco);padding:6px 10px;border-radius:6px;font-size:12px;outline:none;font-family:'DM Sans',sans-serif;margin-bottom:6px">
+            <button onclick="agregarCuentaManualComision()" style="width:100%;background:#1E1E1E;border:1px solid #2A2A2A;color:var(--gris);padding:6px;border-radius:6px;cursor:pointer;font-size:12px">+ Agregar</button>
+          </div>
         </div>
         <!-- Panel derecho: instrumentos -->
         <div style="flex:1;overflow-y:auto">
@@ -3496,7 +3508,37 @@
         </tbody>
       </table>
       <div id="comisionMsg" style="display:none;margin-top:12px;font-size:12px;padding:8px 12px;border-radius:6px"></div>
+      <div style="margin-top:16px;padding-top:12px;border-top:1px solid #1E1E1E;display:flex;gap:8px;align-items:center">
+        <input id="nuevoInstComision" type="text" placeholder="Agregar instrumento (ej: ES, CL, GC...)"
+          style="flex:1;background:#111;border:1px solid #2A2A2A;color:var(--blanco);padding:7px 10px;border-radius:6px;font-size:12px;outline:none;font-family:'DM Sans',sans-serif">
+        <button onclick="agregarInstComision('${escAttr(cuenta)}')"
+          style="background:#1E1E1E;border:1px solid #2A2A2A;color:var(--gris);padding:7px 14px;border-radius:6px;cursor:pointer;font-size:12px;white-space:nowrap">+ Agregar</button>
+      </div>
     `;
+  }
+
+  function agregarInstComision(cuenta) {
+    const input = document.getElementById('nuevoInstComision');
+    const inst = input?.value?.trim().toUpperCase();
+    if (!inst || !cuenta) return;
+    // Re-render panel incluyendo el nuevo instrumento
+    if (!_comisionesData[cuenta]) _comisionesData[cuenta] = {};
+    if (_comisionesData[cuenta][inst] === undefined) _comisionesData[cuenta][inst] = '';
+    input.value = '';
+    seleccionarCuentaComision(cuenta);
+  }
+
+  function agregarCuentaManualComision() {
+    const input = document.getElementById('nuevaCuentaComision');
+    const nombre = input?.value?.trim();
+    if (!nombre) return;
+    if (!_cuentasJournal.includes(nombre)) {
+      _cuentasJournal.push(nombre);
+      _cuentasJournal.sort();
+    }
+    input.value = '';
+    renderCuentasListComisiones();
+    seleccionarCuentaComision(nombre);
   }
 
   async function guardarComision(cuenta, instrumento) {

@@ -2445,12 +2445,14 @@
   function renderOpFila(o) {
     const fecha = new Date(o.fecha).toLocaleDateString('es-AR', { day: '2-digit', month: '2-digit', year: '2-digit' });
     const pnlBruto = Number(o.pnl);
-    // Aplicar comisión si está configurada
+    // Aplicar comisión: commision/contrato × cantidad × 2 (entrada + salida)
     const commPorContrato = (_comisionesData[o.cuenta] && _comisionesData[o.cuenta][o.instrumento]) || 0;
-    const pnl = commPorContrato > 0 ? pnlBruto - commPorContrato : pnlBruto;
+    const cantidad = o.cantidad || 1;
+    const commTotal = commPorContrato > 0 ? commPorContrato * cantidad * 2 : 0;
+    const pnl = commTotal > 0 ? pnlBruto - commTotal : pnlBruto;
     const pnlColor = pnl >= 0 ? 'var(--verde)' : '#E57373';
     const pnlStr = (pnl >= 0 ? '+' : '') + '$' + pnl.toFixed(2);
-    const commStr = commPorContrato > 0 ? ` <span style="font-size:10px;color:#555" title="PnL bruto: $${pnlBruto.toFixed(2)} - comisión: $${commPorContrato.toFixed(2)}">(-$${commPorContrato.toFixed(2)})</span>` : '';
+    const commStr = commTotal > 0 ? ` <span style="font-size:10px;color:#555" title="PnL bruto: $${pnlBruto.toFixed(2)} | comisión: $${commPorContrato.toFixed(2)}/cont × ${cantidad} × 2 = $${commTotal.toFixed(2)}">(-$${commTotal.toFixed(2)})</span>` : '';
     const dir = o.direccion === 'Long' ? '🟢' : '🔴';
     const reglas = o.reglas_cumplidas || [];
     const cumplidas = reglas.filter(r => !r.startsWith('NO:')).length;

@@ -2286,6 +2286,7 @@
               <th style="padding:12px 16px;font-weight:600;text-align:left;font-size:11px;text-transform:uppercase;letter-spacing:1px">Instrumento</th>
               <th style="padding:12px 16px;font-weight:600;text-align:left;font-size:11px;text-transform:uppercase;letter-spacing:1px">Dir</th>
               <th style="padding:12px 16px;font-weight:600;text-align:left;font-size:11px;text-transform:uppercase;letter-spacing:1px">PnL</th>
+              <th style="padding:12px 16px;font-weight:600;text-align:left;font-size:11px;text-transform:uppercase;letter-spacing:1px">Cuenta</th>
               <th style="padding:12px 16px;font-weight:600;text-align:left;font-size:11px;text-transform:uppercase;letter-spacing:1px">Estrategia</th>
               <th style="padding:12px 16px;font-weight:600;text-align:left;font-size:11px;text-transform:uppercase;letter-spacing:1px">Reglas</th>
               <th style="padding:12px 16px;font-weight:600;text-align:left;font-size:11px;text-transform:uppercase;letter-spacing:1px">Emoción</th>
@@ -2455,6 +2456,7 @@
       <td style="padding:12px 16px;font-weight:600">${esc(o.instrumento) || '—'}</td>
       <td style="padding:12px 16px">${dir}</td>
       <td style="padding:12px 16px;font-weight:600;color:${pnlColor}">${pnlStr}</td>
+      <td style="padding:12px 16px;color:var(--gris);font-size:11px">${esc(o.cuenta) || '—'}</td>
       <td style="padding:12px 16px;color:var(--gris)">${esc(o.estrategia) || '—'}</td>
       <td style="padding:12px 16px;font-weight:600;color:${reglasColor}">${reglasStr}</td>
       <td style="padding:12px 16px;color:var(--gris);max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${o.emocion && !o.emocion.startsWith('__') ? esc(o.emocion) : '—'}</td>
@@ -2463,7 +2465,7 @@
         <button onclick="event.stopPropagation();abrirEditarOp('${escAttr(o.id)}')" title="Editar" style="background:none;border:1px solid #2A2A2A;color:#666;padding:2px 8px;border-radius:5px;cursor:pointer;font-size:11px;margin-left:6px">✏️</button>
       </td>
     </tr>${tieneDetalle ? `<tr id="${escAttr(rowId)}_det" style="display:none;border-bottom:1px solid #1A1A1A;background:#0A0A0A" data-estrategia="${escAttr(o.estrategia || '')}">
-      <td colspan="8" style="padding:12px 16px">
+      <td colspan="9" style="padding:12px 16px">
         ${reglasDetalle ? `<div style="margin-bottom:${tieneNotas?'10px':'0'}">${reglasDetalle}</div>` : ''}
         ${tieneNotas ? `<div style="font-size:13px;color:var(--gris);line-height:1.6"><span style="color:#555;font-size:11px;text-transform:uppercase;letter-spacing:1px;margin-right:8px">Nota</span>${esc(o.notas)}</div>` : ''}
       </td>

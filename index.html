@@ -2111,20 +2111,8 @@
     const cont = document.getElementById('journalContainer');
     cont.innerHTML = '<div style="text-align:center;padding:40px;color:var(--gris)"><span class="spinner"></span> Cargando journal...</div>';
 
-    const [r, rc] = await Promise.all([
-      sbFetch('/rest/v1/operaciones_journal?select=*&user_id=eq.' + sesiónActual.user.id + '&order=fecha.desc', {}, sesiónActual.access_token),
-      sbFetch('/rest/v1/comisiones_journal?select=*&user_id=eq.' + sesiónActual.user.id, {}, sesiónActual.access_token)
-    ]);
+    const r = await sbFetch('/rest/v1/operaciones_journal?select=*&user_id=eq.' + sesiónActual.user.id + '&order=fecha.desc', {}, sesiónActual.access_token);
     if (!r.ok || !Array.isArray(r.data)) { cont.innerHTML = '<div style="color:#E57373;padding:20px">Error cargando el journal.</div>'; return; }
-
-    // Armar mapa de comisiones { cuenta_instrumento: monto }
-    _comisionesData = {};
-    if (rc.ok && Array.isArray(rc.data)) {
-      rc.data.forEach(c => {
-        if (!_comisionesData[c.cuenta]) _comisionesData[c.cuenta] = {};
-        _comisionesData[c.cuenta][c.instrumento] = Number(c.comision_contrato);
-      });
-    }
 
     _todasLasOps = r.data.filter(o => o.pnl !== null);
     _opsFiltradas = _todasLasOps;
@@ -2138,14 +2126,14 @@
           <p style="font-size:13px;color:var(--gris)">Registro cuantitativo y cualitativo de tus operaciones.</p>
         </div>
         <div style="display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end">
-          <a href="https://pjrwdseaomijkgytbglh.supabase.co/storage/v1/object/public/Instaladores/TraderJournalTDA-V3.zip" target="_blank" rel="noopener noreferrer" style="display:inline-flex;align-items:center;gap:6px;background:#1A1A1A;border:1px solid #2A2A2A;color:var(--gris);padding:10px 14px;border-radius:8px;text-decoration:none;font-size:12px;font-weight:600">⬇ Descargar ZIP</a>
-          <a href="https://pjrwdseaomijkgytbglh.supabase.co/storage/v1/object/public/Instaladores/GUIA_INSTALACION_TRADINGJOURNALTDA_V3.pdf" target="_blank" rel="noopener noreferrer" style="display:inline-flex;align-items:center;gap:6px;background:#1A1A1A;border:1px solid #2A2A2A;color:var(--gris);padding:10px 14px;border-radius:8px;text-decoration:none;font-size:12px;font-weight:600">📄 Guía</a>
-
+          <a href="https://pjrwdseaomijkgytbglh.supabase.co/storage/v1/object/public/Instaladores/TraderJournalTDA-%20V2.zip" target="_blank" rel="noopener noreferrer" style="display:inline-flex;align-items:center;gap:6px;background:#1A1A1A;border:1px solid #2A2A2A;color:var(--gris);padding:10px 14px;border-radius:8px;text-decoration:none;font-size:12px;font-weight:600">⬇ Descargar ZIP</a>
+          <a href="https://pjrwdseaomijkgytbglh.supabase.co/storage/v1/object/public/Instaladores/GUIA_INSTALACION_TRADINGJOURNALTDA-V2.pdf" target="_blank" rel="noopener noreferrer" style="display:inline-flex;align-items:center;gap:6px;background:#1A1A1A;border:1px solid #2A2A2A;color:var(--gris);padding:10px 14px;border-radius:8px;text-decoration:none;font-size:12px;font-weight:600">📄 Guía</a>
+          <button onclick="abrirImportarCSV()" style="background:#1A1A1A;border:1px solid #2A2A2A;color:var(--gris);padding:10px 14px;border-radius:8px;cursor:pointer;font-size:12px;font-weight:600;display:flex;align-items:center;gap:6px">
+            📥 Importar CSV
+          </button>
+          <input type="file" id="csvFileInput" accept=".csv" style="display:none" onchange="procesarCSV(this)">
           <button onclick="eliminarHistorialJournal()" style="background:rgba(139,26,26,0.15);border:1px solid rgba(139,26,26,0.3);color:#E57373;padding:10px 14px;border-radius:8px;cursor:pointer;font-size:12px;font-weight:600;display:flex;align-items:center;gap:6px">
             🗑️ Eliminar historial
-          </button>
-          <button onclick="abrirComisionesJournal()" style="background:#1A1A1A;border:1px solid #2A2A2A;color:var(--gris);padding:10px 16px;border-radius:8px;cursor:pointer;font-size:13px;font-weight:600;display:flex;align-items:center;gap:8px">
-            💲 Comisiones
           </button>
           <button onclick="abrirConfigJournal()" style="background:#1A1A1A;border:1px solid #2A2A2A;color:var(--gris);padding:10px 16px;border-radius:8px;cursor:pointer;font-size:13px;font-weight:600;display:flex;align-items:center;gap:8px">
             ⚙️ Configurar
@@ -2168,9 +2156,9 @@
                 <div style="font-size:13px;font-weight:600;color:var(--blanco);margin-bottom:3px">Descargá el instalador y la guía</div>
                 <div style="font-size:12px;color:var(--gris);line-height:1.5">Instalá el AddOn de NinjaTrader 8 siguiendo las instrucciones de la guía.</div>
                 <div style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap">
-                  <a href="https://pjrwdseaomijkgytbglh.supabase.co/storage/v1/object/public/Instaladores/TraderJournalTDA-V3.zip" target="_blank" rel="noopener noreferrer" style="display:inline-flex;align-items:center;gap:6px;background:var(--rojo);color:white;padding:7px 14px;border-radius:7px;text-decoration:none;font-size:12px;font-weight:600">⬇ Descargar ZIP</a>
-                  <a href="https://pjrwdseaomijkgytbglh.supabase.co/storage/v1/object/public/Instaladores/GUIA_INSTALACION_TRADINGJOURNALTDA_V3.pdf" target="_blank" rel="noopener noreferrer" style="display:inline-flex;align-items:center;gap:6px;background:#1A1A1A;border:1px solid #2A2A2A;color:var(--gris);padding:7px 14px;border-radius:7px;text-decoration:none;font-size:12px;font-weight:600">📄 Guía de instalación</a>
-                  <a href="https://pjrwdseaomijkgytbglh.supabase.co/storage/v1/object/public/Instaladores/GUIA_INSTALACION_TRADINGJOURNALTDA_V3.pdf" target="_blank" rel="noopener noreferrer" style="display:inline-flex;align-items:center;gap:6px;background:#1A1A1A;border:1px solid #2A2A2A;color:var(--gris);padding:7px 14px;border-radius:7px;text-decoration:none;font-size:12px;font-weight:600">📄 Ver guía PDF</a>
+                  <a href="https://pjrwdseaomijkgytbglh.supabase.co/storage/v1/object/public/Instaladores/TraderJournalTDA-%20V2.zip" target="_blank" rel="noopener noreferrer" style="display:inline-flex;align-items:center;gap:6px;background:var(--rojo);color:white;padding:7px 14px;border-radius:7px;text-decoration:none;font-size:12px;font-weight:600">⬇ Descargar ZIP</a>
+                  <a href="https://pjrwdseaomijkgytbglh.supabase.co/storage/v1/object/public/Instaladores/GUIA_INSTALACION_TRADINGJOURNALTDA-V2.pdf" target="_blank" rel="noopener noreferrer" style="display:inline-flex;align-items:center;gap:6px;background:#1A1A1A;border:1px solid #2A2A2A;color:var(--gris);padding:7px 14px;border-radius:7px;text-decoration:none;font-size:12px;font-weight:600">📄 Guía de instalación</a>
+                  <a href="https://pjrwdseaomijkgytbglh.supabase.co/storage/v1/object/public/Instaladores/GUIA_INSTALACION_TRADINGJOURNALTDA-V2.pdf" target="_blank" rel="noopener noreferrer" style="display:inline-flex;align-items:center;gap:6px;background:#1A1A1A;border:1px solid #2A2A2A;color:var(--gris);padding:7px 14px;border-radius:7px;text-decoration:none;font-size:12px;font-weight:600">📄 Ver guía PDF</a>
                 </div>
               </div>
             </div>
@@ -2300,7 +2288,6 @@
             <tr style="border-bottom:1px solid #1E1E1E;color:var(--gris)">
               <th style="padding:12px 16px;font-weight:600;text-align:left;font-size:11px;text-transform:uppercase;letter-spacing:1px">Fecha</th>
               <th style="padding:12px 16px;font-weight:600;text-align:left;font-size:11px;text-transform:uppercase;letter-spacing:1px">Instrumento</th>
-              <th style="padding:12px 16px;font-weight:600;text-align:left;font-size:11px;text-transform:uppercase;letter-spacing:1px">Cuenta</th>
               <th style="padding:12px 16px;font-weight:600;text-align:left;font-size:11px;text-transform:uppercase;letter-spacing:1px">Dir</th>
               <th style="padding:12px 16px;font-weight:600;text-align:left;font-size:11px;text-transform:uppercase;letter-spacing:1px">PnL</th>
               <th style="padding:12px 16px;font-weight:600;text-align:left;font-size:11px;text-transform:uppercase;letter-spacing:1px">Estrategia</th>
@@ -2444,15 +2431,9 @@
 
   function renderOpFila(o) {
     const fecha = new Date(o.fecha).toLocaleDateString('es-AR', { day: '2-digit', month: '2-digit', year: '2-digit' });
-    const pnlBruto = Number(o.pnl);
-    // Aplicar comisión: commision/contrato × cantidad × 2 (entrada + salida)
-    const commPorContrato = (_comisionesData[o.cuenta] && _comisionesData[o.cuenta][o.instrumento]) || 0;
-    const cantidad = o.cantidad || 1;
-    const commTotal = commPorContrato > 0 ? commPorContrato * cantidad * 2 : 0;
-    const pnl = commTotal > 0 ? pnlBruto - commTotal : pnlBruto;
+    const pnl = Number(o.pnl);
     const pnlColor = pnl >= 0 ? 'var(--verde)' : '#E57373';
     const pnlStr = (pnl >= 0 ? '+' : '') + '$' + pnl.toFixed(2);
-    const commStr = commTotal > 0 ? ` <span style="font-size:10px;color:#555" title="PnL bruto: $${pnlBruto.toFixed(2)} | comisión: $${commPorContrato.toFixed(2)}/cont × ${cantidad} × 2 = $${commTotal.toFixed(2)}">(-$${commTotal.toFixed(2)})</span>` : '';
     const dir = o.direccion === 'Long' ? '🟢' : '🔴';
     const reglas = o.reglas_cumplidas || [];
     const cumplidas = reglas.filter(r => !r.startsWith('NO:')).length;
@@ -2476,9 +2457,8 @@
       onmouseover="this.style.background='#111'" onmouseout="this.style.background='transparent'">
       <td style="padding:12px 16px;color:var(--gris)">${esc(fecha)}</td>
       <td style="padding:12px 16px;font-weight:600">${esc(o.instrumento) || '—'}</td>
-      <td style="padding:12px 16px;font-size:11px;color:#555;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100px">${esc(o.cuenta) || '—'}</td>
       <td style="padding:12px 16px">${dir}</td>
-      <td style="padding:12px 16px;font-weight:600;color:${pnlColor}">${pnlStr}${commStr}</td>
+      <td style="padding:12px 16px;font-weight:600;color:${pnlColor}">${pnlStr}</td>
       <td style="padding:12px 16px;color:var(--gris)">${esc(o.estrategia) || '—'}</td>
       <td style="padding:12px 16px;font-weight:600;color:${reglasColor}">${reglasStr}</td>
       <td style="padding:12px 16px;color:var(--gris);max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${o.emocion && !o.emocion.startsWith('__') ? esc(o.emocion) : '—'}</td>
@@ -2487,7 +2467,7 @@
         <button onclick="event.stopPropagation();abrirEditarOp('${escAttr(o.id)}')" title="Editar" style="background:none;border:1px solid #2A2A2A;color:#666;padding:2px 8px;border-radius:5px;cursor:pointer;font-size:11px;margin-left:6px">✏️</button>
       </td>
     </tr>${tieneDetalle ? `<tr id="${escAttr(rowId)}_det" style="display:none;border-bottom:1px solid #1A1A1A;background:#0A0A0A" data-estrategia="${escAttr(o.estrategia || '')}">
-      <td colspan="9" style="padding:12px 16px">
+      <td colspan="8" style="padding:12px 16px">
         ${reglasDetalle ? `<div style="margin-bottom:${tieneNotas?'10px':'0'}">${reglasDetalle}</div>` : ''}
         ${tieneNotas ? `<div style="font-size:13px;color:var(--gris);line-height:1.6"><span style="color:#555;font-size:11px;text-transform:uppercase;letter-spacing:1px;margin-right:8px">Nota</span>${esc(o.notas)}</div>` : ''}
       </td>
@@ -3217,6 +3197,202 @@
   /* ══════════════════════
      ELIMINAR HISTORIAL
   ══════════════════════ */
+  /* ══════════════════════
+     IMPORTAR CSV DE NT8
+  ══════════════════════ */
+
+  function abrirImportarCSV() {
+    let modal = document.getElementById('modalImportarCSV');
+    if (!modal) {
+      modal = document.createElement('div');
+      modal.id = 'modalImportarCSV';
+      modal.className = 'modal-overlay';
+      modal.innerHTML = `
+        <div class="modal" style="max-width:520px">
+          <button class="modal-close" onclick="cerrarModal('modalImportarCSV')">✕</button>
+          <h3 style="margin-bottom:8px">Importar historial desde CSV</h3>
+          <p class="modal-desc">Seguí estos pasos para importar tus operaciones pasadas con el PnL correcto (comisiones incluidas):</p>
+
+          <div style="background:#0D0D0D;border:1px solid #1E1E1E;border-radius:12px;padding:16px;margin-bottom:20px">
+            <div style="display:flex;gap:12px;margin-bottom:12px">
+              <div style="background:var(--rojo);color:white;border-radius:50%;width:22px;height:22px;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;flex-shrink:0;margin-top:1px">1</div>
+              <div>
+                <div style="font-size:13px;font-weight:600;color:var(--blanco);margin-bottom:3px">Abrí NinjaTrader 8</div>
+                <div style="font-size:12px;color:var(--gris);line-height:1.5">Andá a <strong style="color:var(--blanco)">Nueva → Resultados de operaciones</strong></div>
+              </div>
+            </div>
+            <div style="display:flex;gap:12px;margin-bottom:12px">
+              <div style="background:var(--rojo);color:white;border-radius:50%;width:22px;height:22px;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;flex-shrink:0;margin-top:1px">2</div>
+              <div>
+                <div style="font-size:13px;font-weight:600;color:var(--blanco);margin-bottom:3px">Filtrá por cuenta y período</div>
+                <div style="font-size:12px;color:var(--gris);line-height:1.5">Seleccioná tu cuenta real, el rango de fechas que querés importar y hacé clic en <strong style="color:var(--blanco)">Generar</strong></div>
+              </div>
+            </div>
+            <div style="display:flex;gap:12px;margin-bottom:12px">
+              <div style="background:var(--rojo);color:white;border-radius:50%;width:22px;height:22px;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;flex-shrink:0;margin-top:1px">3</div>
+              <div>
+                <div style="font-size:13px;font-weight:600;color:var(--blanco);margin-bottom:3px">Exportá el CSV</div>
+                <div style="font-size:12px;color:var(--gris);line-height:1.5">Hacé clic en <strong style="color:var(--blanco)">Descargar CSV</strong> y guardalo en cualquier carpeta. <strong style="color:#FFD700">⚠ Asegurate de que el modo sea "Trades ($)" (no "Análisis")</strong></div>
+              </div>
+            </div>
+            <div style="display:flex;gap:12px">
+              <div style="background:var(--rojo);color:white;border-radius:50%;width:22px;height:22px;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;flex-shrink:0;margin-top:1px">4</div>
+              <div>
+                <div style="font-size:13px;font-weight:600;color:var(--blanco);margin-bottom:3px">Seleccioná el archivo acá abajo</div>
+                <div style="font-size:12px;color:var(--gris);line-height:1.5">El sistema va a importar automáticamente todas las operaciones con el monto correcto</div>
+              </div>
+            </div>
+          </div>
+
+          <div style="background:#0D0D0D;border:1px dashed #2A2A2A;border-radius:10px;padding:20px;text-align:center;margin-bottom:16px;cursor:pointer" onclick="document.getElementById('csvFileInput').click()">
+            <div style="font-size:28px;margin-bottom:8px">📂</div>
+            <div style="font-size:13px;font-weight:600;color:var(--blanco);margin-bottom:4px">Seleccioná el archivo CSV</div>
+            <div style="font-size:11px;color:var(--gris)">Modo "Trades ($)" → Descargar CSV → seleccioná el archivo</div>
+          </div>
+
+          <div id="csvImportMsg" style="display:none;padding:10px 14px;border-radius:8px;font-size:13px;margin-bottom:12px"></div>
+
+          <div style="display:flex;gap:8px">
+            <button onclick="document.getElementById('csvFileInput').click()" class="modal-confirm" style="flex:1">📥 Seleccionar archivo CSV</button>
+            <button onclick="cerrarModal('modalImportarCSV')" style="background:#1E1E1E;border:1px solid #2A2A2A;color:var(--gris);padding:12px 18px;border-radius:8px;cursor:pointer;font-size:13px;font-weight:600">Cancelar</button>
+          </div>
+        </div>`;
+      document.body.appendChild(modal);
+    }
+    modal.classList.add('active');
+  }
+
+  async function procesarCSV(input) {
+    const file = input.files[0];
+    if (!file) return;
+
+    const msg = document.getElementById('csvImportMsg');
+    if (msg) { msg.style.display='block'; msg.style.background='rgba(255,193,7,0.1)'; msg.style.color='#FFD700'; msg.style.border='1px solid rgba(255,193,7,0.3)'; msg.textContent='⏳ Procesando archivo...'; }
+
+    try {
+      const text = await file.text();
+      const lineas = text.split('\n').filter(l => l.trim());
+      if (lineas.length < 2) { throw new Error('Archivo vacío o formato incorrecto'); }
+
+      // Detectar separador
+      const sep = lineas[0].includes(';') ? ';' : ',';
+      const headers = lineas[0].split(sep).map(h => h.trim());
+
+      // Columnas del CSV "Trades ($)" de NT8 en español:
+      // 0=Número, 1=Instrumento, 2=Cuenta, 3=Estrategia, 4=Mercado pos., 5=Cant.,
+      // 6=Precio entrada, 7=Precio salida, 8=Tiempo entrada, 9=Tiempo salida,
+      // 10=Nombre entrada, 11=Nombre salida, 12=Ganancias (PnL NETO con comisión), ...
+      const iInst  = headers.findIndex(h => h.includes('Instrumento') || h.includes('Instrument'));
+      const iCuenta= headers.findIndex(h => h.includes('Cuenta') || h.includes('Account'));
+      const iDir   = headers.findIndex(h => h.includes('Mercado pos') || h.includes('Market pos'));
+      const iQty   = headers.findIndex(h => h.includes('Cant') || h.includes('Qty') || h.includes('Quantity'));
+      const iEntry = headers.findIndex(h => h.includes('Tiempo de entrada') || h.includes('Entry time') || h.includes('Entrada'));
+      const iExit  = headers.findIndex(h => h.includes('Tiempo de salida') || h.includes('Exit time') || h.includes('Salida') && h.includes('Tiempo'));
+      const iPnl   = headers.findIndex(h => h === 'Ganancias' || h.includes('Profit') && !h.includes('Con'));
+
+      // Fallback a posiciones fijas si no encuentra por nombre
+      const colInst  = iInst  >= 0 ? iInst  : 1;
+      const colCuenta= iCuenta>= 0 ? iCuenta: 2;
+      const colDir   = iDir   >= 0 ? iDir   : 4;
+      const colEntry = iEntry >= 0 ? iEntry : 8;
+      const colExit  = iExit  >= 0 ? iExit  : 9;
+      const colPnl   = iPnl   >= 0 ? iPnl   : 12;
+
+      let importadas = 0;
+      let omitidas   = 0;
+      let errores    = 0;
+
+      for (let i = 1; i < lineas.length; i++) {
+        const cols = lineas[i].split(sep);
+        if (cols.length < 10) continue;
+
+        const instrRaw = cols[colInst]?.trim() || '';
+        const cuenta   = cols[colCuenta]?.trim() || '';
+        const dirRaw   = cols[colDir]?.trim() || '';
+        const entryStr = cols[colEntry]?.trim() || '';
+        const exitStr  = cols[colExit]?.trim() || '';
+        const pnlStr   = cols[colPnl]?.trim() || '';
+
+        if (!instrRaw || !pnlStr || !entryStr) continue;
+
+        // Instrumento: quitar el vencimiento (MNQ 06-26 → MNQ)
+        const inst = instrRaw.split(' ')[0];
+
+        // Dirección
+        const dir = dirRaw.toLowerCase().includes('short') ? 'Short' : 'Long';
+
+        // Parsear fecha de entrada — formato "d/M/yyyy H:mm:ss"
+        const partesFecha = entryStr.split(' ')[0].split('/');
+        if (partesFecha.length !== 3) continue;
+        const fechaISO = `${partesFecha[2]}-${partesFecha[1].padStart(2,'0')}-${partesFecha[0].padStart(2,'0')}`;
+        const horaEntry = entryStr.split(' ')[1] || '12:00:00';
+        const fechaObj = new Date(`${fechaISO}T${horaEntry}Z`);
+        if (isNaN(fechaObj.getTime())) continue;
+
+        // Duración en segundos
+        let durSeg = 60;
+        if (exitStr) {
+          const exitParts = exitStr.split(' ');
+          const exitFecha = exitParts[0].split('/');
+          if (exitFecha.length === 3) {
+            const exitISO = `${exitFecha[2]}-${exitFecha[1].padStart(2,'0')}-${exitFecha[0].padStart(2,'0')}`;
+            const exitObj = new Date(`${exitISO}T${exitParts[1] || '12:00:00'}Z`);
+            if (!isNaN(exitObj.getTime())) durSeg = Math.max(1, Math.round((exitObj - fechaObj) / 1000));
+          }
+        }
+
+        // Parsear PnL — quitar $, espacios, puntos de miles, cambiar coma por punto
+        const pnlClean = pnlStr.replace(/\$/g,'').replace(/\s/g,'').replace(/\./g,'').replace(',','.');
+        const pnl = parseFloat(pnlClean);
+        if (isNaN(pnl)) continue;
+
+        // Hash único basado en cuenta + fecha exacta de entrada + PnL
+        const execHash = `csv_${cuenta}_${fechaISO}_${horaEntry.replace(/:/g,'')}_${pnl.toFixed(2)}`;
+
+        // Insertar directo en Supabase
+        const r = await sbFetch('/rest/v1/operaciones_journal', {
+          method: 'POST',
+          body: JSON.stringify({
+            user_id:           sesiónActual.user.id,
+            instrumento:       inst,
+            direccion:         dir,
+            pnl:               pnl,
+            duracion_segundos: durSeg,
+            cuenta:            cuenta,
+            fecha:             fechaObj.toISOString(),
+            exec_hash:         execHash
+          }),
+          headers: { 'Prefer': 'return=minimal' }
+        }, sesiónActual.access_token);
+
+        if (r.status === 409) {
+          omitidas++;
+        } else if (r.ok || r.status === 201) {
+          importadas++;
+        } else {
+          console.error('Error importando fila', i, r.status, r.data);
+          errores++;
+        }
+      }
+
+      // Resetear input para poder reimportar
+      input.value = '';
+
+      let texto = importadas > 0
+        ? `✅ Se importaron ${importadas} operación(es) correctamente.`
+        : `No se encontraron operaciones nuevas.`;
+      if (omitidas > 0) texto += ` ⏭ ${omitidas} ya existían.`;
+      if (errores  > 0) texto += ` ⚠ ${errores} con error.`;
+
+      if (msg) { msg.style.background = importadas > 0 ? 'rgba(76,175,80,0.1)' : 'rgba(255,193,7,0.1)'; msg.style.color = importadas > 0 ? 'var(--verde)' : '#FFD700'; msg.style.border = importadas > 0 ? '1px solid rgba(76,175,80,0.3)' : '1px solid rgba(255,193,7,0.3)'; msg.textContent = texto; }
+
+      if (importadas > 0) setTimeout(() => { cerrarModal('modalImportarCSV'); cargarJournal(); }, 1500);
+
+    } catch(err) {
+      if (msg) { msg.style.background='rgba(229,115,115,0.1)'; msg.style.color='#E57373'; msg.style.border='1px solid rgba(229,115,115,0.3)'; msg.textContent='Error: ' + err.message; }
+      input.value = '';
+    }
+  }
 
   async function eliminarHistorialJournal() {
     if (!confirm('⚠️ ¿Estás seguro de que querés eliminar TODAS tus operaciones del journal?\n\nEsta acción no se puede deshacer.')) return;
@@ -3368,199 +3544,6 @@
     } else {
       if (msg) { msg.style.display='block'; msg.style.background='rgba(229,115,115,0.1)'; msg.style.color='#E57373'; msg.style.border='1px solid rgba(229,115,115,0.3)'; msg.textContent='Error al guardar.'; }
       if (btn) { btn.disabled=false; btn.textContent='Guardar cambios'; }
-    }
-  }
-
-  /* ══════════════════════
-     COMISIONES JOURNAL
-  ══════════════════════ */
-
-  let _comisionesData    = {}; // { cuenta: { instrumento: monto } }
-  let _cuentasJournal    = [];
-  let _cuentaSelComision = null;
-
-  async function abrirComisionesJournal() {
-    let modal = document.getElementById('modalComisiones');
-    if (!modal) {
-      modal = document.createElement('div');
-      modal.id = 'modalComisiones';
-      modal.className = 'modal-overlay';
-      document.body.appendChild(modal);
-    }
-    modal.innerHTML = `<div class="modal" style="max-width:680px;max-height:90vh;display:flex;flex-direction:column">
-      <button class="modal-close" onclick="cerrarModal('modalComisiones')">✕</button>
-      <h3 style="margin-bottom:4px">Comisiones por operación</h3>
-      <p class="modal-desc">Definí la comisión por contrato para cada cuenta e instrumento. Se descuenta del PnL mostrado en el journal.</p>
-      <div style="display:flex;gap:16px;flex:1;overflow:hidden;min-height:320px">
-        <!-- Panel izquierdo: cuentas -->
-        <div style="width:200px;flex-shrink:0;overflow-y:auto">
-          <div style="font-size:10px;color:#444;text-transform:uppercase;letter-spacing:1px;margin-bottom:8px">Cuentas</div>
-          <div id="comisionesCuentasList"></div>
-          <div style="font-size:10px;color:#444;margin-top:12px;line-height:1.5">Las cuentas se detectan automáticamente de tus operaciones.</div>
-          <div style="margin-top:16px;padding-top:12px;border-top:1px solid #1E1E1E">
-            <div style="font-size:10px;color:#444;text-transform:uppercase;letter-spacing:1px;margin-bottom:6px">Agregar cuenta</div>
-            <input id="nuevaCuentaComision" type="text" placeholder="Nombre de cuenta" style="width:100%;background:#111;border:1px solid #2A2A2A;color:var(--blanco);padding:6px 10px;border-radius:6px;font-size:11px;outline:none;font-family:'DM Sans',sans-serif;margin-bottom:6px;box-sizing:border-box">
-            <button onclick="agregarCuentaManualComision()" style="width:100%;background:#1E1E1E;border:1px solid #2A2A2A;color:var(--gris);padding:5px;border-radius:6px;cursor:pointer;font-size:11px">+ Agregar</button>
-          </div>
-        </div>
-        <!-- Panel derecho: instrumentos -->
-        <div style="flex:1;overflow-y:auto">
-          <div id="comisionesDetallePanel" style="color:var(--gris);font-size:13px;padding-top:8px">Seleccioná una cuenta</div>
-        </div>
-      </div>
-    </div>`;
-    modal.classList.add('active');
-    await cargarComisiones();
-  }
-
-  async function cargarComisiones() {
-    // Traer cuentas únicas del journal
-    const r1 = await sbFetch(
-      '/rest/v1/operaciones_journal?select=cuenta&user_id=eq.' + sesiónActual.user.id + '&cuenta=not.is.null',
-      {}, sesiónActual.access_token);
-    const cuentasRaw = r1.ok && Array.isArray(r1.data) ? [...new Set(r1.data.map(x => x.cuenta).filter(Boolean))] : [];
-    _cuentasJournal = cuentasRaw.sort();
-
-    // Traer comisiones guardadas
-    const r2 = await sbFetch(
-      '/rest/v1/comisiones_journal?select=*&user_id=eq.' + sesiónActual.user.id,
-      {}, sesiónActual.access_token);
-    _comisionesData = {};
-    if (r2.ok && Array.isArray(r2.data)) {
-      r2.data.forEach(c => {
-        if (!_comisionesData[c.cuenta]) _comisionesData[c.cuenta] = {};
-        _comisionesData[c.cuenta][c.instrumento] = c.comision_contrato;
-      });
-    }
-
-    renderCuentasListComisiones();
-    if (_cuentasJournal.length > 0) seleccionarCuentaComision(_cuentasJournal[0]);
-  }
-
-  function renderCuentasListComisiones() {
-    const cont = document.getElementById('comisionesCuentasList');
-    if (!cont) return;
-    if (_cuentasJournal.length === 0) {
-      cont.innerHTML = '<div style="font-size:12px;color:#444">Sin operaciones registradas</div>';
-      return;
-    }
-    cont.innerHTML = _cuentasJournal.map(c => {
-      const nInst = _comisionesData[c] ? Object.keys(_comisionesData[c]).length : 0;
-      const activa = c === _cuentaSelComision;
-      return `<div onclick="seleccionarCuentaComision('${escAttr(c)}')" style="padding:10px 12px;border-radius:8px;cursor:pointer;margin-bottom:4px;background:${activa?'rgba(211,47,47,0.15)':'#0D0D0D'};border:1px solid ${activa?'rgba(211,47,47,0.4)':'#1E1E1E'}">
-        <div style="font-size:12px;font-weight:600;color:${activa?'var(--blanco)':'var(--gris)'};white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(c)}</div>
-        <div style="font-size:10px;color:#555;margin-top:2px">${nInst > 0 ? nInst + ' instrumento(s)' : 'Sin instrumentos'}</div>
-      </div>`;
-    }).join('');
-  }
-
-  async function seleccionarCuentaComision(cuenta) {
-    _cuentaSelComision = cuenta;
-    renderCuentasListComisiones();
-
-    // Traer instrumentos únicos para esta cuenta
-    const r = await sbFetch(
-      '/rest/v1/operaciones_journal?select=instrumento&user_id=eq.' + sesiónActual.user.id + '&cuenta=eq.' + encodeURIComponent(cuenta) + '&instrumento=not.is.null',
-      {}, sesiónActual.access_token);
-    const instrs = r.ok && Array.isArray(r.data)
-      ? [...new Set(r.data.map(x => x.instrumento).filter(Boolean))].sort()
-      : [];
-
-    const panel = document.getElementById('comisionesDetallePanel');
-    if (!panel) return;
-
-    const comCuenta = _comisionesData[cuenta] || {};
-
-    panel.innerHTML = `
-      <div style="font-size:10px;color:#444;text-transform:uppercase;letter-spacing:1px;margin-bottom:12px">Cuenta: <span style="color:var(--gris)">${esc(cuenta)}</span></div>
-      ${instrs.length === 0 ? '<div style="font-size:12px;color:#444">Sin instrumentos registrados para esta cuenta.</div>' : ''}
-      <table style="width:100%;border-collapse:collapse">
-        <thead>
-          <tr style="border-bottom:1px solid #1E1E1E">
-            <th style="text-align:left;font-size:10px;color:#444;text-transform:uppercase;letter-spacing:1px;padding:6px 8px">Instrumento</th>
-            <th style="text-align:left;font-size:10px;color:#444;text-transform:uppercase;letter-spacing:1px;padding:6px 8px">Comisión/contrato (USD)</th>
-            <th></th>
-          </tr>
-        </thead>
-        <tbody>
-          ${instrs.map(inst => {
-            const val = comCuenta[inst] !== undefined ? comCuenta[inst] : '';
-            return `<tr style="border-bottom:1px solid #111">
-              <td style="padding:8px;font-size:13px;font-weight:600;color:var(--blanco)">${esc(inst)}</td>
-              <td style="padding:8px">
-                <input type="number" step="0.01" min="0" value="${val}" placeholder="ej: 1.90"
-                  id="comm_${escAttr(inst)}"
-                  style="background:#111;border:1px solid #2A2A2A;color:var(--blanco);padding:6px 10px;border-radius:6px;font-size:13px;width:100px;outline:none;font-family:'DM Sans',sans-serif">
-              </td>
-              <td style="padding:8px">
-                <button onclick="guardarComision('${escAttr(cuenta)}','${escAttr(inst)}')"
-                  style="background:var(--rojo);color:white;border:none;padding:6px 14px;border-radius:6px;cursor:pointer;font-size:12px;font-weight:600">
-                  Guardar
-                </button>
-              </td>
-            </tr>`;
-          }).join('')}
-        </tbody>
-      </table>
-      <div id="comisionMsg" style="display:none;margin-top:12px;font-size:12px;padding:8px 12px;border-radius:6px"></div>
-      <div style="margin-top:16px;padding-top:12px;border-top:1px solid #1E1E1E;display:flex;gap:8px;align-items:center">
-        <input id="nuevoInstComision" type="text" placeholder="Agregar instrumento (ej: ES, CL, GC...)"
-          style="flex:1;background:#111;border:1px solid #2A2A2A;color:var(--blanco);padding:7px 10px;border-radius:6px;font-size:12px;outline:none;font-family:'DM Sans',sans-serif">
-        <button onclick="agregarInstComision('${escAttr(cuenta)}')"
-          style="background:#1E1E1E;border:1px solid #2A2A2A;color:var(--gris);padding:7px 14px;border-radius:6px;cursor:pointer;font-size:12px;white-space:nowrap">+ Agregar</button>
-      </div>
-    `;
-  }
-
-  function agregarInstComision(cuenta) {
-    const input = document.getElementById('nuevoInstComision');
-    const inst = input?.value?.trim().toUpperCase();
-    if (!inst || !cuenta) return;
-    if (!_comisionesData[cuenta]) _comisionesData[cuenta] = {};
-    if (_comisionesData[cuenta][inst] === undefined) _comisionesData[cuenta][inst] = 0;
-    input.value = '';
-    seleccionarCuentaComision(cuenta);
-  }
-
-  function agregarCuentaManualComision() {
-    const input = document.getElementById('nuevaCuentaComision');
-    const nombre = input?.value?.trim();
-    if (!nombre) return;
-    if (!_cuentasJournal.includes(nombre)) {
-      _cuentasJournal.push(nombre);
-      _cuentasJournal.sort();
-    }
-    if (!_comisionesData[nombre]) _comisionesData[nombre] = {};
-    input.value = '';
-    renderCuentasListComisiones();
-    seleccionarCuentaComision(nombre);
-  }
-
-  async function guardarComision(cuenta, instrumento) {
-    const input = document.getElementById('comm_' + instrumento);
-    const val = parseFloat((input?.value || '0').replace(',', '.'));
-    if (isNaN(val) || val < 0) { document.getElementById('comisionMsg') && (document.getElementById('comisionMsg').style.display='block', document.getElementById('comisionMsg').textContent='Valor inválido'); return; }
-
-    const msg = document.getElementById('comisionMsg');
-
-    const r = await sbFetch('/rest/v1/comisiones_journal', {
-      method: 'POST',
-      body: JSON.stringify({
-        user_id:            sesiónActual.user.id,
-        cuenta:             cuenta,
-        instrumento:        instrumento,
-        comision_contrato:  val
-      }),
-      headers: { 'Prefer': 'resolution=merge-duplicates,return=minimal' }
-    }, sesiónActual.access_token);
-
-    if (r.ok || r.status === 201) {
-      if (!_comisionesData[cuenta]) _comisionesData[cuenta] = {};
-      _comisionesData[cuenta][instrumento] = val;
-      renderCuentasListComisiones();
-      if (msg) { msg.style.display='block'; msg.style.background='rgba(76,175,80,0.1)'; msg.style.color='var(--verde)'; msg.style.border='1px solid rgba(76,175,80,0.3)'; msg.textContent='✓ Comisión guardada para ' + instrumento; setTimeout(() => msg.style.display='none', 2000); }
-    } else {
-      if (msg) { msg.style.display='block'; msg.style.background='rgba(229,115,115,0.1)'; msg.style.color='#E57373'; msg.style.border='1px solid rgba(229,115,115,0.3)'; msg.textContent='Error al guardar.'; }
     }
   }
 

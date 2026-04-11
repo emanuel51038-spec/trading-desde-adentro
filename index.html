@@ -1982,12 +1982,15 @@
   async function guardarPreRegistro(datos, metodo) {
     try {
       const PRECIOS_BASE = { 'DailyLossLimiter': 30, 'ManualBacktestAnalyzer': 20, 'TDA_RiskReward': 25 };
+      // Version actual de cada producto al momento de la compra (histórico)
+      const VERSIONES_PRODUCTOS = { 'DailyLossLimiter': 'V1.0', 'ManualBacktestAnalyzer': 'V1.0', 'TDA_RiskReward': 'V1.3' };
       const body = {
         nombre: datos.nombre,
         email:  datos.email,
         machine_id: datos.mac,
         estado: 'pendiente_' + metodo,
         producto: productoSeleccionado,
+        version: VERSIONES_PRODUCTOS[productoSeleccionado] || 'V1.0',
         monto: precioFinal,
         metodo_pago: metodo === 'usdt' ? 'USDT' : 'ARS'
       };

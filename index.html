@@ -870,6 +870,13 @@
         </div>
       </div>
       <div class="screenshot-card">
+        <img src="captura_TDARiskReward.png" alt="TDA Risk/Reward">
+        <div class="screenshot-card-body">
+          <div class="screenshot-card-title">TDA Risk/Reward</div>
+          <div class="screenshot-card-desc">Herramienta profesional de Risk/Reward para NinjaTrader 8. Dibujo en 2 clicks, ratio en tiempo real, regla de multiplos de R, calculo automatico de contratos y linea BreakEven por comisiones.</div>
+        </div>
+      </div>
+      <div class="screenshot-card">
         <img src="bitacora1.png" alt="Bitacora de Trading">
         <div class="screenshot-card-body">
           <div class="screenshot-card-title">Bitacora de Trading</div>
@@ -1502,6 +1509,40 @@
           </div>
         </div>
 
+        <!-- TDA Risk/Reward -->
+        <div class="licencia-card" style="cursor:pointer;transition:border-color 0.2s" 
+             onmouseover="this.style.borderColor='rgba(139,26,26,0.6)'" 
+             onmouseout="this.style.borderColor='#1E1E1E'"
+             onclick="irATiendaProducto('TDA_RiskReward')">
+          <div class="licencia-card-header" style="border-bottom:none">
+            <div class="licencia-card-header-left">
+              <div class="licencia-product-icon">📐</div>
+              <div>
+                <div class="licencia-product-name">TDA Risk/Reward</div>
+                <div class="licencia-product-version">V1.3 · NinjaTrader 8 · Licencia permanente</div>
+              </div>
+            </div>
+            <div style="display:flex;align-items:center;gap:12px">
+              <span style="font-family:'Bebas Neue',sans-serif;font-size:24px;color:#E57373">USD 25</span>
+              <span style="font-size:20px">→</span>
+            </div>
+          </div>
+          <div style="padding:0 24px 20px;display:grid;grid-template-columns:repeat(3,1fr);gap:12px">
+            <div style="background:#0D0D0D;border-radius:8px;padding:10px 14px">
+              <div style="font-size:10px;color:var(--gris);text-transform:uppercase;letter-spacing:1px;margin-bottom:4px">Dibujo</div>
+              <div style="font-size:12px;font-weight:600">2 clicks</div>
+            </div>
+            <div style="background:#0D0D0D;border-radius:8px;padding:10px 14px">
+              <div style="font-size:10px;color:var(--gris);text-transform:uppercase;letter-spacing:1px;margin-bottom:4px">Licencia</div>
+              <div style="font-size:12px;font-weight:600">1 equipo</div>
+            </div>
+            <div style="background:#0D0D0D;border-radius:8px;padding:10px 14px">
+              <div style="font-size:10px;color:var(--gris);text-transform:uppercase;letter-spacing:1px;margin-bottom:4px">Pago</div>
+              <div style="font-size:12px;font-weight:600">Único</div>
+            </div>
+          </div>
+        </div>
+
       </div>`;
   }
 
@@ -1566,41 +1607,70 @@
   function irATiendaProducto(producto) {
     productoSeleccionado = producto || 'DailyLossLimiter';
     // Ajustar precio según producto
-    const PRECIOS = { 'DailyLossLimiter': 30, 'ManualBacktestAnalyzer': 20 };
+    const PRECIOS = { 'DailyLossLimiter': 30, 'ManualBacktestAnalyzer': 20, 'TDA_RiskReward': 25 };
     precioFinal = PRECIOS[productoSeleccionado] || 30;
     cuponAplicado = null;
     actualizarPrecios();
 
     // Actualizar hero de la landing según producto
     const esMBA = productoSeleccionado === 'ManualBacktestAnalyzer';
+    const esRR  = productoSeleccionado === 'TDA_RiskReward';
     const badge    = document.getElementById('landingBadge');
     const title    = document.getElementById('landingTitle');
     const subtitle = document.getElementById('landingSubtitle');
     const formTitle = document.getElementById('landingFormTitle');
 
-    if (badge)    badge.textContent = esMBA ? 'NinjaTrader 8 · Indicador' : 'NinjaTrader 8 · Add-On Profesional';
-    if (title)    title.innerHTML   = esMBA ? 'BACKTEST<br><span>ANALYZER</span>' : 'DAILY LOSS<br><span>LIMITER</span>';
-    if (subtitle) subtitle.textContent = esMBA
-      ? 'Realizá backtests a libro abierto de forma rápida y sencilla. Dibujá tus Risk/Reward en el gráfico, obtené estadísticas completas en tiempo real y enviá las operaciones al Trading Journal con un solo click.'
-      : 'Protegé tu capital con un bloqueador automático de pérdidas diarias. Inviolable, persistente y con licencia por equipo.';
-    if (formTitle) formTitle.textContent = esMBA ? 'Obtener Manual Backtest Analyzer' : 'Obtener licencia';
+    if (badge) {
+      badge.textContent = esRR  ? 'NinjaTrader 8 · Drawing Tool'
+                        : esMBA ? 'NinjaTrader 8 · Indicador'
+                        :         'NinjaTrader 8 · Add-On Profesional';
+    }
+    if (title) {
+      title.innerHTML = esRR  ? 'TDA RISK<br><span>REWARD</span>'
+                      : esMBA ? 'BACKTEST<br><span>ANALYZER</span>'
+                      :         'DAILY LOSS<br><span>LIMITER</span>';
+    }
+    if (subtitle) {
+      subtitle.textContent = esRR
+        ? 'Herramienta profesional de Risk/Reward para NinjaTrader 8. Dibujá tu entrada y stop con 2 clicks, ajustá el R:R en tiempo real, visualizá múltiplos de R y calculá automáticamente monto USD, contratos y break-even por comisiones.'
+        : esMBA
+        ? 'Realizá backtests a libro abierto de forma rápida y sencilla. Dibujá tus Risk/Reward en el gráfico, obtené estadísticas completas en tiempo real y enviá las operaciones al Trading Journal con un solo click.'
+        : 'Protegé tu capital con un bloqueador automático de pérdidas diarias. Inviolable, persistente y con licencia por equipo.';
+    }
+    if (formTitle) {
+      formTitle.textContent = esRR  ? 'Obtener TDA Risk/Reward'
+                            : esMBA ? 'Obtener Manual Backtest Analyzer'
+                            :         'Obtener licencia';
+    }
 
     // Actualizar feature cards según producto
     const fg = document.getElementById('featuresGrid');
     if (fg) {
-      fg.innerHTML = esMBA
-        ? '<div class="feature-card"><div class="feature-icon">📊</div><h3>Risk/Reward en el gráfico</h3><p>Dibujá directamente en el chart tu entrada, stop loss y take profit. Visualizá el ratio de forma clara e instantánea.</p></div>'
+      if (esRR) {
+        fg.innerHTML =
+          '<div class="feature-card"><div class="feature-icon">📐</div><h3>Dibujo en 2 clicks</h3><p>Primer click para la entrada, segundo click para el stop. El target se calcula automáticamente en 2R (configurable) y listo para operar.</p></div>'
+        + '<div class="feature-card"><div class="feature-icon">⚡</div><h3>Ratio en tiempo real</h3><p>Arrastrá el stop y el target se reposiciona automáticamente manteniendo el ratio que elegiste. Invertí de long a short sin reconfigurar nada.</p></div>'
+        + '<div class="feature-card"><div class="feature-icon">💰</div><h3>Cálculo automático de contratos</h3><p>La herramienta lee la cantidad del ChartTrader y recalcula el monto USD en vivo. Ves exactamente cuánto arriesgás y cuánto ganás con los contratos configurados.</p></div>'
+        + '<div class="feature-card"><div class="feature-icon">📏</div><h3>Regla de R múltiples</h3><p>Visualizá líneas guía en 1R, 2R, 3R, 4R, 5R... mientras arrastrás el target. Cada múltiplo muestra el monto USD, los puntos y el ratio correspondiente.</p></div>'
+        + '<div class="feature-card"><div class="feature-icon">🎯</div><h3>Línea BreakEven opcional</h3><p>Configurá tu comisión por lado y la herramienta te dibuja una línea sutil donde tenés que mover el stop para cubrir costos. Ideal para cuentas de prop firms.</p></div>'
+        + '<div class="feature-card"><div class="feature-icon">🛡️</div><h3>Licencia por equipo</h3><p>Licencia vinculada a tu MAC Address. No se puede compartir ni usar en otra PC.</p></div>';
+      } else if (esMBA) {
+        fg.innerHTML =
+          '<div class="feature-card"><div class="feature-icon">📊</div><h3>Risk/Reward en el gráfico</h3><p>Dibujá directamente en el chart tu entrada, stop loss y take profit. Visualizá el ratio de forma clara e instantánea.</p></div>'
         + '<div class="feature-card"><div class="feature-icon">📈</div><h3>Estadísticas en tiempo real</h3><p>Win rate, profit factor, ratio R:R, racha máxima y más. Todo se actualiza automáticamente con cada operación.</p></div>'
         + '<div class="feature-card"><div class="feature-icon">📖</div><h3>Backtesting a libro abierto</h3><p>Recorré el gráfico vela por vela y registrá tus operaciones como si estuvieras en vivo. Sin replay ni simulador.</p></div>'
         + '<div class="feature-card"><div class="feature-icon">🚀</div><h3>Integración con Trading Journal</h3><p>Enviá todas las operaciones del backtest al Trading Journal con un solo click. Quedan guardadas en tu panel web para analizarlas cuando quieras.</p></div>'
         + '<div class="feature-card"><div class="feature-icon">📉</div><h3>Analytics web avanzado</h3><p>Accedé desde tu panel web a R Acumulado, Win Rate, Profit Factor, Expected Value, Max Drawdown y equity curve de todos tus backtests.</p></div>'
-        + '<div class="feature-card"><div class="feature-icon">🛡️</div><h3>Licencia por equipo</h3><p>Licencia vinculada a tu MAC Address. No se puede compartir ni usar en otra PC.</p></div>'
-        : '<div class="feature-card"><div class="feature-icon">🔒</div><h3>Bloqueo automático</h3><p>Cancela nuevas órdenes automáticamente cuando alcanzás el límite de pérdida configurado.</p></div>'
+        + '<div class="feature-card"><div class="feature-icon">🛡️</div><h3>Licencia por equipo</h3><p>Licencia vinculada a tu MAC Address. No se puede compartir ni usar en otra PC.</p></div>';
+      } else {
+        fg.innerHTML =
+          '<div class="feature-card"><div class="feature-icon">🔒</div><h3>Bloqueo automático</h3><p>Cancela nuevas órdenes automáticamente cuando alcanzás el límite de pérdida configurado.</p></div>'
         + '<div class="feature-card"><div class="feature-icon">💻</div><h3>Múltiples cuentas</h3><p>Monitoreá varias cuentas simultáneamente, cada una con su propio límite independiente.</p></div>'
         + '<div class="feature-card"><div class="feature-icon">🔑</div><h3>Protección por contraseña</h3><p>El operador no puede desactivar el limitador sin la contraseña. Ideal para prop firms.</p></div>'
         + '<div class="feature-card"><div class="feature-icon">💾</div><h3>Persistente al reinicio</h3><p>El estado se guarda en disco. Si reiniciás NT8 con cuentas bloqueadas, siguen bloqueadas.</p></div>'
         + '<div class="feature-card"><div class="feature-icon">🔄</div><h3>Desbloqueo inteligente</h3><p>Se desbloquea automáticamente cuando el P&L vuelve a $0. Sin intervención manual.</p></div>'
         + '<div class="feature-card"><div class="feature-icon">🛡️</div><h3>Licencia por equipo</h3><p>Licencia vinculada a tu MAC Address. No se puede compartir ni usar en otra PC.</p></div>';
+      }
     }
 
     // Ir a la landing y hacer scroll al formulario de compra
@@ -1667,12 +1737,21 @@
 
     // Datos por producto
     const esMBA = l.producto === 'ManualBacktestAnalyzer';
-    const nombreProducto = esMBA ? 'Manual Backtest Analyzer' : 'Daily Loss Limiter';
-    const iconoProducto  = esMBA ? '📊' : '🔒';
-    const installerUrl   = esMBA
+    const esRR  = l.producto === 'TDA_RiskReward';
+    const nombreProducto = esRR  ? 'TDA Risk/Reward'
+                         : esMBA ? 'Manual Backtest Analyzer'
+                         :         'Daily Loss Limiter';
+    const iconoProducto  = esRR  ? '📐'
+                         : esMBA ? '📊'
+                         :         '🔒';
+    const installerUrl   = esRR
+      ? 'https://pjrwdseaomijkgytbglh.supabase.co/storage/v1/object/public/Instaladores/TDARiskRewardV1.3.zip'
+      : esMBA
       ? 'https://pjrwdseaomijkgytbglh.supabase.co/storage/v1/object/public/Instaladores/TDA_ManualBacktestAnalyzerV2.zip'
       : 'https://pjrwdseaomijkgytbglh.supabase.co/storage/v1/object/public/Instaladores/dailylosslimiter.zip';
-    const guideUrl = esMBA
+    const guideUrl = esRR
+      ? 'https://pjrwdseaomijkgytbglh.supabase.co/storage/v1/object/public/Instaladores/GUIA_INSTALACION_TDARISKREWARD.pdf'
+      : esMBA
       ? 'https://pjrwdseaomijkgytbglh.supabase.co/storage/v1/object/public/Instaladores/GUIA_INSTALACION_MANUALBACKTESTANALYZER-V2.pdf'
       : 'https://pjrwdseaomijkgytbglh.supabase.co/storage/v1/object/public/Instaladores/GUIA_INSTALACION_DAILYLOSSLIMITER.pdf';
 
@@ -1743,6 +1822,14 @@
           </div>
           <div class="empty-product-price">USD 20</div>
         </a>
+        <a class="empty-product-card" onclick="irATiendaProducto('TDA_RiskReward')">
+          <div class="empty-product-icon">📐</div>
+          <div class="empty-product-info">
+            <div class="empty-product-name">TDA Risk/Reward</div>
+            <div class="empty-product-desc">Herramienta profesional de Risk/Reward · NT8</div>
+          </div>
+          <div class="empty-product-price">USD 25</div>
+        </a>
       </div>
     </div>`;
   }
@@ -1768,10 +1855,15 @@
     const rows = r.data.map(l => {
       const fecha = l.fecha_pago || l.created_at?.split('T')[0] || '—';
       const metodo = l.metodo_pago || (l.estado?.includes('usdt') ? 'USDT' : l.estado?.includes('ars') ? 'ARS' : '—');
-      const monto  = l.monto ? `USD ${l.monto}` : (l.producto === 'ManualBacktestAnalyzer' ? 'USD 20' : 'USD 30');
+      const montoDefault = l.producto === 'ManualBacktestAnalyzer' ? 'USD 20'
+                         : l.producto === 'TDA_RiskReward'          ? 'USD 25'
+                         :                                            'USD 30';
+      const monto  = l.monto ? `USD ${l.monto}` : montoDefault;
       const estadoClass = l.estado === 'activa' ? 'activa' : 'pendiente';
       const estadoLabel = l.estado === 'activa' ? 'Activo' : 'Pendiente';
-      const nombreProducto = l.producto === 'ManualBacktestAnalyzer' ? 'Manual Backtest Analyzer V1.0' : 'Daily Loss Limiter V1.0';
+      const nombreProducto = l.producto === 'ManualBacktestAnalyzer' ? 'Manual Backtest Analyzer V1.0'
+                           : l.producto === 'TDA_RiskReward'          ? 'TDA Risk/Reward V1.3'
+                           :                                            'Daily Loss Limiter V1.0';
       return `
       <div class="historial-row">
         <div>
@@ -1889,7 +1981,7 @@
 
   async function guardarPreRegistro(datos, metodo) {
     try {
-      const PRECIOS_BASE = { 'DailyLossLimiter': 30, 'ManualBacktestAnalyzer': 20 };
+      const PRECIOS_BASE = { 'DailyLossLimiter': 30, 'ManualBacktestAnalyzer': 20, 'TDA_RiskReward': 25 };
       const body = {
         nombre: datos.nombre,
         email:  datos.email,
@@ -1965,7 +2057,7 @@
     msg.className = 'cupon-msg'; msg.textContent = 'Verificando...';
 
     // Precio base del producto seleccionado (no siempre 30)
-    const PRECIOS_BASE = { 'DailyLossLimiter': 30, 'ManualBacktestAnalyzer': 20 };
+    const PRECIOS_BASE = { 'DailyLossLimiter': 30, 'ManualBacktestAnalyzer': 20, 'TDA_RiskReward': 25 };
     const precioBase = PRECIOS_BASE[productoSeleccionado] || 30;
 
     try {
@@ -2000,6 +2092,8 @@
     msg.innerHTML = 'Hemos recibido tu solicitud correctamente. Te enviamos un email de confirmación.<br><strong>Revisá tu carpeta de spam</strong> si no lo encontrás.<br>Recordá enviar el comprobante a <strong>tradingdesdeadentro&#64;gmail.com</strong>.';
     const nombreProductoEmail = productoSeleccionado === 'ManualBacktestAnalyzer'
       ? 'Manual Backtest Analyzer'
+      : productoSeleccionado === 'TDA_RiskReward'
+      ? 'TDA Risk/Reward'
       : 'Daily Loss Limiter';
     try {
       await emailjs.send('service_3zbxaia', 'template_gmveuaa', {

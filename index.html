@@ -2360,7 +2360,10 @@
       <!-- Equity Curve -->
       <div style="background:var(--negro-card);border:1px solid var(--negro-border);border-radius:16px;padding:20px;margin-bottom:16px">
         <div style="font-size:12px;font-weight:600;letter-spacing:1px;text-transform:uppercase;color:var(--gris);margin-bottom:12px">Equity Curve</div>
-        <canvas id="equityCanvas" style="width:100%;height:160px"></canvas>
+        <div style="position:relative">
+          <canvas id="equityCanvas" style="width:100%;height:200px"></canvas>
+          <div id="equityTooltip" style="display:none;position:absolute;background:#1A1A1A;border:1px solid #2A2A2A;border-radius:8px;padding:8px 12px;font-size:12px;pointer-events:none;white-space:nowrap;z-index:10"></div>
+        </div>
       </div>
       <!-- EVALUACIÓN DE FONDEOS -->
       <div style="background:var(--negro-card);border:1px solid var(--negro-border);border-radius:16px;padding:20px;margin-bottom:16px">
@@ -2747,6 +2750,78 @@
     ctx.strokeStyle = 'rgba(255,255,255,0.1)';
     ctx.lineWidth = 1;
     ctx.stroke();
+
+    // ── Tooltip ──
+    const tooltip = document.getElementById('equityTooltip');
+    canvas._equityData = { puntos, fechas, pad, W, H, acum };
+
+    canvas.onmousemove = function(e) {
+      const rect = canvas.getBoundingClientRect();
+      const mouseX = e.clientX - rect.left;
+      const { puntos, fechas, pad, W, H } = canvas._equityData;
+      const w = W - pad.left - pad.right;
+      const n = puntos.length - 1;
+      if (n < 1) return;
+
+      // Encontrar el punto más cercano
+      let closest = 0, minDist = Infinity;
+      for (let i = 0; i <= n; i++) {
+        const x = pad.left + (i / n) * w;
+        const dist = Math.abs(mouseX - x);
+        if (dist < minDist) { minDist = dist; closest = i; }
+      }
+
+      if (minDist > 30) { tooltip.style.display = 'none'; return; }
+
+      const val = puntos[closest];
+      const fecha = fechas[closest] || 'Inicio';
+      const color = val >= 0 ? '#4CAF50' : '#E57373';
+      const valStr = (val >= 0 ? '+$' : '-$') + Math.abs(val).toFixed(2);
+
+      tooltip.innerHTML = `<span style="color:#999;margin-right:6px">${fecha}</span><span style="color:${color};font-weight:700">${valStr}</span>`;
+      tooltip.style.display = 'block';
+
+      const x = pad.left + (closest / n) * w;
+      let left = x + 10;
+      if (left + 150 > W) left = x - 160;
+      tooltip.style.left = left + 'px';
+      tooltip.style.top = '8px';
+
+      // Dibujar línea vertical y punto
+      const minV = Math.min(...puntos);
+      const maxV = Math.max(...puntos);
+      const rango = maxV - minV || 1;
+      const py = (v) => pad.top + (1 - (v - minV) / rango) * H;
+
+      // Redibujar — llamar a la función completa evita acumulación de líneas
+      dibujarEquityCurve(canvas._equityOps);
+
+      const cx = pad.left + (closest / n) * w;
+      const minV2 = Math.min(...puntos);
+      const maxV2 = Math.max(...puntos);
+      const rango2 = maxV2 - minV2 || 1;
+      const cy = pad.top + (1 - (val - minV2) / rango2) * (H - pad.top - pad.bottom);
+      const ctxT = canvas.getContext('2d');
+      ctxT.beginPath();
+      ctxT.moveTo(cx, pad.top);
+      ctxT.lineTo(cx, H - pad.bottom);
+      ctxT.strokeStyle = 'rgba(255,255,255,0.15)';
+      ctxT.lineWidth = 1;
+      ctxT.setLineDash([3, 3]);
+      ctxT.stroke();
+      ctxT.setLineDash([]);
+      ctxT.beginPath();
+      ctxT.arc(cx, cy, 4, 0, Math.PI * 2);
+      ctxT.fillStyle = val >= 0 ? '#4CAF50' : '#E57373';
+      ctxT.fill();
+    };
+
+    canvas.onmouseleave = function() {
+      if (tooltip) tooltip.style.display = 'none';
+    };
+
+    // Guardar ops para redibujar en hover
+    canvas._equityOps = ops;
   }
 
   // ═══════════════════════════════════════════════════════════

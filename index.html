@@ -2466,17 +2466,24 @@
     const diasMes   = new Date(_calAnio, _calMes + 1, 0).getDate();
     const dias = ['Dom','Lun','Mar','Mié','Jue','Vie','Sáb'];
 
-    let html = '<div style="display:grid;grid-template-columns:repeat(7,1fr);gap:4px">';
-    // Headers
+    let html = '<div style="display:grid;grid-template-columns:repeat(7,1fr) 80px;gap:4px">';
+    // Headers días
     dias.forEach(d => {
       html += `<div style="text-align:center;font-size:10px;font-weight:600;color:var(--gris);padding:4px 0;text-transform:uppercase;letter-spacing:0.5px">${d}</div>`;
     });
+    // Header semana
+    html += `<div style="text-align:center;font-size:10px;font-weight:600;color:var(--gris);padding:4px 0;text-transform:uppercase;letter-spacing:0.5px">Semana</div>`;
+
     // Espacios vacíos al inicio
     for (let i = 0; i < primerDia; i++) {
       html += '<div></div>';
     }
+
     // Días
     const hoy = new Date();
+    let colActual = primerDia; // posición en la fila actual (0=Dom)
+    let pnlSemana = 0;
+
     for (let dia = 1; dia <= diasMes; dia++) {
       const info = porDia[dia];
       const esHoy = dia === hoy.getDate() && _calMes === hoy.getMonth() && _calAnio === hoy.getFullYear();
@@ -2484,6 +2491,7 @@
 
       if (info) {
         const p = info.pnl;
+        pnlSemana += p;
         pnlTxt = (p >= 0 ? '+' : '') + '$' + Math.abs(p).toFixed(0);
         if (p > 0)      { bg = 'rgba(76,175,80,0.12)';  border = 'rgba(76,175,80,0.3)';  pnlColor = '#4CAF50'; }
         else if (p < 0) { bg = 'rgba(229,115,115,0.12)'; border = 'rgba(229,115,115,0.3)'; pnlColor = '#E57373'; }
@@ -2495,6 +2503,24 @@
         ${info ? `<div style="font-size:10px;font-weight:700;color:${pnlColor}">${pnlTxt}</div>
         <div style="font-size:9px;color:var(--gris)">${info.trades} op${info.trades !== 1 ? 's' : ''}</div>` : ''}
       </div>`;
+
+      colActual++;
+
+      // Al llegar al sábado (col 6) o al último día del mes → mostrar total semanal
+      const esSabado = (new Date(_calAnio, _calMes, dia).getDay()) === 6;
+      const esUltimoDia = dia === diasMes;
+
+      if (esSabado || esUltimoDia) {
+        const swColor = pnlSemana > 0 ? '#4CAF50' : pnlSemana < 0 ? '#E57373' : 'var(--gris)';
+        const swTxt = pnlSemana !== 0 ? (pnlSemana > 0 ? '+' : '') + '$' + Math.abs(pnlSemana).toFixed(0) : '—';
+        const swBg = pnlSemana > 0 ? 'rgba(76,175,80,0.08)' : pnlSemana < 0 ? 'rgba(229,115,115,0.08)' : 'transparent';
+        html += `<div style="background:${swBg};border:1px solid #1E1E1E;border-radius:8px;padding:6px 4px;min-height:52px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px">
+          <div style="font-size:9px;color:#555;text-transform:uppercase;letter-spacing:0.5px">total</div>
+          <div style="font-size:11px;font-weight:700;color:${swColor}">${swTxt}</div>
+        </div>`;
+        pnlSemana = 0;
+        colActual = 0;
+      }
     }
     html += '</div>';
     grid.innerHTML = html;
@@ -2612,7 +2638,7 @@
     if (!canvas) return;
     const dpr = window.devicePixelRatio || 1;
     const W = canvas.offsetWidth || canvas.parentElement.offsetWidth || 600;
-    const H = 160;
+    const H = 200;
     canvas.width  = W * dpr;
     canvas.height = H * dpr;
     canvas.style.width  = W + 'px';
@@ -2623,20 +2649,62 @@
     // Calcular puntos de equity acumulada (orden cronológico = reversed)
     const sorted = [...ops].reverse();
     const puntos = [0];
+    const fechas = [''];
     let acum = 0;
-    sorted.forEach(o => { acum += pnlNeto(o); puntos.push(acum); });
+    sorted.forEach(o => {
+      acum += pnlNeto(o);
+      puntos.push(acum);
+      const d = new Date(o.fecha);
+      fechas.push(d.getDate() + '/' + (d.getMonth()+1));
+    });
 
     const minV = Math.min(...puntos);
     const maxV = Math.max(...puntos);
     const rango = maxV - minV || 1;
-    const pad = { top: 10, bottom: 10, left: 8, right: 8 };
+
+    // Padding para ejes
+    const pad = { top: 12, bottom: 30, left: 52, right: 12 };
     const w = W - pad.left - pad.right;
     const h = H - pad.top - pad.bottom;
 
-    const px = (i) => pad.left + (i / (puntos.length - 1)) * w;
+    const px = (i) => pad.left + (i / Math.max(puntos.length - 1, 1)) * w;
     const py = (v) => pad.top + (1 - (v - minV) / rango) * h;
 
-    // Gradiente bajo la curva
+    ctx.font = '10px DM Sans, sans-serif';
+    ctx.textBaseline = 'middle';
+
+    // ── Eje Y (labels) ──
+    const nTicks = 4;
+    for (let t = 0; t <= nTicks; t++) {
+      const val = minV + (rango / nTicks) * t;
+      const y   = py(val);
+      ctx.fillStyle = '#555';
+      ctx.textAlign = 'right';
+      ctx.fillText((val >= 0 ? '+$' : '-$') + Math.abs(val).toFixed(0), pad.left - 6, y);
+      // línea guía horizontal
+      ctx.beginPath();
+      ctx.moveTo(pad.left, y);
+      ctx.lineTo(W - pad.right, y);
+      ctx.strokeStyle = 'rgba(255,255,255,0.05)';
+      ctx.lineWidth = 1;
+      ctx.setLineDash([3, 4]);
+      ctx.stroke();
+      ctx.setLineDash([]);
+    }
+
+    // ── Eje X (fechas) — mostrar máx 6 labels ──
+    const maxLabels = 6;
+    const step = Math.max(1, Math.floor((puntos.length - 1) / maxLabels));
+    ctx.fillStyle = '#555';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'top';
+    for (let i = 1; i < puntos.length; i++) {
+      if ((i - 1) % step === 0 || i === puntos.length - 1) {
+        ctx.fillText(fechas[i], px(i), H - pad.bottom + 4);
+      }
+    }
+
+    // ── Gradiente bajo la curva ──
     const grad = ctx.createLinearGradient(0, pad.top, 0, H - pad.bottom);
     const color = acum >= 0 ? '76,175,80' : '229,115,115';
     grad.addColorStop(0, `rgba(${color},0.3)`);
@@ -2651,7 +2719,7 @@
     ctx.fillStyle = grad;
     ctx.fill();
 
-    // Línea
+    // ── Línea ──
     ctx.beginPath();
     ctx.moveTo(px(0), py(puntos[0]));
     puntos.forEach((v, i) => { if (i > 0) ctx.lineTo(px(i), py(v)); });
@@ -2659,18 +2727,26 @@
     ctx.lineWidth = 2;
     ctx.stroke();
 
-    // Línea base $0
+    // ── Línea base $0 ──
     const y0 = py(0);
     if (y0 > pad.top && y0 < H - pad.bottom) {
       ctx.beginPath();
       ctx.moveTo(pad.left, y0);
       ctx.lineTo(W - pad.right, y0);
-      ctx.strokeStyle = 'rgba(255,255,255,0.1)';
+      ctx.strokeStyle = 'rgba(255,255,255,0.15)';
       ctx.lineWidth = 1;
       ctx.setLineDash([4, 4]);
       ctx.stroke();
       ctx.setLineDash([]);
     }
+
+    // ── Línea eje Y ──
+    ctx.beginPath();
+    ctx.moveTo(pad.left, pad.top);
+    ctx.lineTo(pad.left, H - pad.bottom);
+    ctx.strokeStyle = 'rgba(255,255,255,0.1)';
+    ctx.lineWidth = 1;
+    ctx.stroke();
   }
 
   // ═══════════════════════════════════════════════════════════

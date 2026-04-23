@@ -1051,6 +1051,7 @@
       <button class="panel-nav-btn" onclick="switchPanelTab('tienda', this)">Comprar herramienta</button>
       <button class="panel-nav-btn" onclick="switchPanelTab('recursos', this)">Recursos gratuitos</button>
       <button class="panel-nav-btn" onclick="switchPanelTab('journal', this)">📒 Trading Journal</button>
+      <button class="panel-nav-btn" onclick="switchPanelTab('fondeos', this)">🏦 Fondeos</button>
     </nav>
 
     <!-- Content -->
@@ -1091,6 +1092,11 @@
       <!-- Sección: Trading Journal -->
       <div class="panel-section" id="sec-journal">
         <div id="journalContainer"></div>
+      </div>
+
+      <!-- Sección: Fondeos -->
+      <div class="panel-section" id="sec-fondeos">
+        <div id="fondeosContainer"></div>
       </div>
     </div>
 
@@ -1167,6 +1173,7 @@
     document.getElementById('sec-' + sec).classList.add('activa');
     btn.classList.add('active');
     if (sec === 'journal') cargarJournal();
+    if (sec === 'fondeos') cargarFondeos();
   }
 
   /* ══════════════════════
@@ -2417,6 +2424,337 @@
 
   // Llamar equity curve después de renderizar
   // ── CALENDARIO ──────────────────────────────────────
+  /* ══════════════════════════════════════════════════════
+     FONDEOS
+  ══════════════════════════════════════════════════════ */
+
+  let _fondeosFiltrados = [];
+
+  async function cargarFondeos() {
+    const cont = document.getElementById('fondeosContainer');
+    cont.innerHTML = '<div style="text-align:center;padding:40px;color:var(--gris)"><span class="spinner"></span> Cargando fondeos...</div>';
+
+    const r = await sbFetch('/rest/v1/fondeos?select=*&user_id=eq.' + sesiónActual.user.id + '&order=fecha.desc', {}, sesiónActual.access_token);
+    const fondeos = r.ok && Array.isArray(r.data) ? r.data : [];
+    _fondeosFiltrados = fondeos;
+    renderFondeos(fondeos);
+  }
+
+  function renderFondeos(fondeos) {
+    const cont = document.getElementById('fondeosContainer');
+
+    // Calcular métricas
+    const evals    = fondeos.filter(f => f.tipo === 'Evaluacion');
+    const retiros  = fondeos.filter(f => f.tipo === 'Retiro');
+    const superadas = evals.filter(f => f.estado === 'Superada').length;
+    const fallidas  = evals.filter(f => f.estado === 'Fallida').length;
+    const totalEvals = evals.filter(f => f.estado === 'Superada' || f.estado === 'Fallida').length;
+    const ratioAprobacion = totalEvals > 0 ? Math.round(superadas / totalEvals * 100) : 0;
+    const totalGastado = evals.reduce((a, f) => a + Number(f.monto), 0);
+    const totalRetirado = retiros.reduce((a, f) => a + Number(f.monto), 0);
+    const neto = totalRetirado - totalGastado;
+
+    // Empresas únicas para filtro
+    const empresas = [...new Set(fondeos.map(f => f.empresa))].sort();
+
+    cont.innerHTML = `
+      <!-- Header -->
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:24px;flex-wrap:wrap;gap:12px">
+        <div>
+          <h2 style="font-family:'Bebas Neue',sans-serif;font-size:28px;letter-spacing:2px;margin-bottom:4px">CONTROL DE FONDEOS</h2>
+          <p style="font-size:13px;color:var(--gris)">Registro de evaluaciones, retiros y rendimiento en prop firms.</p>
+        </div>
+        <button onclick="abrirModalFondeo()" style="background:var(--rojo);color:white;border:none;padding:10px 18px;border-radius:8px;cursor:pointer;font-size:13px;font-weight:600">+ Nuevo registro</button>
+      </div>
+
+      <!-- Métricas -->
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px;margin-bottom:24px">
+        ${renderFondeoCard('TOTAL GASTADO', '-$' + totalGastado.toFixed(2), '#E57373')}
+        ${renderFondeoCard('TOTAL RETIRADO', '+$' + totalRetirado.toFixed(2), 'var(--verde)')}
+        ${renderFondeoCard('NETO', (neto >= 0 ? '+' : '') + '$' + neto.toFixed(2), neto >= 0 ? 'var(--verde)' : '#E57373')}
+        ${renderFondeoCard('RATIO APROBACIÓN', ratioAprobacion + '%', ratioAprobacion >= 50 ? 'var(--verde)' : '#E57373')}
+        ${renderFondeoCard('SUPERADAS', superadas + ' / ' + totalEvals, 'var(--verde)')}
+        ${renderFondeoCard('FALLIDAS', String(fallidas), '#E57373')}
+      </div>
+
+      <!-- Gráficos -->
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:24px">
+        <div style="background:var(--negro-card);border:1px solid var(--negro-border);border-radius:16px;padding:20px">
+          <div style="font-size:11px;font-weight:600;letter-spacing:1px;text-transform:uppercase;color:var(--gris);margin-bottom:12px">Gastos vs Retiros acumulados</div>
+          <canvas id="fondeosBarCanvas" style="width:100%;max-height:180px"></canvas>
+        </div>
+        <div style="background:var(--negro-card);border:1px solid var(--negro-border);border-radius:16px;padding:20px">
+          <div style="font-size:11px;font-weight:600;letter-spacing:1px;text-transform:uppercase;color:var(--gris);margin-bottom:12px">Evaluaciones por estado</div>
+          <canvas id="fondeosPieCanvas" style="width:100%;max-height:180px"></canvas>
+        </div>
+      </div>
+
+      <!-- Filtros -->
+      <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:16px;align-items:center">
+        <select id="filtroFondeoEmpresa" onchange="filtrarFondeos()" style="background:#0D0D0D;border:1px solid #1E1E1E;color:var(--blanco);padding:7px 12px;border-radius:8px;font-size:13px;cursor:pointer;font-family:'DM Sans',sans-serif">
+          <option value="">Todas las empresas</option>
+          ${empresas.map(e => `<option value="${esc(e)}">${esc(e)}</option>`).join('')}
+        </select>
+        <select id="filtroFondeoTipo" onchange="filtrarFondeos()" style="background:#0D0D0D;border:1px solid #1E1E1E;color:var(--blanco);padding:7px 12px;border-radius:8px;font-size:13px;cursor:pointer;font-family:'DM Sans',sans-serif">
+          <option value="">Todos los tipos</option>
+          <option value="Evaluacion">Evaluación</option>
+          <option value="Retiro">Retiro</option>
+        </select>
+        <select id="filtroFondeoEstado" onchange="filtrarFondeos()" style="background:#0D0D0D;border:1px solid #1E1E1E;color:var(--blanco);padding:7px 12px;border-radius:8px;font-size:13px;cursor:pointer;font-family:'DM Sans',sans-serif">
+          <option value="">Todos los estados</option>
+          <option value="En curso">En curso</option>
+          <option value="Superada">Superada</option>
+          <option value="Fallida">Fallida</option>
+          <option value="Renovacion">Renovación</option>
+        </select>
+        <input type="date" id="filtroFondeoDesde" onchange="filtrarFondeos()" style="background:#0D0D0D;border:1px solid #1E1E1E;color:var(--blanco);padding:7px 12px;border-radius:8px;font-size:13px;font-family:'DM Sans',sans-serif">
+        <input type="date" id="filtroFondeoHasta" onchange="filtrarFondeos()" style="background:#0D0D0D;border:1px solid #1E1E1E;color:var(--blanco);padding:7px 12px;border-radius:8px;font-size:13px;font-family:'DM Sans',sans-serif">
+        <button onclick="limpiarFiltrosFondeos()" style="background:#1A1A1A;border:1px solid #2A2A2A;color:var(--gris);padding:7px 14px;border-radius:8px;cursor:pointer;font-size:12px">✕ Limpiar</button>
+      </div>
+
+      <!-- Tabla -->
+      <div style="background:var(--negro-card);border:1px solid var(--negro-border);border-radius:16px;overflow:hidden">
+        ${fondeos.length === 0 ? `
+          <div style="text-align:center;padding:48px;color:var(--gris)">
+            <div style="font-size:32px;margin-bottom:12px">🏦</div>
+            <div style="font-size:15px;font-weight:600;margin-bottom:6px">Sin registros todavía</div>
+            <div style="font-size:13px">Hacé clic en <strong>+ Nuevo registro</strong> para empezar</div>
+          </div>` : `
+        <table style="width:100%;border-collapse:collapse">
+          <thead>
+            <tr style="border-bottom:1px solid #1E1E1E;color:var(--gris)">
+              <th style="padding:12px 16px;font-weight:600;text-align:left;font-size:11px;text-transform:uppercase;letter-spacing:1px">Fecha</th>
+              <th style="padding:12px 16px;font-weight:600;text-align:left;font-size:11px;text-transform:uppercase;letter-spacing:1px">Empresa</th>
+              <th style="padding:12px 16px;font-weight:600;text-align:left;font-size:11px;text-transform:uppercase;letter-spacing:1px">Tipo</th>
+              <th style="padding:12px 16px;font-weight:600;text-align:left;font-size:11px;text-transform:uppercase;letter-spacing:1px">Estado</th>
+              <th style="padding:12px 16px;font-weight:600;text-align:left;font-size:11px;text-transform:uppercase;letter-spacing:1px">Monto</th>
+              <th style="padding:12px 16px;font-weight:600;text-align:left;font-size:11px;text-transform:uppercase;letter-spacing:1px">Notas</th>
+              <th style="padding:12px 16px;font-weight:600;text-align:left;font-size:11px;text-transform:uppercase;letter-spacing:1px"></th>
+            </tr>
+          </thead>
+          <tbody id="fondeosTbody">${fondeos.map(renderFondeoFila).join('')}</tbody>
+        </table>`}
+      </div>`;
+
+    // Dibujar gráficos
+    setTimeout(() => {
+      dibujarGraficosFondeos(fondeos);
+    }, 100);
+  }
+
+  function renderFondeoCard(label, valor, color) {
+    return `<div style="background:var(--negro-card);border:1px solid var(--negro-border);border-radius:12px;padding:16px 18px">
+      <div style="font-size:10px;color:var(--gris);text-transform:uppercase;letter-spacing:1px;margin-bottom:8px">${label}</div>
+      <div style="font-size:22px;font-family:'Bebas Neue',sans-serif;color:${color}">${valor}</div>
+    </div>`;
+  }
+
+  function renderFondeoFila(f) {
+    const fecha = new Date(f.fecha + 'T00:00:00').toLocaleDateString('es-AR', {day:'2-digit',month:'2-digit',year:'2-digit'});
+    const esRetiro = f.tipo === 'Retiro';
+    const montoColor = esRetiro ? 'var(--verde)' : '#E57373';
+    const montoStr = (esRetiro ? '+' : '-') + '$' + Number(f.monto).toFixed(2);
+    const estadoColor = {
+      'Superada': 'var(--verde)', 'Fallida': '#E57373',
+      'En curso': '#FFD700', 'Renovacion': '#64B5F6'
+    }[f.estado] || 'var(--gris)';
+    return `<tr style="border-bottom:1px solid #1A1A1A" onmouseover="this.style.background='#111'" onmouseout="this.style.background='transparent'">
+      <td style="padding:12px 16px;color:var(--gris)">${fecha}</td>
+      <td style="padding:12px 16px;font-weight:600">${esc(f.empresa)}</td>
+      <td style="padding:12px 16px;color:var(--gris)">${f.tipo === 'Evaluacion' ? 'Evaluación' : 'Retiro'}</td>
+      <td style="padding:12px 16px"><span style="color:${estadoColor};font-size:12px;font-weight:600">${f.estado || '—'}</span></td>
+      <td style="padding:12px 16px;font-weight:700;color:${montoColor}">${montoStr}</td>
+      <td style="padding:12px 16px;color:var(--gris);font-size:12px;max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(f.notas || '—')}</td>
+      <td style="padding:12px 16px;white-space:nowrap">
+        <button onclick="editarFondeo('${escAttr(f.id)}')" style="background:none;border:1px solid #2A2A2A;color:#666;padding:2px 8px;border-radius:5px;cursor:pointer;font-size:11px;margin-right:4px">✏️</button>
+        <button onclick="eliminarFondeo('${escAttr(f.id)}')" style="background:none;border:1px solid rgba(139,26,26,0.3);color:#E57373;padding:2px 8px;border-radius:5px;cursor:pointer;font-size:11px">✕</button>
+      </td>
+    </tr>`;
+  }
+
+  function dibujarGraficosFondeos(fondeos) {
+    // ── Gráfico de barras: gastos vs retiros por empresa ──
+    const barCanvas = document.getElementById('fondeosBarCanvas');
+    if (barCanvas) {
+      const empresas = [...new Set(fondeos.map(f => f.empresa))].sort();
+      const gastos   = empresas.map(e => fondeos.filter(f => f.empresa === e && f.tipo === 'Evaluacion').reduce((a, f) => a + Number(f.monto), 0));
+      const retiros  = empresas.map(e => fondeos.filter(f => f.empresa === e && f.tipo === 'Retiro').reduce((a, f) => a + Number(f.monto), 0));
+
+      if (window._fondeoBarChart) window._fondeoBarChart.destroy();
+      window._fondeoBarChart = new Chart(barCanvas.getContext('2d'), {
+        type: 'bar',
+        data: {
+          labels: empresas,
+          datasets: [
+            { label: 'Gastado', data: gastos, backgroundColor: 'rgba(229,115,115,0.7)', borderRadius: 4 },
+            { label: 'Retirado', data: retiros, backgroundColor: 'rgba(76,175,80,0.7)', borderRadius: 4 }
+          ]
+        },
+        options: {
+          responsive: true, maintainAspectRatio: false,
+          plugins: { legend: { labels: { color: '#9E9E9E', font: { size: 11 } } } },
+          scales: {
+            x: { ticks: { color: '#666' }, grid: { color: 'rgba(255,255,255,0.05)' } },
+            y: { ticks: { color: '#666', callback: v => '$' + v }, grid: { color: 'rgba(255,255,255,0.05)' } }
+          }
+        }
+      });
+    }
+
+    // ── Gráfico de torta: estados ──
+    const pieCanvas = document.getElementById('fondeosPieCanvas');
+    if (pieCanvas) {
+      const evals = fondeos.filter(f => f.tipo === 'Evaluacion');
+      const superadas  = evals.filter(f => f.estado === 'Superada').length;
+      const fallidas   = evals.filter(f => f.estado === 'Fallida').length;
+      const enCurso    = evals.filter(f => f.estado === 'En curso').length;
+      const renovacion = evals.filter(f => f.estado === 'Renovacion').length;
+
+      if (window._fondeoPieChart) window._fondeoPieChart.destroy();
+      window._fondeoPieChart = new Chart(pieCanvas.getContext('2d'), {
+        type: 'doughnut',
+        data: {
+          labels: ['Superada', 'Fallida', 'En curso', 'Renovación'],
+          datasets: [{
+            data: [superadas, fallidas, enCurso, renovacion],
+            backgroundColor: ['rgba(76,175,80,0.8)', 'rgba(229,115,115,0.8)', 'rgba(255,215,0,0.8)', 'rgba(100,181,246,0.8)'],
+            borderWidth: 0
+          }]
+        },
+        options: {
+          responsive: true, maintainAspectRatio: false,
+          plugins: { legend: { position: 'bottom', labels: { color: '#9E9E9E', font: { size: 11 }, padding: 12 } } }
+        }
+      });
+    }
+  }
+
+  function filtrarFondeos() {
+    const empresa = document.getElementById('filtroFondeoEmpresa')?.value || '';
+    const tipo    = document.getElementById('filtroFondeoTipo')?.value || '';
+    const estado  = document.getElementById('filtroFondeoEstado')?.value || '';
+    const desde   = document.getElementById('filtroFondeoDesde')?.value || '';
+    const hasta   = document.getElementById('filtroFondeoHasta')?.value || '';
+
+    const filtrados = _fondeosFiltrados.filter(f => {
+      return (!empresa || f.empresa === empresa)
+          && (!tipo    || f.tipo === tipo)
+          && (!estado  || f.estado === estado)
+          && (!desde   || f.fecha >= desde)
+          && (!hasta   || f.fecha <= hasta);
+    });
+
+    const tbody = document.getElementById('fondeosTbody');
+    if (tbody) tbody.innerHTML = filtrados.map(renderFondeoFila).join('');
+  }
+
+  function limpiarFiltrosFondeos() {
+    ['filtroFondeoEmpresa','filtroFondeoTipo','filtroFondeoEstado','filtroFondeoDesde','filtroFondeoHasta']
+      .forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
+    filtrarFondeos();
+  }
+
+  function abrirModalFondeo(fondeo = null) {
+    let modal = document.getElementById('modalFondeo');
+    if (!modal) {
+      modal = document.createElement('div');
+      modal.id = 'modalFondeo';
+      modal.className = 'modal-overlay';
+      document.body.appendChild(modal);
+    }
+    const esEdicion = !!fondeo;
+    modal.innerHTML = `
+      <div class="modal" style="max-width:460px">
+        <button class="modal-close" onclick="cerrarModal('modalFondeo')">✕</button>
+        <h3 style="margin-bottom:20px">${esEdicion ? 'Editar registro' : 'Nuevo registro'}</h3>
+
+        <label style="font-size:11px;color:var(--gris);display:block;margin-bottom:5px;text-transform:uppercase;letter-spacing:1px">Fecha</label>
+        <input type="date" id="fondeoFecha" value="${fondeo?.fecha || new Date().toISOString().slice(0,10)}"
+          style="width:100%;background:#181818;border:1px solid #2A2A2A;color:var(--blanco);padding:9px 12px;border-radius:7px;font-size:13px;margin-bottom:14px;outline:none;font-family:'DM Sans',sans-serif">
+
+        <label style="font-size:11px;color:var(--gris);display:block;margin-bottom:5px;text-transform:uppercase;letter-spacing:1px">Empresa</label>
+        <input type="text" id="fondeoEmpresa" placeholder="Ej: FTMO, MyFundedFutures..." value="${esc(fondeo?.empresa || '')}"
+          style="width:100%;background:#181818;border:1px solid #2A2A2A;color:var(--blanco);padding:9px 12px;border-radius:7px;font-size:13px;margin-bottom:14px;outline:none;font-family:'DM Sans',sans-serif">
+
+        <label style="font-size:11px;color:var(--gris);display:block;margin-bottom:5px;text-transform:uppercase;letter-spacing:1px">Tipo</label>
+        <select id="fondeoTipo" onchange="toggleFondeoEstado()" style="width:100%;background:#181818;border:1px solid #2A2A2A;color:var(--blanco);padding:9px 12px;border-radius:7px;font-size:13px;margin-bottom:14px;outline:none;font-family:'DM Sans',sans-serif">
+          <option value="Evaluacion" ${!fondeo || fondeo.tipo === 'Evaluacion' ? 'selected' : ''}>Evaluación</option>
+          <option value="Retiro" ${fondeo?.tipo === 'Retiro' ? 'selected' : ''}>Retiro</option>
+        </select>
+
+        <div id="fondeoEstadoWrap">
+          <label style="font-size:11px;color:var(--gris);display:block;margin-bottom:5px;text-transform:uppercase;letter-spacing:1px">Estado</label>
+          <select id="fondeoEstado" style="width:100%;background:#181818;border:1px solid #2A2A2A;color:var(--blanco);padding:9px 12px;border-radius:7px;font-size:13px;margin-bottom:14px;outline:none;font-family:'DM Sans',sans-serif">
+            <option value="En curso" ${(!fondeo || fondeo.estado === 'En curso') ? 'selected' : ''}>En curso</option>
+            <option value="Superada" ${fondeo?.estado === 'Superada' ? 'selected' : ''}>Superada</option>
+            <option value="Fallida" ${fondeo?.estado === 'Fallida' ? 'selected' : ''}>Fallida</option>
+            <option value="Renovacion" ${fondeo?.estado === 'Renovacion' ? 'selected' : ''}>Renovación</option>
+          </select>
+        </div>
+
+        <label style="font-size:11px;color:var(--gris);display:block;margin-bottom:5px;text-transform:uppercase;letter-spacing:1px">Monto (USD)</label>
+        <input type="number" id="fondeoMonto" step="0.01" min="0" placeholder="0.00" value="${fondeo?.monto || ''}"
+          style="width:100%;background:#181818;border:1px solid #2A2A2A;color:var(--blanco);padding:9px 12px;border-radius:7px;font-size:13px;margin-bottom:14px;outline:none;font-family:'DM Sans',sans-serif">
+
+        <label style="font-size:11px;color:var(--gris);display:block;margin-bottom:5px;text-transform:uppercase;letter-spacing:1px">Notas (opcional)</label>
+        <textarea id="fondeoNotas" placeholder="Observaciones..." style="width:100%;background:#181818;border:1px solid #2A2A2A;color:var(--blanco);padding:9px 12px;border-radius:7px;font-size:13px;min-height:70px;resize:vertical;outline:none;font-family:'DM Sans',sans-serif;margin-bottom:16px">${esc(fondeo?.notas || '')}</textarea>
+
+        <div id="fondeoMsg" style="display:none;margin-bottom:12px;font-size:12px;padding:8px 12px;border-radius:6px"></div>
+        <div style="display:flex;gap:8px">
+          <button onclick="guardarFondeo('${escAttr(fondeo?.id || '')}')" class="modal-confirm" style="flex:1">Guardar</button>
+          <button onclick="cerrarModal('modalFondeo')" style="background:#1E1E1E;border:1px solid #2A2A2A;color:var(--gris);padding:12px 18px;border-radius:8px;cursor:pointer;font-size:13px;font-weight:600">Cancelar</button>
+        </div>
+      </div>`;
+    modal.classList.add('active');
+    toggleFondeoEstado();
+  }
+
+  function toggleFondeoEstado() {
+    const tipo = document.getElementById('fondeoTipo')?.value;
+    const wrap = document.getElementById('fondeoEstadoWrap');
+    if (wrap) wrap.style.display = tipo === 'Retiro' ? 'none' : 'block';
+  }
+
+  async function guardarFondeo(id) {
+    const msg     = document.getElementById('fondeoMsg');
+    const fecha   = document.getElementById('fondeoFecha')?.value;
+    const empresa = document.getElementById('fondeoEmpresa')?.value?.trim();
+    const tipo    = document.getElementById('fondeoTipo')?.value;
+    const estado  = tipo === 'Retiro' ? null : document.getElementById('fondeoEstado')?.value;
+    const monto   = parseFloat(document.getElementById('fondeoMonto')?.value || '0');
+    const notas   = document.getElementById('fondeoNotas')?.value?.trim() || null;
+
+    if (!fecha || !empresa || !monto || monto <= 0) {
+      msg.style.display = 'block'; msg.style.background = 'rgba(229,115,115,0.1)'; msg.style.color = '#E57373'; msg.style.border = '1px solid rgba(229,115,115,0.3)';
+      msg.textContent = 'Completá fecha, empresa y monto.'; return;
+    }
+
+    const payload = { user_id: sesiónActual.user.id, fecha, empresa, tipo, estado, monto, notas };
+    const r = id
+      ? await sbFetch('/rest/v1/fondeos?id=eq.' + id, { method: 'PATCH', body: JSON.stringify({ fecha, empresa, tipo, estado, monto, notas }) }, sesiónActual.access_token)
+      : await sbFetch('/rest/v1/fondeos', { method: 'POST', body: JSON.stringify(payload), headers: { 'Prefer': 'return=minimal' } }, sesiónActual.access_token);
+
+    if (r.ok || r.status === 201) {
+      msg.style.display = 'block'; msg.style.background = 'rgba(76,175,80,0.1)'; msg.style.color = 'var(--verde)'; msg.style.border = '1px solid rgba(76,175,80,0.3)';
+      msg.textContent = '✓ Guardado';
+      setTimeout(() => { cerrarModal('modalFondeo'); cargarFondeos(); }, 700);
+    } else {
+      msg.style.display = 'block'; msg.style.background = 'rgba(229,115,115,0.1)'; msg.style.color = '#E57373'; msg.style.border = '1px solid rgba(229,115,115,0.3)';
+      msg.textContent = 'Error al guardar.';
+    }
+  }
+
+  async function editarFondeo(id) {
+    const r = await sbFetch('/rest/v1/fondeos?id=eq.' + id + '&select=*', {}, sesiónActual.access_token);
+    if (r.ok && r.data?.length > 0) abrirModalFondeo(r.data[0]);
+  }
+
+  async function eliminarFondeo(id) {
+    if (!confirm('¿Eliminár este registro?')) return;
+    await sbFetch('/rest/v1/fondeos?id=eq.' + id, { method: 'DELETE' }, sesiónActual.access_token);
+    cargarFondeos();
+  }
+
   let _todasLasOps = [];
   let _opsFiltradas = [];
   let _comisiones = {};

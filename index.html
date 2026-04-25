@@ -2505,6 +2505,7 @@
           <option value="En curso">En curso</option>
           <option value="Superada">Superada</option>
           <option value="Quemada">Quemada</option>
+          <option value="Renovada">Renovada</option>
         </select>
         <select id="filtroFondeoMotivo" onchange="filtrarFondeos()" style="background:#0D0D0D;border:1px solid #1E1E1E;color:var(--blanco);padding:7px 12px;border-radius:8px;font-size:13px;cursor:pointer;font-family:'DM Sans',sans-serif">
           <option value="">Todos los motivos</option>
@@ -2560,7 +2561,7 @@
     const montoColor = esRetiro ? 'var(--verde)' : '#E57373';
     const montoStr = (esRetiro ? '+' : '-') + '$' + Number(f.monto).toFixed(2);
     const resultadoColor = {
-      'Superada': 'var(--verde)', 'Quemada': '#E57373', 'En curso': '#FFD700'
+      'Superada': 'var(--verde)', 'Quemada': '#E57373', 'En curso': '#FFD700', 'Renovada': '#64B5F6'
     }[f.resultado] || 'var(--gris)';
     const motivoColor = f.motivo === 'Renovacion' ? '#64B5F6' : 'var(--gris)';
     return `<tr style="border-bottom:1px solid #1A1A1A" onmouseover="this.style.background='#111'" onmouseout="this.style.background='transparent'">
@@ -2614,15 +2615,16 @@
       const superadas  = evals.filter(f => f.resultado === 'Superada').length;
       const quemadas   = evals.filter(f => f.resultado === 'Quemada').length;
       const enCurso    = evals.filter(f => f.resultado === 'En curso').length;
+      const renovadas  = evals.filter(f => f.resultado === 'Renovada').length;
 
       if (window._fondeoPieChart) window._fondeoPieChart.destroy();
       window._fondeoPieChart = new Chart(pieCanvas.getContext('2d'), {
         type: 'doughnut',
         data: {
-          labels: ['Superada', 'Quemada', 'En curso'],
+          labels: ['Superada', 'Quemada', 'En curso', 'Renovada'],
           datasets: [{
-            data: [superadas, quemadas, enCurso],
-            backgroundColor: ['rgba(76,175,80,0.8)', 'rgba(229,115,115,0.8)', 'rgba(255,215,0,0.8)'],
+            data: [superadas, quemadas, enCurso, renovadas],
+            backgroundColor: ['rgba(76,175,80,0.8)', 'rgba(229,115,115,0.8)', 'rgba(255,215,0,0.8)', 'rgba(100,181,246,0.8)'],
             borderWidth: 0
           }]
         },
@@ -2701,6 +2703,7 @@
             <option value="En curso" ${(!fondeo || fondeo.resultado === 'En curso') ? 'selected' : ''}>En curso</option>
             <option value="Superada" ${fondeo?.resultado === 'Superada' ? 'selected' : ''}>Superada</option>
             <option value="Quemada" ${fondeo?.resultado === 'Quemada' ? 'selected' : ''}>Quemada</option>
+            <option value="Renovada" ${fondeo?.resultado === 'Renovada' ? 'selected' : ''}>Renovada</option>
           </select>
         </div>
 

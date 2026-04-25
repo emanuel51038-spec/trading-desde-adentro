@@ -2673,7 +2673,7 @@
     }
     const esEdicion = !!fondeo;
     modal.innerHTML = `
-      <div class="modal" style="max-width:460px">
+      <div class="modal" style="max-width:460px;max-height:90vh;overflow-y:auto">
         <button class="modal-close" onclick="cerrarModal('modalFondeo')">✕</button>
         <h3 style="margin-bottom:20px">${esEdicion ? 'Editar registro' : 'Nuevo registro'}</h3>
 

@@ -2446,9 +2446,9 @@
     // Calcular métricas
     const evals    = fondeos.filter(f => f.tipo === 'Evaluacion');
     const retiros  = fondeos.filter(f => f.tipo === 'Retiro');
-    const superadas = evals.filter(f => f.estado === 'Superada').length;
-    const fallidas  = evals.filter(f => f.estado === 'Fallida').length;
-    const totalEvals = evals.filter(f => f.estado === 'Superada' || f.estado === 'Fallida').length;
+    const superadas  = evals.filter(f => f.resultado === 'Superada').length;
+    const quemadas   = evals.filter(f => f.resultado === 'Quemada').length;
+    const totalEvals = evals.filter(f => f.resultado === 'Superada' || f.resultado === 'Quemada').length;
     const ratioAprobacion = totalEvals > 0 ? Math.round(superadas / totalEvals * 100) : 0;
     const totalGastado = evals.reduce((a, f) => a + Number(f.monto), 0);
     const totalRetirado = retiros.reduce((a, f) => a + Number(f.monto), 0);
@@ -2474,7 +2474,7 @@
         ${renderFondeoCard('NETO', (neto >= 0 ? '+' : '') + '$' + neto.toFixed(2), neto >= 0 ? 'var(--verde)' : '#E57373')}
         ${renderFondeoCard('RATIO APROBACIÓN', ratioAprobacion + '%', ratioAprobacion >= 50 ? 'var(--verde)' : '#E57373')}
         ${renderFondeoCard('SUPERADAS', superadas + ' / ' + totalEvals, 'var(--verde)')}
-        ${renderFondeoCard('FALLIDAS', String(fallidas), '#E57373')}
+        ${renderFondeoCard('QUEMADAS', String(quemadas), '#E57373')}
       </div>
 
       <!-- Gráficos -->
@@ -2500,11 +2500,15 @@
           <option value="Evaluacion">Evaluación</option>
           <option value="Retiro">Retiro</option>
         </select>
-        <select id="filtroFondeoEstado" onchange="filtrarFondeos()" style="background:#0D0D0D;border:1px solid #1E1E1E;color:var(--blanco);padding:7px 12px;border-radius:8px;font-size:13px;cursor:pointer;font-family:'DM Sans',sans-serif">
-          <option value="">Todos los estados</option>
+        <select id="filtroFondeoResultado" onchange="filtrarFondeos()" style="background:#0D0D0D;border:1px solid #1E1E1E;color:var(--blanco);padding:7px 12px;border-radius:8px;font-size:13px;cursor:pointer;font-family:'DM Sans',sans-serif">
+          <option value="">Todos los resultados</option>
           <option value="En curso">En curso</option>
           <option value="Superada">Superada</option>
-          <option value="Fallida">Fallida</option>
+          <option value="Quemada">Quemada</option>
+        </select>
+        <select id="filtroFondeoMotivo" onchange="filtrarFondeos()" style="background:#0D0D0D;border:1px solid #1E1E1E;color:var(--blanco);padding:7px 12px;border-radius:8px;font-size:13px;cursor:pointer;font-family:'DM Sans',sans-serif">
+          <option value="">Todos los motivos</option>
+          <option value="Inicio">Inicio</option>
           <option value="Renovacion">Renovación</option>
         </select>
         <input type="date" id="filtroFondeoDesde" onchange="filtrarFondeos()" style="background:#0D0D0D;border:1px solid #1E1E1E;color:var(--blanco);padding:7px 12px;border-radius:8px;font-size:13px;font-family:'DM Sans',sans-serif">
@@ -2526,7 +2530,8 @@
               <th style="padding:12px 16px;font-weight:600;text-align:left;font-size:11px;text-transform:uppercase;letter-spacing:1px">Fecha</th>
               <th style="padding:12px 16px;font-weight:600;text-align:left;font-size:11px;text-transform:uppercase;letter-spacing:1px">Empresa</th>
               <th style="padding:12px 16px;font-weight:600;text-align:left;font-size:11px;text-transform:uppercase;letter-spacing:1px">Tipo</th>
-              <th style="padding:12px 16px;font-weight:600;text-align:left;font-size:11px;text-transform:uppercase;letter-spacing:1px">Estado</th>
+              <th style="padding:12px 16px;font-weight:600;text-align:left;font-size:11px;text-transform:uppercase;letter-spacing:1px">Motivo</th>
+              <th style="padding:12px 16px;font-weight:600;text-align:left;font-size:11px;text-transform:uppercase;letter-spacing:1px">Resultado</th>
               <th style="padding:12px 16px;font-weight:600;text-align:left;font-size:11px;text-transform:uppercase;letter-spacing:1px">Monto</th>
               <th style="padding:12px 16px;font-weight:600;text-align:left;font-size:11px;text-transform:uppercase;letter-spacing:1px">Notas</th>
               <th style="padding:12px 16px;font-weight:600;text-align:left;font-size:11px;text-transform:uppercase;letter-spacing:1px"></th>
@@ -2554,15 +2559,16 @@
     const esRetiro = f.tipo === 'Retiro';
     const montoColor = esRetiro ? 'var(--verde)' : '#E57373';
     const montoStr = (esRetiro ? '+' : '-') + '$' + Number(f.monto).toFixed(2);
-    const estadoColor = {
-      'Superada': 'var(--verde)', 'Fallida': '#E57373',
-      'En curso': '#FFD700', 'Renovacion': '#64B5F6'
-    }[f.estado] || 'var(--gris)';
+    const resultadoColor = {
+      'Superada': 'var(--verde)', 'Quemada': '#E57373', 'En curso': '#FFD700'
+    }[f.resultado] || 'var(--gris)';
+    const motivoColor = f.motivo === 'Renovacion' ? '#64B5F6' : 'var(--gris)';
     return `<tr style="border-bottom:1px solid #1A1A1A" onmouseover="this.style.background='#111'" onmouseout="this.style.background='transparent'">
       <td style="padding:12px 16px;color:var(--gris)">${fecha}</td>
       <td style="padding:12px 16px;font-weight:600">${esc(f.empresa)}</td>
       <td style="padding:12px 16px;color:var(--gris)">${f.tipo === 'Evaluacion' ? 'Evaluación' : 'Retiro'}</td>
-      <td style="padding:12px 16px"><span style="color:${estadoColor};font-size:12px;font-weight:600">${f.estado || '—'}</span></td>
+      <td style="padding:12px 16px"><span style="color:${motivoColor};font-size:12px;font-weight:600">${f.motivo || '—'}</span></td>
+      <td style="padding:12px 16px"><span style="color:${resultadoColor};font-size:12px;font-weight:600">${f.resultado || '—'}</span></td>
       <td style="padding:12px 16px;font-weight:700;color:${montoColor}">${montoStr}</td>
       <td style="padding:12px 16px;color:var(--gris);font-size:12px;max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(f.notas || '—')}</td>
       <td style="padding:12px 16px;white-space:nowrap">
@@ -2605,19 +2611,18 @@
     const pieCanvas = document.getElementById('fondeosPieCanvas');
     if (pieCanvas) {
       const evals = fondeos.filter(f => f.tipo === 'Evaluacion');
-      const superadas  = evals.filter(f => f.estado === 'Superada').length;
-      const fallidas   = evals.filter(f => f.estado === 'Fallida').length;
-      const enCurso    = evals.filter(f => f.estado === 'En curso').length;
-      const renovacion = evals.filter(f => f.estado === 'Renovacion').length;
+      const superadas  = evals.filter(f => f.resultado === 'Superada').length;
+      const quemadas   = evals.filter(f => f.resultado === 'Quemada').length;
+      const enCurso    = evals.filter(f => f.resultado === 'En curso').length;
 
       if (window._fondeoPieChart) window._fondeoPieChart.destroy();
       window._fondeoPieChart = new Chart(pieCanvas.getContext('2d'), {
         type: 'doughnut',
         data: {
-          labels: ['Superada', 'Fallida', 'En curso', 'Renovación'],
+          labels: ['Superada', 'Quemada', 'En curso'],
           datasets: [{
-            data: [superadas, fallidas, enCurso, renovacion],
-            backgroundColor: ['rgba(76,175,80,0.8)', 'rgba(229,115,115,0.8)', 'rgba(255,215,0,0.8)', 'rgba(100,181,246,0.8)'],
+            data: [superadas, quemadas, enCurso],
+            backgroundColor: ['rgba(76,175,80,0.8)', 'rgba(229,115,115,0.8)', 'rgba(255,215,0,0.8)'],
             borderWidth: 0
           }]
         },
@@ -2632,16 +2637,18 @@
   function filtrarFondeos() {
     const empresa = document.getElementById('filtroFondeoEmpresa')?.value || '';
     const tipo    = document.getElementById('filtroFondeoTipo')?.value || '';
-    const estado  = document.getElementById('filtroFondeoEstado')?.value || '';
-    const desde   = document.getElementById('filtroFondeoDesde')?.value || '';
-    const hasta   = document.getElementById('filtroFondeoHasta')?.value || '';
+    const resultado = document.getElementById('filtroFondeoResultado')?.value || '';
+    const motivo    = document.getElementById('filtroFondeoMotivo')?.value || '';
+    const desde     = document.getElementById('filtroFondeoDesde')?.value || '';
+    const hasta     = document.getElementById('filtroFondeoHasta')?.value || '';
 
     const filtrados = _fondeosFiltrados.filter(f => {
-      return (!empresa || f.empresa === empresa)
-          && (!tipo    || f.tipo === tipo)
-          && (!estado  || f.estado === estado)
-          && (!desde   || f.fecha >= desde)
-          && (!hasta   || f.fecha <= hasta);
+      return (!empresa  || f.empresa === empresa)
+          && (!tipo     || f.tipo === tipo)
+          && (!resultado|| f.resultado === resultado)
+          && (!motivo   || f.motivo === motivo)
+          && (!desde    || f.fecha >= desde)
+          && (!hasta    || f.fecha <= hasta);
     });
 
     const tbody = document.getElementById('fondeosTbody');
@@ -2649,7 +2656,7 @@
   }
 
   function limpiarFiltrosFondeos() {
-    ['filtroFondeoEmpresa','filtroFondeoTipo','filtroFondeoEstado','filtroFondeoDesde','filtroFondeoHasta']
+    ['filtroFondeoEmpresa','filtroFondeoTipo','filtroFondeoResultado','filtroFondeoMotivo','filtroFondeoDesde','filtroFondeoHasta']
       .forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
     filtrarFondeos();
   }
@@ -2682,13 +2689,18 @@
           <option value="Retiro" ${fondeo?.tipo === 'Retiro' ? 'selected' : ''}>Retiro</option>
         </select>
 
-        <div id="fondeoEstadoWrap">
-          <label style="font-size:11px;color:var(--gris);display:block;margin-bottom:5px;text-transform:uppercase;letter-spacing:1px">Estado</label>
-          <select id="fondeoEstado" style="width:100%;background:#181818;border:1px solid #2A2A2A;color:var(--blanco);padding:9px 12px;border-radius:7px;font-size:13px;margin-bottom:14px;outline:none;font-family:'DM Sans',sans-serif">
-            <option value="En curso" ${(!fondeo || fondeo.estado === 'En curso') ? 'selected' : ''}>En curso</option>
-            <option value="Superada" ${fondeo?.estado === 'Superada' ? 'selected' : ''}>Superada</option>
-            <option value="Fallida" ${fondeo?.estado === 'Fallida' ? 'selected' : ''}>Fallida</option>
-            <option value="Renovacion" ${fondeo?.estado === 'Renovacion' ? 'selected' : ''}>Renovación</option>
+        <div id="fondeoEvalWrap">
+          <label style="font-size:11px;color:var(--gris);display:block;margin-bottom:5px;text-transform:uppercase;letter-spacing:1px">Motivo</label>
+          <select id="fondeoMotivo" style="width:100%;background:#181818;border:1px solid #2A2A2A;color:var(--blanco);padding:9px 12px;border-radius:7px;font-size:13px;margin-bottom:14px;outline:none;font-family:'DM Sans',sans-serif">
+            <option value="Inicio" ${!fondeo || fondeo.motivo === 'Inicio' ? 'selected' : ''}>Inicio</option>
+            <option value="Renovacion" ${fondeo?.motivo === 'Renovacion' ? 'selected' : ''}>Renovación</option>
+          </select>
+
+          <label style="font-size:11px;color:var(--gris);display:block;margin-bottom:5px;text-transform:uppercase;letter-spacing:1px">Resultado</label>
+          <select id="fondeoResultado" style="width:100%;background:#181818;border:1px solid #2A2A2A;color:var(--blanco);padding:9px 12px;border-radius:7px;font-size:13px;margin-bottom:14px;outline:none;font-family:'DM Sans',sans-serif">
+            <option value="En curso" ${(!fondeo || fondeo.resultado === 'En curso') ? 'selected' : ''}>En curso</option>
+            <option value="Superada" ${fondeo?.resultado === 'Superada' ? 'selected' : ''}>Superada</option>
+            <option value="Quemada" ${fondeo?.resultado === 'Quemada' ? 'selected' : ''}>Quemada</option>
           </select>
         </div>
 
@@ -2711,7 +2723,7 @@
 
   function toggleFondeoEstado() {
     const tipo = document.getElementById('fondeoTipo')?.value;
-    const wrap = document.getElementById('fondeoEstadoWrap');
+    const wrap = document.getElementById('fondeoEvalWrap');
     if (wrap) wrap.style.display = tipo === 'Retiro' ? 'none' : 'block';
   }
 
@@ -2720,7 +2732,8 @@
     const fecha   = document.getElementById('fondeoFecha')?.value;
     const empresa = document.getElementById('fondeoEmpresa')?.value?.trim();
     const tipo    = document.getElementById('fondeoTipo')?.value;
-    const estado  = tipo === 'Retiro' ? null : document.getElementById('fondeoEstado')?.value;
+    const motivo   = tipo === 'Retiro' ? null : document.getElementById('fondeoMotivo')?.value;
+    const resultado = tipo === 'Retiro' ? null : document.getElementById('fondeoResultado')?.value;
     const monto   = parseFloat(document.getElementById('fondeoMonto')?.value || '0');
     const notas   = document.getElementById('fondeoNotas')?.value?.trim() || null;
 
@@ -2729,9 +2742,9 @@
       msg.textContent = 'Completá fecha, empresa y monto.'; return;
     }
 
-    const payload = { user_id: sesiónActual.user.id, fecha, empresa, tipo, estado, monto, notas };
+    const payload = { user_id: sesiónActual.user.id, fecha, empresa, tipo, motivo, resultado, monto, notas };
     const r = id
-      ? await sbFetch('/rest/v1/fondeos?id=eq.' + id, { method: 'PATCH', body: JSON.stringify({ fecha, empresa, tipo, estado, monto, notas }) }, sesiónActual.access_token)
+      ? await sbFetch('/rest/v1/fondeos?id=eq.' + id, { method: 'PATCH', body: JSON.stringify({ fecha, empresa, tipo, motivo, resultado, monto, notas }) }, sesiónActual.access_token)
       : await sbFetch('/rest/v1/fondeos', { method: 'POST', body: JSON.stringify(payload), headers: { 'Prefer': 'return=minimal' } }, sesiónActual.access_token);
 
     if (r.ok || r.status === 201) {

@@ -2453,99 +2453,147 @@
     const totalGastado = evals.reduce((a, f) => a + Number(f.monto), 0);
     const totalRetirado = retiros.reduce((a, f) => a + Number(f.monto), 0);
     const neto = totalRetirado - totalGastado;
-
-    // Empresas únicas para filtro
     const empresas = [...new Set(fondeos.map(f => f.empresa))].sort();
 
     cont.innerHTML = `
+    <style>
+      @import url('https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Mono:wght@300;400;500&display=swap');
+      .fondeos-wrap { font-family:'DM Sans',sans-serif; }
+      .f-title { font-family:'Syne',sans-serif; font-size:32px; font-weight:800; letter-spacing:-0.5px; color:#fff;
+        background:linear-gradient(90deg,#00E5FF,#B388FF); -webkit-background-clip:text; -webkit-text-fill-color:transparent; }
+      .f-sub { font-family:'DM Mono',monospace; font-size:11px; color:#444; letter-spacing:2px; text-transform:uppercase; margin-top:4px; }
+      .f-btn-new { font-family:'Syne',sans-serif; font-weight:700; font-size:12px; letter-spacing:1px; text-transform:uppercase;
+        background:linear-gradient(135deg,#00E5FF22,#B388FF22); border:1px solid #00E5FF55;
+        color:#00E5FF; padding:10px 20px; border-radius:6px; cursor:pointer; transition:all .2s; }
+      .f-btn-new:hover { background:linear-gradient(135deg,#00E5FF33,#B388FF33); border-color:#00E5FF; box-shadow:0 0 16px #00E5FF33; }
+      .f-kpi { background:#0A0A0A; border:1px solid #1A1A1A; border-radius:10px; padding:18px 20px; position:relative; overflow:hidden; }
+      .f-kpi::before { content:''; position:absolute; top:0; left:0; right:0; height:2px; background:linear-gradient(90deg,#00E5FF,#B388FF); }
+      .f-kpi-label { font-family:'DM Mono',monospace; font-size:9px; letter-spacing:2px; text-transform:uppercase; color:#444; margin-bottom:10px; }
+      .f-kpi-val { font-family:'Syne',sans-serif; font-size:26px; font-weight:800; }
+      .f-chart-wrap { background:#0A0A0A; border:1px solid #1A1A1A; border-radius:10px; padding:20px; }
+      .f-chart-label { font-family:'DM Mono',monospace; font-size:9px; letter-spacing:2px; text-transform:uppercase; color:#444; margin-bottom:14px; }
+      .f-filter select, .f-filter input { background:#080808; border:1px solid #1C1C1C; color:#aaa; padding:7px 12px;
+        border-radius:6px; font-size:12px; font-family:'DM Mono',monospace; cursor:pointer; transition:border-color .2s; }
+      .f-filter select:hover, .f-filter input:hover { border-color:#00E5FF44; }
+      .f-filter select:focus, .f-filter input:focus { outline:none; border-color:#00E5FF66; }
+      .f-filter-clear { font-family:'DM Mono',monospace; font-size:11px; background:none; border:1px solid #1C1C1C;
+        color:#444; padding:7px 14px; border-radius:6px; cursor:pointer; transition:all .2s; }
+      .f-filter-clear:hover { border-color:#ff444444; color:#ff6666; }
+      .f-table { width:100%; border-collapse:collapse; }
+      .f-table th { font-family:'DM Mono',monospace; font-size:9px; letter-spacing:2px; text-transform:uppercase;
+        color:#333; padding:12px 16px; text-align:left; border-bottom:1px solid #111; }
+      .f-table td { padding:13px 16px; border-bottom:1px solid #0E0E0E; font-size:13px; }
+      .f-table tr:hover td { background:#0C0C0C; }
+      .f-tag { font-family:'DM Mono',monospace; font-size:10px; letter-spacing:1px; padding:3px 8px; border-radius:3px; }
+      .f-tag-superada { background:#00E5FF11; color:#00E5FF; border:1px solid #00E5FF33; }
+      .f-tag-quemada  { background:#ff444411; color:#ff6666; border:1px solid #ff444433; }
+      .f-tag-renovada { background:#B388FF11; color:#B388FF; border:1px solid #B388FF33; }
+      .f-tag-encurso  { background:#FFD70011; color:#FFD700; border:1px solid #FFD70033; }
+      .f-tag-inicio   { background:#ffffff08; color:#666; border:1px solid #ffffff11; }
+      .f-tag-renovacion { background:#B388FF11; color:#B388FF; border:1px solid #B388FF22; }
+      .f-edit-btn { background:none; border:1px solid #1C1C1C; color:#444; padding:3px 9px; border-radius:4px; cursor:pointer; font-size:11px; transition:all .2s; }
+      .f-edit-btn:hover { border-color:#00E5FF44; color:#00E5FF; }
+      .f-del-btn  { background:none; border:1px solid #ff444422; color:#ff4444; padding:3px 9px; border-radius:4px; cursor:pointer; font-size:11px; transition:all .2s; }
+      .f-del-btn:hover  { border-color:#ff4444; }
+    </style>
+
+    <div class="fondeos-wrap">
       <!-- Header -->
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:24px;flex-wrap:wrap;gap:12px">
+      <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:28px;flex-wrap:wrap;gap:12px">
         <div>
-          <h2 style="font-family:'Bebas Neue',sans-serif;font-size:28px;letter-spacing:2px;margin-bottom:4px">CONTROL DE FONDEOS</h2>
-          <p style="font-size:13px;color:var(--gris)">Registro de evaluaciones, retiros y rendimiento en prop firms.</p>
+          <div class="f-title">CONTROL DE FONDEOS</div>
+          <div class="f-sub">// prop firms · evaluaciones · retiros · rendimiento</div>
         </div>
-        <button onclick="abrirModalFondeo()" style="background:var(--rojo);color:white;border:none;padding:10px 18px;border-radius:8px;cursor:pointer;font-size:13px;font-weight:600">+ Nuevo registro</button>
+        <button class="f-btn-new" onclick="abrirModalFondeo()">+ Nuevo registro</button>
       </div>
 
-      <!-- Métricas -->
-      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px;margin-bottom:24px">
-        ${renderFondeoCard('TOTAL GASTADO', '-$' + totalGastado.toFixed(2), '#E57373')}
-        ${renderFondeoCard('TOTAL RETIRADO', '+$' + totalRetirado.toFixed(2), 'var(--verde)')}
-        ${renderFondeoCard('NETO', (neto >= 0 ? '+' : '') + '$' + neto.toFixed(2), neto >= 0 ? 'var(--verde)' : '#E57373')}
-        ${renderFondeoCard('RATIO APROBACIÓN', ratioAprobacion + '%', ratioAprobacion >= 50 ? 'var(--verde)' : '#E57373')}
-        ${renderFondeoCard('SUPERADAS', superadas + ' / ' + totalEvals, 'var(--verde)')}
-        ${renderFondeoCard('QUEMADAS', String(quemadas), '#E57373')}
+      <!-- KPIs -->
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin-bottom:20px">
+        <div class="f-kpi">
+          <div class="f-kpi-label">Total gastado</div>
+          <div class="f-kpi-val" style="color:#ff6666">-$${totalGastado.toFixed(2)}</div>
+        </div>
+        <div class="f-kpi">
+          <div class="f-kpi-label">Total retirado</div>
+          <div class="f-kpi-val" style="color:#00E5FF">+$${totalRetirado.toFixed(2)}</div>
+        </div>
+        <div class="f-kpi">
+          <div class="f-kpi-label">Beneficio neto</div>
+          <div class="f-kpi-val" style="color:${neto >= 0 ? '#00E5FF' : '#ff6666'}">${(neto >= 0 ? '+' : '')}$${neto.toFixed(2)}</div>
+        </div>
+        <div class="f-kpi">
+          <div class="f-kpi-label">Funding ratio</div>
+          <div class="f-kpi-val" style="color:#B388FF">${ratioAprobacion}%</div>
+        </div>
+        <div class="f-kpi">
+          <div class="f-kpi-label">Superadas</div>
+          <div class="f-kpi-val" style="color:#00E5FF">${superadas}<span style="font-size:14px;color:#333"> / ${totalEvals}</span></div>
+        </div>
+        <div class="f-kpi">
+          <div class="f-kpi-label">Quemadas</div>
+          <div class="f-kpi-val" style="color:#ff6666">${quemadas}</div>
+        </div>
       </div>
 
       <!-- Gráficos -->
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:24px">
-        <div style="background:var(--negro-card);border:1px solid var(--negro-border);border-radius:16px;padding:20px">
-          <div style="font-size:11px;font-weight:600;letter-spacing:1px;text-transform:uppercase;color:var(--gris);margin-bottom:12px">Gastos vs Retiros acumulados</div>
-          <canvas id="fondeosBarCanvas" style="width:100%;max-height:180px"></canvas>
+      <div style="display:grid;grid-template-columns:2fr 1fr;gap:12px;margin-bottom:20px">
+        <div class="f-chart-wrap">
+          <div class="f-chart-label">// evolución de capital — gastos · retiros · neto</div>
+          <canvas id="fondeosBarCanvas" style="width:100%;max-height:200px"></canvas>
         </div>
-        <div style="background:var(--negro-card);border:1px solid var(--negro-border);border-radius:16px;padding:20px">
-          <div style="font-size:11px;font-weight:600;letter-spacing:1px;text-transform:uppercase;color:var(--gris);margin-bottom:12px">Evaluaciones por estado</div>
-          <canvas id="fondeosPieCanvas" style="width:100%;max-height:180px"></canvas>
+        <div class="f-chart-wrap">
+          <div class="f-chart-label">// evaluaciones por resultado</div>
+          <canvas id="fondeosPieCanvas" style="width:100%;max-height:200px"></canvas>
         </div>
       </div>
 
       <!-- Filtros -->
-      <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:16px;align-items:center">
-        <select id="filtroFondeoEmpresa" onchange="filtrarFondeos()" style="background:#0D0D0D;border:1px solid #1E1E1E;color:var(--blanco);padding:7px 12px;border-radius:8px;font-size:13px;cursor:pointer;font-family:'DM Sans',sans-serif">
-          <option value="">Todas las empresas</option>
+      <div class="f-filter" style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px;align-items:center">
+        <select id="filtroFondeoEmpresa" onchange="filtrarFondeos()">
+          <option value="">// empresa</option>
           ${empresas.map(e => `<option value="${esc(e)}">${esc(e)}</option>`).join('')}
         </select>
-        <select id="filtroFondeoTipo" onchange="filtrarFondeos()" style="background:#0D0D0D;border:1px solid #1E1E1E;color:var(--blanco);padding:7px 12px;border-radius:8px;font-size:13px;cursor:pointer;font-family:'DM Sans',sans-serif">
-          <option value="">Todos los tipos</option>
+        <select id="filtroFondeoTipo" onchange="filtrarFondeos()">
+          <option value="">// tipo</option>
           <option value="Evaluacion">Evaluación</option>
           <option value="Retiro">Retiro</option>
         </select>
-        <select id="filtroFondeoResultado" onchange="filtrarFondeos()" style="background:#0D0D0D;border:1px solid #1E1E1E;color:var(--blanco);padding:7px 12px;border-radius:8px;font-size:13px;cursor:pointer;font-family:'DM Sans',sans-serif">
-          <option value="">Todos los resultados</option>
+        <select id="filtroFondeoResultado" onchange="filtrarFondeos()">
+          <option value="">// resultado</option>
           <option value="En curso">En curso</option>
           <option value="Superada">Superada</option>
           <option value="Quemada">Quemada</option>
           <option value="Renovada">Renovada</option>
         </select>
-        <select id="filtroFondeoMotivo" onchange="filtrarFondeos()" style="background:#0D0D0D;border:1px solid #1E1E1E;color:var(--blanco);padding:7px 12px;border-radius:8px;font-size:13px;cursor:pointer;font-family:'DM Sans',sans-serif">
-          <option value="">Todos los motivos</option>
+        <select id="filtroFondeoMotivo" onchange="filtrarFondeos()">
+          <option value="">// motivo</option>
           <option value="Inicio">Inicio</option>
           <option value="Renovacion">Renovación</option>
         </select>
-        <input type="date" id="filtroFondeoDesde" onchange="filtrarFondeos()" style="background:#0D0D0D;border:1px solid #1E1E1E;color:var(--blanco);padding:7px 12px;border-radius:8px;font-size:13px;font-family:'DM Sans',sans-serif">
-        <input type="date" id="filtroFondeoHasta" onchange="filtrarFondeos()" style="background:#0D0D0D;border:1px solid #1E1E1E;color:var(--blanco);padding:7px 12px;border-radius:8px;font-size:13px;font-family:'DM Sans',sans-serif">
-        <button onclick="limpiarFiltrosFondeos()" style="background:#1A1A1A;border:1px solid #2A2A2A;color:var(--gris);padding:7px 14px;border-radius:8px;cursor:pointer;font-size:12px">✕ Limpiar</button>
+        <input type="date" id="filtroFondeoDesde" onchange="filtrarFondeos()" placeholder="desde">
+        <input type="date" id="filtroFondeoHasta" onchange="filtrarFondeos()" placeholder="hasta">
+        <button class="f-filter-clear" onclick="limpiarFiltrosFondeos()">✕ limpiar</button>
       </div>
 
       <!-- Tabla -->
-      <div style="background:var(--negro-card);border:1px solid var(--negro-border);border-radius:16px;overflow:hidden">
+      <div style="background:#080808;border:1px solid #111;border-radius:10px;overflow:hidden">
         ${fondeos.length === 0 ? `
-          <div style="text-align:center;padding:48px;color:var(--gris)">
-            <div style="font-size:32px;margin-bottom:12px">🏦</div>
-            <div style="font-size:15px;font-weight:600;margin-bottom:6px">Sin registros todavía</div>
-            <div style="font-size:13px">Hacé clic en <strong>+ Nuevo registro</strong> para empezar</div>
+          <div style="text-align:center;padding:56px;color:#333">
+            <div style="font-family:'DM Mono',monospace;font-size:11px;letter-spacing:2px;margin-bottom:12px">// SIN REGISTROS</div>
+            <div style="font-size:12px;color:#222">Hacé clic en <span style="color:#00E5FF">+ Nuevo registro</span> para comenzar</div>
           </div>` : `
-        <table style="width:100%;border-collapse:collapse">
+        <table class="f-table">
           <thead>
-            <tr style="border-bottom:1px solid #1E1E1E;color:var(--gris)">
-              <th style="padding:12px 16px;font-weight:600;text-align:left;font-size:11px;text-transform:uppercase;letter-spacing:1px">Fecha</th>
-              <th style="padding:12px 16px;font-weight:600;text-align:left;font-size:11px;text-transform:uppercase;letter-spacing:1px">Empresa</th>
-              <th style="padding:12px 16px;font-weight:600;text-align:left;font-size:11px;text-transform:uppercase;letter-spacing:1px">Tipo</th>
-              <th style="padding:12px 16px;font-weight:600;text-align:left;font-size:11px;text-transform:uppercase;letter-spacing:1px">Motivo</th>
-              <th style="padding:12px 16px;font-weight:600;text-align:left;font-size:11px;text-transform:uppercase;letter-spacing:1px">Resultado</th>
-              <th style="padding:12px 16px;font-weight:600;text-align:left;font-size:11px;text-transform:uppercase;letter-spacing:1px">Monto</th>
-              <th style="padding:12px 16px;font-weight:600;text-align:left;font-size:11px;text-transform:uppercase;letter-spacing:1px">Notas</th>
-              <th style="padding:12px 16px;font-weight:600;text-align:left;font-size:11px;text-transform:uppercase;letter-spacing:1px"></th>
+            <tr>
+              <th>fecha</th><th>empresa</th><th>tipo</th><th>motivo</th><th>resultado</th><th>monto</th><th>notas</th><th></th>
             </tr>
           </thead>
           <tbody id="fondeosTbody">${fondeos.map(renderFondeoFila).join('')}</tbody>
         </table>`}
-      </div>`;
+      </div>
+    </div>`;
 
-    // Dibujar gráficos
-    setTimeout(() => {
-      dibujarGraficosFondeos(fondeos);
-    }, 100);
+    setTimeout(() => { dibujarGraficosFondeos(fondeos); }, 100);
   }
 
   function renderFondeoCard(label, valor, color) {
@@ -2558,23 +2606,28 @@
   function renderFondeoFila(f) {
     const fecha = new Date(f.fecha + 'T00:00:00').toLocaleDateString('es-AR', {day:'2-digit',month:'2-digit',year:'2-digit'});
     const esRetiro = f.tipo === 'Retiro';
-    const montoColor = esRetiro ? 'var(--verde)' : '#E57373';
+    const montoColor = esRetiro ? '#00E5FF' : '#ff6666';
     const montoStr = (esRetiro ? '+' : '-') + '$' + Number(f.monto).toFixed(2);
-    const resultadoColor = {
-      'Superada': 'var(--verde)', 'Quemada': '#E57373', 'En curso': '#FFD700', 'Renovada': '#64B5F6'
-    }[f.resultado] || 'var(--gris)';
-    const motivoColor = f.motivo === 'Renovacion' ? '#64B5F6' : 'var(--gris)';
-    return `<tr style="border-bottom:1px solid #1A1A1A" onmouseover="this.style.background='#111'" onmouseout="this.style.background='transparent'">
-      <td style="padding:12px 16px;color:var(--gris)">${fecha}</td>
-      <td style="padding:12px 16px;font-weight:600">${esc(f.empresa)}</td>
-      <td style="padding:12px 16px;color:var(--gris)">${f.tipo === 'Evaluacion' ? 'Evaluación' : 'Retiro'}</td>
-      <td style="padding:12px 16px"><span style="color:${motivoColor};font-size:12px;font-weight:600">${f.motivo || '—'}</span></td>
-      <td style="padding:12px 16px"><span style="color:${resultadoColor};font-size:12px;font-weight:600">${f.resultado || '—'}</span></td>
-      <td style="padding:12px 16px;font-weight:700;color:${montoColor}">${montoStr}</td>
-      <td style="padding:12px 16px;color:var(--gris);font-size:12px;max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(f.notas || '—')}</td>
-      <td style="padding:12px 16px;white-space:nowrap">
-        <button onclick="editarFondeo('${escAttr(f.id)}')" style="background:none;border:1px solid #2A2A2A;color:#666;padding:2px 8px;border-radius:5px;cursor:pointer;font-size:11px;margin-right:4px">✏️</button>
-        <button onclick="eliminarFondeo('${escAttr(f.id)}')" style="background:none;border:1px solid rgba(139,26,26,0.3);color:#E57373;padding:2px 8px;border-radius:5px;cursor:pointer;font-size:11px">✕</button>
+    const resultadoTag = {
+      'Superada':  '<span class="f-tag f-tag-superada">Superada</span>',
+      'Quemada':   '<span class="f-tag f-tag-quemada">Quemada</span>',
+      'Renovada':  '<span class="f-tag f-tag-renovada">Renovada</span>',
+      'En curso':  '<span class="f-tag f-tag-encurso">En curso</span>',
+    }[f.resultado] || '<span style="color:#333">—</span>';
+    const motivoTag = f.motivo === 'Renovacion'
+      ? '<span class="f-tag f-tag-renovacion">Renovación</span>'
+      : f.motivo ? '<span class="f-tag f-tag-inicio">Inicio</span>' : '<span style="color:#333">—</span>';
+    return `<tr>
+      <td style="font-family:'DM Mono',monospace;font-size:11px;color:#555">${fecha}</td>
+      <td style="font-family:'Syne',sans-serif;font-weight:700;color:#ccc;font-size:13px">${esc(f.empresa)}</td>
+      <td style="font-family:'DM Mono',monospace;font-size:11px;color:#444">${f.tipo === 'Evaluacion' ? 'EVAL' : 'RETIRO'}</td>
+      <td>${motivoTag}</td>
+      <td>${resultadoTag}</td>
+      <td style="font-family:'DM Mono',monospace;font-weight:500;color:${montoColor};font-size:13px">${montoStr}</td>
+      <td style="color:#333;font-size:12px;max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(f.notas || '—')}</td>
+      <td style="white-space:nowrap">
+        <button class="f-edit-btn" onclick="editarFondeo('${escAttr(f.id)}')">✏</button>
+        <button class="f-del-btn" onclick="eliminarFondeo('${escAttr(f.id)}')">✕</button>
       </td>
     </tr>`;
   }
@@ -2593,8 +2646,8 @@
         data: {
           labels: empresas,
           datasets: [
-            { label: 'Gastado', data: gastos, backgroundColor: 'rgba(229,115,115,0.7)', borderRadius: 4 },
-            { label: 'Retirado', data: retiros, backgroundColor: 'rgba(76,175,80,0.7)', borderRadius: 4 }
+            { label: 'Gastado', data: gastos, backgroundColor: 'rgba(255,102,102,0.7)', borderRadius: 4 },
+            { label: 'Retirado', data: retiros, backgroundColor: 'rgba(0,229,255,0.7)', borderRadius: 4 }
           ]
         },
         options: {

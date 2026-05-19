@@ -2307,7 +2307,7 @@
     cont.innerHTML = header + renderJournalTabs('real') + `
       <div id="journalRealContent">
       <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:12px;margin-bottom:28px">
-        ${renderStatCard('Acumulado', (stats.acumulado >= 0 ? '+' : '') + '$' + Math.abs(stats.acumulado).toFixed(2), stats.acumulado >= 0 ? 'var(--verde)' : '#E57373')}
+        ${renderStatCard('Acumulado', (stats.acumulado >= 0 ? '+' : '-') + '$' + Math.abs(stats.acumulado).toFixed(2), stats.acumulado >= 0 ? 'var(--verde)' : '#E57373')}
         ${renderStatCard('Win Rate', stats.winRate + '%', stats.winRate >= 50 ? 'var(--verde)' : '#E57373')}
         ${renderStatCard('Ratio R:R', stats.ratio, parseFloat(stats.ratio) >= 1 ? 'var(--verde)' : '#E57373')}
         ${renderStatCard('Profit Factor', stats.pf, parseFloat(stats.pf) >= 1 ? 'var(--verde)' : '#E57373')}

@@ -2260,6 +2260,10 @@
           <button onclick="abrirComisiones()" style="background:#1A1A1A;border:1px solid #2A2A2A;color:var(--gris);padding:10px 14px;border-radius:8px;cursor:pointer;font-size:12px;font-weight:600;display:flex;align-items:center;gap:6px">
             💲 Comisiones
           </button>
+          <label id="btnImportarCT" style="background:#1A1A1A;border:1px solid #1565C0;color:#64B5F6;padding:10px 14px;border-radius:8px;cursor:pointer;font-size:12px;font-weight:600;display:flex;align-items:center;gap:6px" title="Importar historial exportado desde cTrader (.xlsx)">
+            📥 Importar cTrader
+            <input type="file" accept=".xlsx" style="display:none" onchange="importarHistorialCTrader(this)">
+          </label>
           <button onclick="eliminarHistorialJournal()" style="background:rgba(139,26,26,0.15);border:1px solid rgba(139,26,26,0.3);color:#E57373;padding:10px 14px;border-radius:8px;cursor:pointer;font-size:12px;font-weight:600;display:flex;align-items:center;gap:6px">
             🗑️ Eliminar historial
           </button>
@@ -4133,6 +4137,116 @@
     } catch(err) {
       if (msg) { msg.style.background='rgba(229,115,115,0.1)'; msg.style.color='#E57373'; msg.style.border='1px solid rgba(229,115,115,0.3)'; msg.textContent='Error: ' + err.message; }
       input.value = '';
+    }
+  }
+
+  async function importarHistorialCTrader(input) {
+    const file = input.files[0];
+    if (!file) return;
+    input.value = '';
+
+    const cont = document.getElementById('journalContainer');
+    const overlay = document.createElement('div');
+    overlay.id = 'importOverlay';
+    overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.75);z-index:9999;display:flex;align-items:center;justify-content:center';
+    overlay.innerHTML = `<div style="background:#111;border:1px solid #2A2A2A;border-radius:16px;padding:32px 40px;text-align:center;min-width:320px">
+      <div class="spinner" style="margin:0 auto 16px"></div>
+      <div id="importStatus" style="font-size:14px;color:var(--gris)">Leyendo archivo...</div>
+    </div>`;
+    document.body.appendChild(overlay);
+
+    const setStatus = (msg) => {
+      const el = document.getElementById('importStatus');
+      if (el) el.textContent = msg;
+    };
+
+    try {
+      // Leer xlsx con SheetJS
+      const buffer = await file.arrayBuffer();
+      const XLSX = await import('https://cdn.sheetjs.com/xlsx-0.20.3/package/xlsx.mjs');
+      const wb = XLSX.read(buffer, { type: 'array', cellDates: true });
+      const ws = wb.Sheets[wb.SheetNames[0]];
+      const rows = XLSX.utils.sheet_to_json(ws, { defval: '' });
+
+      if (!rows.length) throw new Error('El archivo no contiene operaciones.');
+
+      setStatus(`${rows.length} operaciones encontradas. Enviando...`);
+
+      let enviadas = 0, omitidas = 0, errores = 0;
+
+      for (const row of rows) {
+        try {
+          // Mapear columnas del xlsx de cTrader
+          const simbolo   = String(row['Símbolo'] || row['Symbol'] || '').trim();
+          const dirRaw    = String(row['Dirección de apertura'] || row['Direction'] || '').trim().toLowerCase();
+          const dir       = dirRaw.includes('comprar') || dirRaw.includes('buy') ? 'Long' : 'Short';
+          const pnl       = parseFloat(String(row['$ neto'] || row['Net $'] || '0').replace(',', '.'));
+          const cantidad  = parseFloat(String(row['Cantidad de Cierre'] || row['Closing Quantity'] || '1').replace(',', '.'));
+          const fechaRaw  = row['Hora de cierre'] || row['Closing Time'] || '';
+          const cta       = sesiónActual.user.id; // usa user_id como cuenta
+
+          if (!simbolo) { errores++; continue; }
+
+          // Parsear fecha
+          let fecha;
+          if (fechaRaw instanceof Date) {
+            fecha = fechaRaw.toISOString();
+          } else {
+            // Formato: "15/05/2026 15:58:00.577"
+            const parts = String(fechaRaw).match(/(\d+)\/(\d+)\/(\d+)\s+(\d+):(\d+):(\d+)/);
+            if (parts) {
+              fecha = new Date(`${parts[3]}-${parts[2]}-${parts[1]}T${parts[4]}:${parts[5]}:${parts[6]}Z`).toISOString();
+            } else {
+              fecha = new Date().toISOString();
+            }
+          }
+
+          // Hash para deduplicación
+          const execHash = `ct_${simbolo}_${dir}_${fecha}_${pnl}`;
+
+          const body = {
+            user_id:           sesiónActual.user.id,
+            instrumento:       simbolo,
+            direccion:         dir,
+            pnl:               isNaN(pnl) ? 0 : pnl,
+            duracion_segundos: 0,
+            cuenta:            cta,
+            cantidad:          isNaN(cantidad) ? 1 : Math.max(1, Math.round(cantidad * 10)),
+            fecha:             fecha,
+            sin_telegram:      true,
+            exec_hash:         execHash
+          };
+
+          const res = await fetch('https://pjrwdseaomijkgytbglh.supabase.co/functions/v1/telegram-bot/nt8', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'x-nt8-secret': 'nt8secret2025'
+            },
+            body: JSON.stringify(body)
+          });
+
+          if (res.status === 409 || res.status === 200) {
+            const data = await res.json().catch(() => ({}));
+            if (res.status === 409 || data?.duplicate) omitidas++;
+            else enviadas++;
+          } else {
+            errores++;
+          }
+
+          setStatus(`Procesando... ${enviadas + omitidas + errores}/${rows.length}`);
+        } catch(e) {
+          errores++;
+        }
+      }
+
+      document.getElementById('importOverlay')?.remove();
+      alert(`✅ Importación completada\n\n• Enviadas: ${enviadas}\n• Ya existían: ${omitidas}\n• Errores: ${errores}`);
+      cargarJournal();
+
+    } catch(e) {
+      document.getElementById('importOverlay')?.remove();
+      alert('❌ Error al importar: ' + e.message);
     }
   }
 

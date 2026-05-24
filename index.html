@@ -2208,6 +2208,24 @@
     }
   }
 
+  function switchPlataformaJournal(plat) {
+    const isNT8 = plat === 'nt8';
+    document.getElementById('panelInstaladorNT8').style.display = isNT8 ? 'block' : 'none';
+    document.getElementById('panelInstaladorCT').style.display  = isNT8 ? 'none'  : 'block';
+    const btnNT8 = document.getElementById('btnPlataformaNT8');
+    const btnCT  = document.getElementById('btnPlataformaCT');
+    if (btnNT8) {
+      btnNT8.style.background = isNT8 ? 'var(--rojo)' : '#181818';
+      btnNT8.style.color      = isNT8 ? 'white'       : 'var(--gris)';
+      btnNT8.style.borderColor = isNT8 ? 'var(--rojo)' : '#2A2A2A';
+    }
+    if (btnCT) {
+      btnCT.style.background  = isNT8 ? '#181818' : '#1565C0';
+      btnCT.style.color       = isNT8 ? 'var(--gris)' : 'white';
+      btnCT.style.borderColor  = isNT8 ? '#2A2A2A' : '#1565C0';
+    }
+  }
+
   /* ══════════════════════
      TRADING JOURNAL
   ══════════════════════ */
@@ -2231,6 +2249,7 @@
     const ops = _todasLasOps;
 
     // Header con botón configurar (engranaje)
+    const userId = sesiónActual.user.id;
     const header = `
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:24px">
         <div>
@@ -2238,8 +2257,6 @@
           <p style="font-size:13px;color:var(--gris)">Registro cuantitativo y cualitativo de tus operaciones.</p>
         </div>
         <div style="display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end">
-          <a href="https://pjrwdseaomijkgytbglh.supabase.co/storage/v1/object/public/Instaladores/TraderJournalTDA_V4.zip" target="_blank" rel="noopener noreferrer" style="display:inline-flex;align-items:center;gap:6px;background:#1A1A1A;border:1px solid #2A2A2A;color:var(--gris);padding:10px 14px;border-radius:8px;text-decoration:none;font-size:12px;font-weight:600">⬇ Descargar ZIP</a>
-          <a href="https://pjrwdseaomijkgytbglh.supabase.co/storage/v1/object/public/Instaladores/GUIA_INSTALACION_TRADINGJOURNALTDA-V4.pdf" target="_blank" rel="noopener noreferrer" style="display:inline-flex;align-items:center;gap:6px;background:#1A1A1A;border:1px solid #2A2A2A;color:var(--gris);padding:10px 14px;border-radius:8px;text-decoration:none;font-size:12px;font-weight:600">📄 Guía</a>
           <button onclick="abrirComisiones()" style="background:#1A1A1A;border:1px solid #2A2A2A;color:var(--gris);padding:10px 14px;border-radius:8px;cursor:pointer;font-size:12px;font-weight:600;display:flex;align-items:center;gap:6px">
             💲 Comisiones
           </button>
@@ -2252,59 +2269,112 @@
         </div>
       </div>`;
 
-    if (ops.length === 0) {
-      cont.innerHTML = header + renderJournalTabs('real') + `
-        <div style="background:#0D0D0D;border:1px solid #1E1E1E;border-radius:16px;padding:36px 32px;max-width:680px;margin:0 auto">
-          <div style="font-size:36px;margin-bottom:12px">📒</div>
-          <h3 style="font-size:20px;font-weight:700;color:var(--blanco);margin-bottom:6px">¡Bienvenido al Trading Journal!</h3>
-          <p style="font-size:13px;color:var(--gris);margin-bottom:28px;line-height:1.6">Seguí estos pasos para empezar a registrar tus operaciones automáticamente.</p>
+    // Panel de instalación con sidebar NT8 / cTrader (se muestra siempre arriba)
+    const instaladorPanel = `
+      <div style="background:#0D0D0D;border:1px solid #1E1E1E;border-radius:16px;padding:24px;margin-bottom:28px">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:12px">
+          <div>
+            <div style="font-size:11px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--gris);margin-bottom:4px">Instalación del cBot</div>
+            <h3 style="font-size:17px;font-weight:700;color:var(--blanco);margin:0">Descargar e instalar en tu plataforma</h3>
+          </div>
+          <!-- Tu User ID -->
+          <div style="background:#111;border:1px solid #2A2A2A;border-radius:10px;padding:10px 16px;display:flex;align-items:center;gap:10px">
+            <div>
+              <div style="font-size:10px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--gris);margin-bottom:3px">Tu User ID</div>
+              <div style="font-family:monospace;font-size:12px;color:var(--blanco);word-break:break-all" id="journalUserId">${esc(userId)}</div>
+            </div>
+            <button onclick="copiar('${escAttr(userId)}', this)" style="background:var(--rojo);color:white;border:none;border-radius:6px;padding:6px 12px;font-size:11px;font-weight:700;cursor:pointer;white-space:nowrap;flex-shrink:0">📋 Copiar</button>
+          </div>
+        </div>
 
-          <!-- Pasos -->
-          <div style="display:flex;flex-direction:column;gap:12px;margin-bottom:28px;text-align:left">
-            <div style="display:flex;gap:14px;align-items:flex-start;background:#111;border:1px solid #1E1E1E;border-radius:10px;padding:14px 16px">
-              <div style="min-width:28px;height:28px;border-radius:50%;background:var(--rojo);display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;color:white">1</div>
-              <div>
-                <div style="font-size:13px;font-weight:600;color:var(--blanco);margin-bottom:3px">Descargá el instalador y la guía</div>
-                <div style="font-size:12px;color:var(--gris);line-height:1.5">Instalá el AddOn de NinjaTrader 8 siguiendo las instrucciones de la guía.</div>
-                <div style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap">
-                  <a href="https://pjrwdseaomijkgytbglh.supabase.co/storage/v1/object/public/Instaladores/TraderJournalTDA_V4.zip" target="_blank" rel="noopener noreferrer" style="display:inline-flex;align-items:center;gap:6px;background:var(--rojo);color:white;padding:7px 14px;border-radius:7px;text-decoration:none;font-size:12px;font-weight:600">⬇ Descargar ZIP</a>
-                  <a href="https://pjrwdseaomijkgytbglh.supabase.co/storage/v1/object/public/Instaladores/GUIA_INSTALACION_TRADINGJOURNALTDA-V4.pdf" target="_blank" rel="noopener noreferrer" style="display:inline-flex;align-items:center;gap:6px;background:#1A1A1A;border:1px solid #2A2A2A;color:var(--gris);padding:7px 14px;border-radius:7px;text-decoration:none;font-size:12px;font-weight:600">📄 Guía de instalación</a>
-                  <a href="https://pjrwdseaomijkgytbglh.supabase.co/storage/v1/object/public/Instaladores/GUIA_INSTALACION_TRADINGJOURNALTDA-V4.pdf" target="_blank" rel="noopener noreferrer" style="display:inline-flex;align-items:center;gap:6px;background:#1A1A1A;border:1px solid #2A2A2A;color:var(--gris);padding:7px 14px;border-radius:7px;text-decoration:none;font-size:12px;font-weight:600">📄 Ver guía PDF</a>
+        <!-- Selector de plataforma -->
+        <div style="display:flex;gap:8px;margin-bottom:20px">
+          <button id="btnPlataformaNT8" onclick="switchPlataformaJournal('nt8')"
+            style="flex:1;padding:10px 16px;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;transition:all 0.15s;border:1px solid var(--rojo);background:var(--rojo);color:white;font-family:'DM Sans',sans-serif">
+            📈 NinjaTrader 8
+          </button>
+          <button id="btnPlataformaCT" onclick="switchPlataformaJournal('ctrader')"
+            style="flex:1;padding:10px 16px;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;transition:all 0.15s;border:1px solid #2A2A2A;background:#181818;color:var(--gris);font-family:'DM Sans',sans-serif">
+            🔵 cTrader
+          </button>
+        </div>
+
+        <!-- Panel NT8 -->
+        <div id="panelInstaladorNT8">
+          <div style="display:flex;flex-direction:column;gap:10px">
+            <div style="display:flex;gap:12px;align-items:flex-start;background:#111;border:1px solid #1E1E1E;border-radius:10px;padding:14px 16px">
+              <div style="min-width:24px;height:24px;border-radius:50%;background:var(--rojo);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:white;flex-shrink:0">1</div>
+              <div style="flex:1">
+                <div style="font-size:13px;font-weight:600;color:var(--blanco);margin-bottom:3px">Descargá el instalador para NT8</div>
+                <div style="font-size:12px;color:var(--gris);line-height:1.5;margin-bottom:10px">Importá el ZIP directamente en NinjaTrader 8: <strong style="color:#ccc">Herramientas → Importar NinjaScript</strong>.</div>
+                <div style="display:flex;gap:8px;flex-wrap:wrap">
+                  <a href="https://pjrwdseaomijkgytbglh.supabase.co/storage/v1/object/public/Instaladores/TraderJournalTDA_V4.zip" target="_blank" rel="noopener noreferrer" style="display:inline-flex;align-items:center;gap:6px;background:var(--rojo);color:white;padding:7px 14px;border-radius:7px;text-decoration:none;font-size:12px;font-weight:600">⬇ Descargar ZIP (NT8)</a>
+                  <a href="https://pjrwdseaomijkgytbglh.supabase.co/storage/v1/object/public/Instaladores/GUIA_INSTALACION_TRADINGJOURNALTDA-V4.pdf" target="_blank" rel="noopener noreferrer" style="display:inline-flex;align-items:center;gap:6px;background:#1A1A1A;border:1px solid #2A2A2A;color:var(--gris);padding:7px 14px;border-radius:7px;text-decoration:none;font-size:12px;font-weight:600">📄 Guía PDF</a>
                 </div>
               </div>
             </div>
-            <div style="display:flex;gap:14px;align-items:flex-start;background:#111;border:1px solid #1E1E1E;border-radius:10px;padding:14px 16px">
-              <div style="min-width:28px;height:28px;border-radius:50%;background:var(--rojo);display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;color:white">2</div>
+            <div style="display:flex;gap:12px;align-items:flex-start;background:#111;border:1px solid #1E1E1E;border-radius:10px;padding:14px 16px">
+              <div style="min-width:24px;height:24px;border-radius:50%;background:var(--rojo);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:white;flex-shrink:0">2</div>
               <div>
-                <div style="font-size:13px;font-weight:600;color:var(--blanco);margin-bottom:3px">Vinculá tu Telegram</div>
-                <div style="font-size:12px;color:var(--gris);line-height:1.5">Tocá el botón <strong style="color:var(--blanco)">⚙️ Configurar</strong> arriba a la derecha, luego <strong style="color:var(--blanco)">Vincular Telegram</strong> y seguí las instrucciones.</div>
+                <div style="font-size:13px;font-weight:600;color:var(--blanco);margin-bottom:3px">Iniciá sesión en el AddOn</div>
+                <div style="font-size:12px;color:var(--gris);line-height:1.5">Usá el mismo email y contraseña de esta página. El AddOn detectará tu User ID automáticamente.</div>
               </div>
             </div>
-            <div style="display:flex;gap:14px;align-items:flex-start;background:#111;border:1px solid #1E1E1E;border-radius:10px;padding:14px 16px">
-              <div style="min-width:28px;height:28px;border-radius:50%;background:var(--rojo);display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;color:white">3</div>
+            <div style="display:flex;gap:12px;align-items:flex-start;background:#111;border:1px solid #1E1E1E;border-radius:10px;padding:14px 16px">
+              <div style="min-width:24px;height:24px;border-radius:50%;background:var(--rojo);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:white;flex-shrink:0">3</div>
               <div>
-                <div style="font-size:13px;font-weight:600;color:var(--blanco);margin-bottom:3px">Configurá tus estrategias y reglas</div>
-                <div style="font-size:12px;color:var(--gris);line-height:1.5">En ⚙️ Configurar, agregá tus estrategias con sus reglas operativas y tus reglas generales de sesión.</div>
-              </div>
-            </div>
-            <div style="display:flex;gap:14px;align-items:flex-start;background:#111;border:1px solid #1E1E1E;border-radius:10px;padding:14px 16px">
-              <div style="min-width:28px;height:28px;border-radius:50%;background:var(--rojo);display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;color:white">4</div>
-              <div>
-                <div style="font-size:13px;font-weight:600;color:var(--blanco);margin-bottom:3px">¡Operá y journaleá!</div>
-                <div style="font-size:12px;color:var(--gris);line-height:1.5">Cada vez que cerrés una operación en NinjaTrader 8, el bot de Telegram te va a escribir para completar el registro. Las estadísticas aparecerán acá automáticamente.</div>
+                <div style="font-size:13px;font-weight:600;color:var(--blanco);margin-bottom:3px">Vinculá Telegram y configurá estrategias</div>
+                <div style="font-size:12px;color:var(--gris);line-height:1.5">Usá el botón <strong style="color:#ccc">⚙️ Configurar</strong> para vincular Telegram y agregar tus estrategias con sus reglas.</div>
               </div>
             </div>
           </div>
+        </div>
 
-          <p style="font-size:11px;color:#444;text-align:center">¿Dudas? Escribinos a <a href="mailto:tradingdesdeadentro&#64;gmail.com" style="color:var(--rojo);text-decoration:none">tradingdesdeadentro&#64;gmail.com</a></p>
+        <!-- Panel cTrader -->
+        <div id="panelInstaladorCT" style="display:none">
+          <div style="display:flex;flex-direction:column;gap:10px">
+            <div style="display:flex;gap:12px;align-items:flex-start;background:#111;border:1px solid #1E1E1E;border-radius:10px;padding:14px 16px">
+              <div style="min-width:24px;height:24px;border-radius:50%;background:#1565C0;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:white;flex-shrink:0">1</div>
+              <div style="flex:1">
+                <div style="font-size:13px;font-weight:600;color:var(--blanco);margin-bottom:3px">Descargá el cBot para cTrader</div>
+                <div style="font-size:12px;color:var(--gris);line-height:1.5;margin-bottom:10px">Importá el archivo <strong style="color:#ccc">.algo</strong> en cTrader: <strong style="color:#ccc">Algo → cBots → Importar</strong>.</div>
+                <a href="https://pjrwdseaomijkgytbglh.supabase.co/storage/v1/object/public/Instaladores/TraderJournalTDA_noSourceCode.algo" target="_blank" rel="noopener noreferrer" style="display:inline-flex;align-items:center;gap:6px;background:#1565C0;color:white;padding:7px 14px;border-radius:7px;text-decoration:none;font-size:12px;font-weight:600">⬇ Descargar .algo (cTrader)</a>
+              </div>
+            </div>
+            <div style="display:flex;gap:12px;align-items:flex-start;background:#111;border:1px solid #1E1E1E;border-radius:10px;padding:14px 16px">
+              <div style="min-width:24px;height:24px;border-radius:50%;background:#1565C0;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:white;flex-shrink:0">2</div>
+              <div>
+                <div style="font-size:13px;font-weight:600;color:var(--blanco);margin-bottom:3px">Pegá tu User ID en los parámetros del cBot</div>
+                <div style="font-size:12px;color:var(--gris);line-height:1.5">En cTrader, al agregar el cBot al gráfico, pegá tu User ID (mostrado arriba) en el campo <strong style="color:#ccc">User ID (de tu panel web)</strong>.</div>
+              </div>
+            </div>
+            <div style="display:flex;gap:12px;align-items:flex-start;background:#111;border:1px solid #1E1E1E;border-radius:10px;padding:14px 16px">
+              <div style="min-width:24px;height:24px;border-radius:50%;background:#1565C0;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:white;flex-shrink:0">3</div>
+              <div>
+                <div style="font-size:13px;font-weight:600;color:var(--blanco);margin-bottom:3px">Activá el cBot y operá</div>
+                <div style="font-size:12px;color:var(--gris);line-height:1.5">Cada vez que cerrés una posición, la operación se registrará automáticamente en tu journal. Compatible con Pepperstone y cualquier broker cTrader.</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>`;
+
+    if (ops.length === 0) {
+      cont.innerHTML = header + renderJournalTabs('real') + instaladorPanel + `
+        <div style="background:#0D0D0D;border:1px solid #1E1E1E;border-radius:16px;padding:36px 32px;max-width:680px;margin:0 auto;text-align:center">
+          <div style="font-size:36px;margin-bottom:12px">📒</div>
+          <h3 style="font-size:20px;font-weight:700;color:var(--blanco);margin-bottom:6px">¡Bienvenido al Trading Journal!</h3>
+          <p style="font-size:13px;color:var(--gris);margin-bottom:16px;line-height:1.6">Instalá el cBot en tu plataforma siguiendo los pasos de arriba. Una vez que cerrés tu primera operación, aparecerá acá automáticamente.</p>
+          <p style="font-size:11px;color:#444">¿Dudas? Escribinos a <a href="mailto:tradingdesdeadentro&#64;gmail.com" style="color:var(--rojo);text-decoration:none">tradingdesdeadentro&#64;gmail.com</a></p>
         </div>`;
+      setTimeout(() => { if (typeof initJournalPlatformSwitch === 'function') initJournalPlatformSwitch(); }, 50);
       return;
     }
 
     const stats = calcularStats(ops);
     const estrategiasUnicas = [...new Set(ops.map(o => o.estrategia).filter(Boolean))];
 
-    cont.innerHTML = header + renderJournalTabs('real') + `
+    cont.innerHTML = header + renderJournalTabs('real') + instaladorPanel + `
       <div id="journalRealContent">
       <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:12px;margin-bottom:28px">
         ${renderStatCard('Acumulado', (stats.acumulado >= 0 ? '+' : '-') + '$' + Math.abs(stats.acumulado).toFixed(2), stats.acumulado >= 0 ? 'var(--verde)' : '#E57373')}

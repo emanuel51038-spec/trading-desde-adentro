@@ -5293,7 +5293,13 @@
       headers: { 'Prefer': 'return=minimal' }
     }, sesiónActual.access_token);
 
-    // 2. Actualizar el afiliado: estado=aprobado, asignar cupón
+    // 2. Buscar datos del afiliado para el email
+    const rAfilData = await sbFetch(
+      `/rest/v1/afiliados?id=eq.${_afilIdAprobando}&select=nombre,email`,
+      {}, sesiónActual.access_token
+    );
+
+    // 3. Actualizar el afiliado: estado=aprobado, asignar cupón
     const rAfil = await fetch(`${SUPABASE_URL}/rest/v1/afiliados?id=eq.${_afilIdAprobando}`, {
       method: 'PATCH',
       headers: {
@@ -5306,7 +5312,22 @@
     });
 
     if (rAfil.ok || rAfil.status === 204) {
-      showAuthMsg(msg, `✅ Afiliado aprobado con cupón ${codigo}.`, 'ok');
+      // 4. Enviar email al afiliado
+      if (rAfilData.ok && Array.isArray(rAfilData.data) && rAfilData.data.length > 0) {
+        const afil = rAfilData.data[0];
+        try {
+          await emailjs.send('service_3zbxaia', 'template_afiliado_aprobado', {
+            nombre:       afil.nombre,
+            email:        afil.email,
+            codigo_cupon: codigo,
+            descuento:    descuento,
+            comision:     COMISION_PCT,
+            link_panel:   'https://www.tradingdesdeadentro.com'
+          });
+        } catch(e) { console.error('EmailJS afiliado:', e); }
+      }
+
+      showAuthMsg(msg, `✅ Afiliado aprobado con cupón ${codigo}. Email enviado.`, 'ok');
       setTimeout(() => {
         document.getElementById('aprobarInlineForm')?.remove();
         cargarAdminSolicitudes();

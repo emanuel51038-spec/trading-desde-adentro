@@ -1357,6 +1357,8 @@
   }
 
   function switchPanelTab(sec, btn) {
+    // Cerrar cualquier modal abierto antes de cambiar de sección
+    document.querySelectorAll('.modal-overlay.active').forEach(m => m.classList.remove('active'));
     document.querySelectorAll('.panel-section').forEach(s => s.classList.remove('activa'));
     document.querySelectorAll('.panel-nav-btn').forEach(b => b.classList.remove('active'));
     document.getElementById('sec-' + sec).classList.add('activa');

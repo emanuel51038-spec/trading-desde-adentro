@@ -619,6 +619,138 @@
       vertical-align: middle; margin-right: 6px;
     }
     @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* ══════════════════════════════
+       SISTEMA DE AFILIADOS
+    ══════════════════════════════ */
+    .afil-hero {
+      background: linear-gradient(135deg, rgba(139,26,26,0.15) 0%, rgba(10,10,10,0) 60%);
+      border: 1px solid rgba(139,26,26,0.2); border-radius: 16px;
+      padding: 32px; margin-bottom: 24px; position: relative; overflow: hidden;
+    }
+    .afil-hero::before {
+      content: '🤝'; position: absolute; right: 24px; top: 50%; transform: translateY(-50%);
+      font-size: 72px; opacity: 0.08;
+    }
+    .afil-hero h3 {
+      font-family: 'Bebas Neue', sans-serif; font-size: 28px; letter-spacing: 2px; margin-bottom: 6px;
+    }
+    .afil-hero p { font-size: 14px; color: var(--gris); line-height: 1.7; max-width: 560px; }
+
+    .afil-stats-grid {
+      display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 12px; margin-bottom: 24px;
+    }
+    .afil-stat-card {
+      background: var(--negro-card); border: 1px solid var(--negro-border);
+      border-radius: 12px; padding: 18px 20px;
+    }
+    .afil-stat-label { font-size: 11px; font-weight: 600; letter-spacing: 1px; text-transform: uppercase; color: var(--gris); margin-bottom: 6px; }
+    .afil-stat-value { font-family: 'Bebas Neue', sans-serif; font-size: 28px; color: var(--blanco); line-height: 1; }
+    .afil-stat-sub { font-size: 11px; color: var(--gris); margin-top: 4px; }
+
+    .afil-cupon-box {
+      background: var(--negro-card); border: 1px solid rgba(139,26,26,0.3);
+      border-radius: 12px; padding: 20px 24px; margin-bottom: 20px;
+      display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap;
+    }
+    .afil-cupon-label { font-size: 12px; font-weight: 600; letter-spacing: 1px; text-transform: uppercase; color: var(--gris); margin-bottom: 4px; }
+    .afil-cupon-codigo {
+      font-family: 'Bebas Neue', sans-serif; font-size: 32px; letter-spacing: 4px; color: #E57373;
+    }
+    .afil-cupon-desc { font-size: 12px; color: var(--gris); margin-top: 2px; }
+
+    .afil-section-title {
+      font-family: 'Bebas Neue', sans-serif; font-size: 20px; letter-spacing: 2px;
+      margin-bottom: 14px; color: var(--gris-claro);
+    }
+
+    .afil-ventas-table {
+      background: var(--negro-card); border: 1px solid var(--negro-border);
+      border-radius: 12px; overflow: hidden; margin-bottom: 24px;
+    }
+    .afil-ventas-row {
+      display: grid; grid-template-columns: 1fr 110px 90px 90px 100px;
+      padding: 12px 18px; border-bottom: 1px solid var(--negro-border);
+      font-size: 13px; align-items: center; gap: 10px;
+    }
+    .afil-ventas-row.header {
+      font-size: 11px; font-weight: 600; letter-spacing: 1px; text-transform: uppercase;
+      color: var(--gris); background: #0D0D0D;
+    }
+    .afil-ventas-row:last-child { border-bottom: none; }
+    @media (max-width: 640px) {
+      .afil-ventas-row { grid-template-columns: 1fr 80px 80px; }
+      .afil-ventas-row .afil-col-meta { display: none; }
+    }
+
+    /* Estado afil badge */
+    .estado-aprobado  { background: rgba(76,175,80,0.15); color: #4CAF50; border: 1px solid rgba(76,175,80,0.3); }
+    .estado-pendiente_afil { background: rgba(255,193,7,0.15); color: #FFC107; border: 1px solid rgba(255,193,7,0.3); }
+    .estado-rechazado { background: rgba(229,115,115,0.15); color: #E57373; border: 1px solid rgba(229,115,115,0.3); }
+    .estado-pagado    { background: rgba(76,175,80,0.15); color: #4CAF50; border: 1px solid rgba(76,175,80,0.3); }
+    .estado-pendiente_pago { background: rgba(255,193,7,0.15); color: #FFC107; border: 1px solid rgba(255,193,7,0.3); }
+
+    /* Formulario solicitud */
+    .afil-solicitud-card {
+      background: var(--negro-card); border: 1px solid var(--negro-border);
+      border-radius: 16px; padding: 32px; max-width: 560px;
+    }
+    .afil-input {
+      width: 100%; background: #181818; border: 1px solid var(--negro-border);
+      border-radius: 8px; padding: 12px 14px; color: var(--blanco);
+      font-family: 'DM Sans', sans-serif; font-size: 14px; outline: none;
+      transition: border-color 0.2s; margin-bottom: 14px; resize: vertical;
+    }
+    .afil-input:focus { border-color: var(--rojo); }
+    .afil-input::placeholder { color: #444; }
+    .afil-label {
+      display: block; font-size: 11px; font-weight: 600; letter-spacing: 1px;
+      text-transform: uppercase; color: var(--gris); margin-bottom: 6px;
+    }
+    .afil-group { margin-bottom: 16px; }
+
+    /* Admin panel afiliados */
+    .admin-table {
+      background: var(--negro-card); border: 1px solid var(--negro-border);
+      border-radius: 12px; overflow: hidden; margin-bottom: 24px;
+    }
+    .admin-row {
+      display: grid; grid-template-columns: 1fr 110px 120px 120px auto;
+      padding: 13px 18px; border-bottom: 1px solid var(--negro-border);
+      font-size: 13px; align-items: center; gap: 10px;
+    }
+    .admin-row.header {
+      font-size: 11px; font-weight: 600; letter-spacing: 1px; text-transform: uppercase;
+      color: var(--gris); background: #0D0D0D;
+    }
+    .admin-row:last-child { border-bottom: none; }
+    .admin-action-btns { display: flex; gap: 6px; }
+    .admin-btn {
+      padding: 5px 12px; border-radius: 6px; font-size: 11px; font-weight: 600;
+      cursor: pointer; border: 1px solid; font-family: 'DM Sans', sans-serif; transition: all 0.2s;
+    }
+    .admin-btn.green { background: rgba(76,175,80,0.1); border-color: rgba(76,175,80,0.4); color: #4CAF50; }
+    .admin-btn.green:hover { background: rgba(76,175,80,0.25); }
+    .admin-btn.red { background: rgba(229,115,115,0.1); border-color: rgba(229,115,115,0.4); color: #E57373; }
+    .admin-btn.red:hover { background: rgba(229,115,115,0.25); }
+    .admin-btn.yellow { background: rgba(255,193,7,0.1); border-color: rgba(255,193,7,0.4); color: #FFC107; }
+    .admin-btn.yellow:hover { background: rgba(255,193,7,0.25); }
+
+    .admin-tabs { display: flex; gap: 8px; margin-bottom: 20px; flex-wrap: wrap; }
+    .admin-tab-btn {
+      padding: 8px 18px; border-radius: 8px; font-size: 13px; font-weight: 600;
+      cursor: pointer; border: 1px solid var(--negro-border); background: #161616;
+      color: var(--gris); font-family: 'DM Sans', sans-serif; transition: all 0.2s;
+    }
+    .admin-tab-btn.active { background: var(--rojo); border-color: var(--rojo); color: white; }
+    .admin-tab-btn:hover:not(.active) { border-color: var(--rojo); color: var(--blanco); }
+
+    .admin-section { display: none; }
+    .admin-section.activa { display: block; }
+
+    /* Modal registrar venta */
+    .afil-form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    @media (max-width: 480px) { .afil-form-row { grid-template-columns: 1fr; } }
   </style>
   <script defer src="/_vercel/insights/script.js"></script>
 </head>
@@ -1052,6 +1184,7 @@
       <button class="panel-nav-btn" onclick="switchPanelTab('recursos', this)">Recursos gratuitos</button>
       <button class="panel-nav-btn" onclick="switchPanelTab('journal', this)">📒 Trading Journal</button>
       <button class="panel-nav-btn" onclick="switchPanelTab('fondeos', this)">🏦 Fondeos</button>
+      <button class="panel-nav-btn" id="tabAfiliados" onclick="switchPanelTab('afiliados', this)">🤝 Afiliados</button>
     </nav>
 
     <!-- Content -->
@@ -1098,13 +1231,69 @@
       <div class="panel-section" id="sec-fondeos">
         <div id="fondeosContainer"></div>
       </div>
+
+      <!-- Sección: Afiliados -->
+      <div class="panel-section" id="sec-afiliados">
+        <div id="afiladosContainer"></div>
+      </div>
     </div>
 
   </div>
 </div>
 
-<!-- MODAL: Cambiar MAC -->
-<div class="modal-overlay" id="modalCambiarMac">
+<!-- MODAL: Registrar venta afiliado (admin) -->
+<div class="modal-overlay" id="modalRegistrarVenta">
+  <div class="modal" style="max-width:520px">
+    <button class="modal-close" onclick="cerrarModal('modalRegistrarVenta')">✕</button>
+    <h3>Registrar Venta</h3>
+    <p class="modal-desc">Registrá manualmente una venta asociada a un afiliado.</p>
+    <div class="afil-form-row">
+      <div>
+        <label class="afil-label">Afiliado (cupón)</label>
+        <input type="text" class="afil-input" id="ventaCupon" placeholder="Ej: LUCAS15" style="text-transform:uppercase;margin-bottom:0">
+      </div>
+      <div>
+        <label class="afil-label">Producto</label>
+        <select class="afil-input" id="ventaProducto" style="margin-bottom:0">
+          <option value="DailyLossLimiter">Daily Loss Limiter — USD 30</option>
+          <option value="ManualBacktestAnalyzer">Manual Backtest Analyzer — USD 20</option>
+          <option value="TDA_RiskReward">TDA Risk/Reward — USD 25</option>
+        </select>
+      </div>
+    </div>
+    <div class="afil-form-row" style="margin-top:12px">
+      <div>
+        <label class="afil-label">Monto cobrado (USD)</label>
+        <input type="number" class="afil-input" id="ventaMonto" placeholder="Ej: 25.50" step="0.01" min="0" style="margin-bottom:0">
+      </div>
+      <div>
+        <label class="afil-label">Método de pago</label>
+        <select class="afil-input" id="ventaMetodo" style="margin-bottom:0">
+          <option value="USDT">USDT</option>
+          <option value="ARS">ARS</option>
+        </select>
+      </div>
+    </div>
+    <div style="margin-top:12px">
+      <label class="afil-label">Email del comprador</label>
+      <input type="email" class="afil-input" id="ventaEmailComprador" placeholder="comprador@email.com" style="margin-bottom:0">
+    </div>
+    <div id="ventaMsg" style="display:none;margin-top:12px" class="auth-msg"></div>
+    <button class="modal-confirm" id="ventaBtn" onclick="registrarVentaAfiliado()" style="margin-top:16px">Registrar venta →</button>
+  </div>
+</div>
+
+<!-- MODAL: Marcar comisión pagada -->
+<div class="modal-overlay" id="modalPagarComision">
+  <div class="modal" style="max-width:420px">
+    <button class="modal-close" onclick="cerrarModal('modalPagarComision')">✕</button>
+    <h3>Marcar Comisión Pagada</h3>
+    <p class="modal-desc" id="pagarComisionDesc">Confirmá el pago de la comisión al afiliado.</p>
+    <input type="hidden" id="pagarComisionVentaId">
+    <div id="pagarComisionMsg" style="display:none;margin-top:12px" class="auth-msg"></div>
+    <button class="modal-confirm" id="pagarComisionBtn" onclick="confirmarPagoComision()">Confirmar pago →</button>
+  </div>
+</div>
   <div class="modal">
     <button class="modal-close" onclick="cerrarModal('modalCambiarMac')">✕</button>
     <h3>Cambiar dispositivo</h3>
@@ -1174,6 +1363,7 @@
     btn.classList.add('active');
     if (sec === 'journal') cargarJournal();
     if (sec === 'fondeos') cargarFondeos();
+    if (sec === 'afiliados') cargarAfiliados();
   }
 
   /* ══════════════════════
@@ -4739,6 +4929,619 @@
         }
       }
     });
+  }
+
+  /* ══════════════════════════════════════
+     SISTEMA DE AFILIADOS
+  ══════════════════════════════════════ */
+
+  const ADMIN_EMAIL = 'tradingdesdeadentro@gmail.com';
+  const COMISION_PCT = 20; // % de comisión fijo para todos los afiliados
+  const PRECIOS_BASE_AFIL = { 'DailyLossLimiter': 30, 'ManualBacktestAnalyzer': 20, 'TDA_RiskReward': 25 };
+
+  function esAdmin() {
+    return sesiónActual?.user?.email === ADMIN_EMAIL;
+  }
+
+  async function cargarAfiliados() {
+    const cont = document.getElementById('afiladosContainer');
+    if (!cont) return;
+    cont.innerHTML = '<div style="text-align:center;padding:40px;color:var(--gris)"><span class="spinner"></span> Cargando...</div>';
+
+    if (esAdmin()) {
+      await renderAdminAfiliados(cont);
+    } else {
+      await renderAfiladoUsuario(cont);
+    }
+  }
+
+  /* ─── VISTA USUARIO ─── */
+  async function renderAfiladoUsuario(cont) {
+    const userId = sesiónActual.user.id;
+    const userEmail = sesiónActual.user.email;
+
+    // Buscar si ya tiene solicitud
+    const r = await sbFetch(
+      `/rest/v1/afiliados?user_id=eq.${userId}&select=*`,
+      {}, sesiónActual.access_token
+    );
+
+    const afil = (r.ok && Array.isArray(r.data) && r.data.length > 0) ? r.data[0] : null;
+
+    if (!afil) {
+      // Formulario de solicitud
+      cont.innerHTML = `
+        <div class="afil-hero">
+          <h3>PROGRAMA DE AFILIADOS</h3>
+          <p>Compartí las herramientas de Trading desde Adentro con tu comunidad y ganá un <strong style="color:#E57373">${COMISION_PCT}% de comisión</strong> por cada venta generada con tu cupón de descuento.</p>
+        </div>
+        <div class="afil-solicitud-card">
+          <div class="afil-section-title">SOLICITAR ACCESO</div>
+          <div class="afil-group">
+            <label class="afil-label">Nombre completo</label>
+            <input type="text" class="afil-input" id="afilNombre" placeholder="Tu nombre" style="margin-bottom:0">
+          </div>
+          <div class="afil-group">
+            <label class="afil-label">Tu comunidad / plataforma</label>
+            <input type="text" class="afil-input" id="afilPlataforma" placeholder="Ej: Instagram @usuario, canal de YouTube, grupo de Telegram..." style="margin-bottom:0">
+          </div>
+          <div class="afil-group">
+            <label class="afil-label">¿Cómo vas a promocionar las herramientas?</label>
+            <textarea class="afil-input" id="afilDescripcion" rows="3" placeholder="Contanos brevemente cómo pensás difundir los productos..." style="margin-bottom:0"></textarea>
+          </div>
+          <div class="afil-group">
+            <label class="afil-label">Código de cupón deseado (opcional)</label>
+            <input type="text" class="afil-input" id="afilCuponSugerido" placeholder="Ej: LUCAS15 (nosotros lo asignamos)" style="text-transform:uppercase;margin-bottom:0">
+            <p style="font-size:11px;color:var(--gris);margin-top:6px">El cupón final es asignado por el equipo de TDA. Podés sugerir uno.</p>
+          </div>
+          <div id="afilSolicitudMsg" style="display:none;margin-top:4px" class="auth-msg"></div>
+          <button class="auth-btn" id="afilSolicitudBtn" onclick="enviarSolicitudAfiliado()" style="margin-top:8px">Enviar solicitud →</button>
+        </div>`;
+      return;
+    }
+
+    // Ya tiene solicitud — mostrar estado
+    if (afil.estado === 'pendiente') {
+      cont.innerHTML = `
+        <div class="afil-hero">
+          <h3>SOLICITUD ENVIADA</h3>
+          <p>Tu solicitud fue recibida y está siendo revisada. Te notificaremos por email cuando sea aprobada. Generalmente tomamos entre 24 y 48 horas.</p>
+        </div>
+        <div class="licencia-card" style="max-width:480px">
+          <div class="licencia-card-header" style="border-bottom:none">
+            <div class="licencia-card-header-left">
+              <div class="licencia-product-icon">⏳</div>
+              <div>
+                <div class="licencia-product-name">Solicitud en revisión</div>
+                <div class="licencia-product-version">Enviada el ${afil.created_at?.split('T')[0] || '—'}</div>
+              </div>
+            </div>
+            <span class="estado-badge estado-pendiente">Pendiente</span>
+          </div>
+        </div>`;
+      return;
+    }
+
+    if (afil.estado === 'rechazado') {
+      cont.innerHTML = `
+        <div class="afil-hero">
+          <h3>SOLICITUD NO APROBADA</h3>
+          <p>Tu solicitud de afiliado no fue aprobada en esta oportunidad. Si tenés dudas, contactanos por Instagram.</p>
+        </div>`;
+      return;
+    }
+
+    // APROBADO — mostrar dashboard
+    const rVentas = await sbFetch(
+      `/rest/v1/ventas_afiliados?afiliado_id=eq.${afil.id}&select=*&order=created_at.desc`,
+      {}, sesiónActual.access_token
+    );
+    const ventas = (rVentas.ok && Array.isArray(rVentas.data)) ? rVentas.data : [];
+
+    const totalVentas = ventas.length;
+    const totalComision = ventas.reduce((acc, v) => acc + (parseFloat(v.comision_usd) || 0), 0);
+    const comisionPendiente = ventas.filter(v => v.estado_comision === 'pendiente').reduce((acc, v) => acc + (parseFloat(v.comision_usd) || 0), 0);
+    const comisionPagada = ventas.filter(v => v.estado_comision === 'pagado').reduce((acc, v) => acc + (parseFloat(v.comision_usd) || 0), 0);
+
+    const ventasRows = ventas.length === 0
+      ? `<div class="historial-empty">Aún no hay ventas registradas con tu cupón.</div>`
+      : ventas.map(v => {
+          const nombreProd = v.producto === 'ManualBacktestAnalyzer' ? 'Manual Backtest Analyzer'
+                           : v.producto === 'TDA_RiskReward' ? 'TDA Risk/Reward'
+                           : 'Daily Loss Limiter';
+          const estadoComClass = v.estado_comision === 'pagado' ? 'estado-pagado' : 'estado-pendiente_pago';
+          const estadoComLabel = v.estado_comision === 'pagado' ? 'Pagado' : 'Pendiente';
+          return `
+          <div class="afil-ventas-row">
+            <div>
+              <div style="font-weight:600">${esc(nombreProd)}</div>
+              <div style="font-size:11px;color:var(--gris)">${v.created_at?.split('T')[0] || '—'}</div>
+            </div>
+            <div class="afil-col-meta" style="color:var(--gris);font-size:12px">${esc(v.metodo_pago || '—')}</div>
+            <div style="font-family:'Bebas Neue',sans-serif;font-size:16px;color:#E57373">USD ${parseFloat(v.monto_venta).toFixed(0)}</div>
+            <div style="font-family:'Bebas Neue',sans-serif;font-size:16px;color:#4CAF50">USD ${parseFloat(v.comision_usd).toFixed(2)}</div>
+            <div><span class="estado-badge ${estadoComClass}" style="font-size:10px">${estadoComLabel}</span></div>
+          </div>`;
+        }).join('');
+
+    cont.innerHTML = `
+      <div class="afil-hero">
+        <h3>MI PANEL DE AFILIADO</h3>
+        <p>Tu cupón activo está generando ventas. Comisión del <strong style="color:#E57373">${COMISION_PCT}%</strong> por cada venta. Las comisiones acumuladas se pagan por USDT o transferencia cuando lo solicitás.</p>
+      </div>
+
+      <div class="afil-cupon-box">
+        <div>
+          <div class="afil-cupon-label">Tu cupón de descuento</div>
+          <div class="afil-cupon-codigo">${esc(afil.codigo_cupon)}</div>
+          <div class="afil-cupon-desc">${afil.descuento_pct || 10}% de descuento para tus referidos · Comisión ${COMISION_PCT}% para vos</div>
+        </div>
+        <button class="action-btn" style="width:auto;padding:10px 20px" onclick="copiar('${escAttr(afil.codigo_cupon)}', this)">
+          <span class="ab-icon">📋</span> Copiar cupón
+        </button>
+      </div>
+
+      <div class="afil-stats-grid">
+        <div class="afil-stat-card">
+          <div class="afil-stat-label">Ventas totales</div>
+          <div class="afil-stat-value">${totalVentas}</div>
+          <div class="afil-stat-sub">operaciones registradas</div>
+        </div>
+        <div class="afil-stat-card">
+          <div class="afil-stat-label">Comisión total</div>
+          <div class="afil-stat-value" style="color:#4CAF50">$${totalComision.toFixed(2)}</div>
+          <div class="afil-stat-sub">USD acumulado</div>
+        </div>
+        <div class="afil-stat-card">
+          <div class="afil-stat-label">Pendiente de pago</div>
+          <div class="afil-stat-value" style="color:#FFC107">$${comisionPendiente.toFixed(2)}</div>
+          <div class="afil-stat-sub">USD por cobrar</div>
+        </div>
+        <div class="afil-stat-card">
+          <div class="afil-stat-label">Ya cobrado</div>
+          <div class="afil-stat-value" style="color:var(--gris)">$${comisionPagada.toFixed(2)}</div>
+          <div class="afil-stat-sub">USD pagados</div>
+        </div>
+      </div>
+
+      <div class="afil-section-title">HISTORIAL DE VENTAS</div>
+      <div class="afil-ventas-table">
+        <div class="afil-ventas-row header">
+          <div>Producto</div>
+          <div class="afil-col-meta">Método</div>
+          <div>Venta</div>
+          <div>Comisión</div>
+          <div>Estado</div>
+        </div>
+        ${ventasRows}
+      </div>
+
+      <div style="background:rgba(139,26,26,0.08);border:1px solid rgba(139,26,26,0.2);border-radius:12px;padding:16px 20px">
+        <p style="font-size:13px;color:var(--gris)">💬 Para solicitar el pago de tus comisiones acumuladas, escribinos por Instagram <a href="https://instagram.com/tradingdesdeadentro" target="_blank" style="color:#E57373">@tradingdesdeadentro</a> o a <strong style="color:#ccc">tradingdesdeadentro@gmail.com</strong>.</p>
+      </div>`;
+  }
+
+  async function enviarSolicitudAfiliado() {
+    const nombre      = document.getElementById('afilNombre')?.value.trim();
+    const plataforma  = document.getElementById('afilPlataforma')?.value.trim();
+    const descripcion = document.getElementById('afilDescripcion')?.value.trim();
+    const cuponSug    = document.getElementById('afilCuponSugerido')?.value.trim().toUpperCase();
+    const msg         = document.getElementById('afilSolicitudMsg');
+    const btn         = document.getElementById('afilSolicitudBtn');
+
+    if (!nombre || !plataforma || !descripcion) {
+      showAuthMsg(msg, 'Completá todos los campos obligatorios.', 'err');
+      return;
+    }
+
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner"></span>Enviando...';
+
+    const body = {
+      user_id: sesiónActual.user.id,
+      email: sesiónActual.user.email,
+      nombre,
+      plataforma,
+      descripcion,
+      cupon_sugerido: cuponSug || null,
+      estado: 'pendiente'
+    };
+
+    const r = await sbFetch('/rest/v1/afiliados', {
+      method: 'POST',
+      body: JSON.stringify(body),
+      headers: { 'Prefer': 'return=minimal' }
+    }, sesiónActual.access_token);
+
+    btn.disabled = false;
+    btn.textContent = 'Enviar solicitud →';
+
+    if (r.ok || r.status === 201) {
+      showAuthMsg(msg, '✅ Solicitud enviada. Te avisamos por email cuando sea aprobada.', 'ok');
+      setTimeout(() => cargarAfiliados(), 2000);
+    } else {
+      showAuthMsg(msg, 'Error al enviar la solicitud. Intentá de nuevo.', 'err');
+    }
+  }
+
+  /* ─── VISTA ADMIN ─── */
+  async function renderAdminAfiliados(cont) {
+    cont.innerHTML = `
+      <div class="panel-greeting" style="margin-bottom:20px">
+        <h2>ADMIN — AFILIADOS</h2>
+        <p style="color:var(--gris);font-size:14px">Gestioná solicitudes, cupones y ventas del programa de afiliados.</p>
+      </div>
+      <div class="admin-tabs">
+        <button class="admin-tab-btn active" onclick="switchAdminTab('solicitudes', this)">Solicitudes</button>
+        <button class="admin-tab-btn" onclick="switchAdminTab('afiliados_activos', this)">Afiliados activos</button>
+        <button class="admin-tab-btn" onclick="switchAdminTab('ventas', this)">Ventas</button>
+      </div>
+      <div id="adminSolicitudes" class="admin-section activa"></div>
+      <div id="adminAfiliadosActivos" class="admin-section"></div>
+      <div id="adminVentas" class="admin-section"></div>`;
+
+    await cargarAdminSolicitudes();
+    await cargarAdminAfiliadosActivos();
+    await cargarAdminVentas();
+  }
+
+  function switchAdminTab(sec, btn) {
+    document.querySelectorAll('.admin-section').forEach(s => s.classList.remove('activa'));
+    document.querySelectorAll('.admin-tab-btn').forEach(b => b.classList.remove('active'));
+    const mapId = { 'solicitudes': 'adminSolicitudes', 'afiliados_activos': 'adminAfiliadosActivos', 'ventas': 'adminVentas' };
+    document.getElementById(mapId[sec]).classList.add('activa');
+    btn.classList.add('active');
+  }
+
+  async function cargarAdminSolicitudes() {
+    const cont = document.getElementById('adminSolicitudes');
+    if (!cont) return;
+    cont.innerHTML = '<div style="color:var(--gris);padding:20px"><span class="spinner"></span> Cargando...</div>';
+
+    const r = await sbFetch(
+      `/rest/v1/afiliados?estado=eq.pendiente&select=*&order=created_at.asc`,
+      {}, sesiónActual.access_token
+    );
+
+    if (!r.ok || !Array.isArray(r.data) || r.data.length === 0) {
+      cont.innerHTML = '<div style="padding:20px;color:var(--gris);font-size:14px">✅ No hay solicitudes pendientes.</div>';
+      return;
+    }
+
+    const rows = r.data.map(a => `
+      <div class="admin-row">
+        <div>
+          <div style="font-weight:600;font-size:13px">${esc(a.nombre)}</div>
+          <div style="font-size:11px;color:var(--gris)">${esc(a.email)} · ${a.created_at?.split('T')[0]}</div>
+          <div style="font-size:12px;color:var(--gris-claro);margin-top:4px">${esc(a.plataforma)}</div>
+          <div style="font-size:11px;color:#9E9E9E;margin-top:2px;line-height:1.4">${esc(a.descripcion)}</div>
+          ${a.cupon_sugerido ? `<div style="font-size:11px;color:#E57373;margin-top:2px">Sugiere: <strong>${esc(a.cupon_sugerido)}</strong></div>` : ''}
+        </div>
+        <div></div>
+        <div></div>
+        <div></div>
+        <div class="admin-action-btns">
+          <button class="admin-btn green" onclick="abrirAprobarAfiliado('${escAttr(a.id)}', '${escAttr(a.email)}', '${escAttr(a.cupon_sugerido || '')}')">Aprobar</button>
+          <button class="admin-btn red" onclick="rechazarAfiliado('${escAttr(a.id)}')">Rechazar</button>
+        </div>
+      </div>`).join('');
+
+    cont.innerHTML = `
+      <div class="admin-table">
+        <div class="admin-row header"><div>Solicitante</div><div></div><div></div><div></div><div>Acción</div></div>
+        ${rows}
+      </div>`;
+  }
+
+  let _afilIdAprobando = null;
+
+  function abrirAprobarAfiliado(id, email, cuponSug) {
+    _afilIdAprobando = id;
+    const cuponAuto = email.split('@')[0].replace(/[^a-zA-Z0-9]/g,'').toUpperCase().slice(0,8) + COMISION_PCT;
+    const sugerido = cuponSug || cuponAuto;
+
+    // Simple prompt con modal inline
+    const cont = document.getElementById('adminSolicitudes');
+    const existing = document.getElementById('aprobarInlineForm');
+    if (existing) existing.remove();
+
+    const div = document.createElement('div');
+    div.id = 'aprobarInlineForm';
+    div.style.cssText = 'background:#141414;border:1px solid rgba(139,26,26,0.4);border-radius:12px;padding:20px;margin-bottom:16px';
+    div.innerHTML = `
+      <div style="font-size:14px;font-weight:600;margin-bottom:12px">Aprobar afiliado — asignar cupón</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px">
+        <div>
+          <label class="afil-label">Código de cupón</label>
+          <input type="text" class="afil-input" id="cuponNuevo" value="${escAttr(sugerido)}" style="text-transform:uppercase;margin-bottom:0">
+        </div>
+        <div>
+          <label class="afil-label">Descuento para el comprador (%)</label>
+          <input type="number" class="afil-input" id="descuentoNuevo" value="15" min="1" max="50" style="margin-bottom:0">
+        </div>
+      </div>
+      <div id="aprobarMsg" style="display:none" class="auth-msg"></div>
+      <div style="display:flex;gap:8px;margin-top:4px">
+        <button class="admin-btn green" style="padding:8px 18px;font-size:13px" onclick="confirmarAprobarAfiliado()">Confirmar aprobación</button>
+        <button class="admin-btn red" style="padding:8px 18px;font-size:13px" onclick="document.getElementById('aprobarInlineForm').remove()">Cancelar</button>
+      </div>`;
+    cont.insertBefore(div, cont.firstChild);
+  }
+
+  async function confirmarAprobarAfiliado() {
+    const codigo    = document.getElementById('cuponNuevo')?.value.trim().toUpperCase();
+    const descuento = parseInt(document.getElementById('descuentoNuevo')?.value) || 15;
+    const msg       = document.getElementById('aprobarMsg');
+
+    if (!codigo || codigo.length < 3) { showAuthMsg(msg, 'El cupón debe tener al menos 3 caracteres.', 'err'); return; }
+
+    // Verificar que el código no exista ya
+    const check = await sbFetch(`/rest/v1/cupones?codigo=eq.${codigo}&select=codigo`, {}, sesiónActual.access_token);
+    if (check.ok && Array.isArray(check.data) && check.data.length > 0) {
+      showAuthMsg(msg, 'Ese código de cupón ya existe. Elegí otro.', 'err'); return;
+    }
+
+    // 1. Crear el cupón
+    const rCupon = await sbFetch('/rest/v1/cupones', {
+      method: 'POST',
+      body: JSON.stringify({ codigo, descuento, activo: true }),
+      headers: { 'Prefer': 'return=minimal' }
+    }, sesiónActual.access_token);
+
+    // 2. Actualizar el afiliado: estado=aprobado, asignar cupón
+    const rAfil = await fetch(`${SUPABASE_URL}/rest/v1/afiliados?id=eq.${_afilIdAprobando}`, {
+      method: 'PATCH',
+      headers: {
+        'Content-Type': 'application/json',
+        'apikey': SUPABASE_ANON,
+        'Authorization': 'Bearer ' + sesiónActual.access_token,
+        'Prefer': 'return=minimal'
+      },
+      body: JSON.stringify({ estado: 'aprobado', codigo_cupon: codigo, descuento_pct: descuento })
+    });
+
+    if (rAfil.ok || rAfil.status === 204) {
+      showAuthMsg(msg, `✅ Afiliado aprobado con cupón ${codigo}.`, 'ok');
+      setTimeout(() => {
+        document.getElementById('aprobarInlineForm')?.remove();
+        cargarAdminSolicitudes();
+        cargarAdminAfiliadosActivos();
+      }, 1500);
+    } else {
+      showAuthMsg(msg, 'Error al aprobar. Verificá e intentá de nuevo.', 'err');
+    }
+  }
+
+  async function rechazarAfiliado(id) {
+    if (!confirm('¿Confirmar rechazo de esta solicitud?')) return;
+    const r = await fetch(`${SUPABASE_URL}/rest/v1/afiliados?id=eq.${id}`, {
+      method: 'PATCH',
+      headers: {
+        'Content-Type': 'application/json',
+        'apikey': SUPABASE_ANON,
+        'Authorization': 'Bearer ' + sesiónActual.access_token,
+        'Prefer': 'return=minimal'
+      },
+      body: JSON.stringify({ estado: 'rechazado' })
+    });
+    if (r.ok || r.status === 204) cargarAdminSolicitudes();
+  }
+
+  async function cargarAdminAfiliadosActivos() {
+    const cont = document.getElementById('adminAfiliadosActivos');
+    if (!cont) return;
+    cont.innerHTML = '<div style="color:var(--gris);padding:20px"><span class="spinner"></span> Cargando...</div>';
+
+    const r = await sbFetch(
+      `/rest/v1/afiliados?estado=eq.aprobado&select=*&order=created_at.desc`,
+      {}, sesiónActual.access_token
+    );
+
+    if (!r.ok || !Array.isArray(r.data) || r.data.length === 0) {
+      cont.innerHTML = '<div style="padding:20px;color:var(--gris);font-size:14px">No hay afiliados activos todavía.</div>';
+      return;
+    }
+
+    const rows = await Promise.all(r.data.map(async a => {
+      const rv = await sbFetch(`/rest/v1/ventas_afiliados?afiliado_id=eq.${a.id}&select=comision_usd,estado_comision`, {}, sesiónActual.access_token);
+      const ventas = (rv.ok && Array.isArray(rv.data)) ? rv.data : [];
+      const pendiente = ventas.filter(v => v.estado_comision === 'pendiente').reduce((acc, v) => acc + (parseFloat(v.comision_usd) || 0), 0);
+      return `
+        <div class="admin-row">
+          <div>
+            <div style="font-weight:600;font-size:13px">${esc(a.nombre)}</div>
+            <div style="font-size:11px;color:var(--gris)">${esc(a.email)}</div>
+            <div style="font-size:11px;color:var(--gris)">${esc(a.plataforma || '')}</div>
+          </div>
+          <div style="font-family:'Bebas Neue',sans-serif;font-size:18px;color:#E57373;letter-spacing:2px">${esc(a.codigo_cupon)}</div>
+          <div style="font-size:12px;color:var(--gris)">${a.descuento_pct || 15}% desc · ${COMISION_PCT}% com</div>
+          <div style="font-family:'Bebas Neue',sans-serif;font-size:16px;color:#FFC107">$${pendiente.toFixed(2)} pend.</div>
+          <div class="admin-action-btns">
+            <button class="admin-btn green" onclick="abrirRegistrarVenta('${escAttr(a.codigo_cupon)}')">+ Venta</button>
+          </div>
+        </div>`;
+    }));
+
+    cont.innerHTML = `
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:10px">
+        <div style="font-size:14px;color:var(--gris)">${r.data.length} afiliado(s) activo(s)</div>
+        <button class="admin-btn green" style="padding:9px 20px;font-size:13px" onclick="abrirRegistrarVenta('')">+ Registrar venta</button>
+      </div>
+      <div class="admin-table">
+        <div class="admin-row header"><div>Afiliado</div><div>Cupón</div><div>Config</div><div>Pendiente</div><div>Acción</div></div>
+        ${rows.join('')}
+      </div>`;
+  }
+
+  async function cargarAdminVentas() {
+    const cont = document.getElementById('adminVentas');
+    if (!cont) return;
+    cont.innerHTML = '<div style="color:var(--gris);padding:20px"><span class="spinner"></span> Cargando...</div>';
+
+    const r = await sbFetch(
+      `/rest/v1/ventas_afiliados?select=*,afiliados(nombre,codigo_cupon)&order=created_at.desc&limit=50`,
+      {}, sesiónActual.access_token
+    );
+
+    if (!r.ok || !Array.isArray(r.data) || r.data.length === 0) {
+      cont.innerHTML = '<div style="padding:20px;color:var(--gris);font-size:14px">No hay ventas registradas todavía.</div>';
+      return;
+    }
+
+    const totalPendiente = r.data.filter(v => v.estado_comision === 'pendiente').reduce((acc, v) => acc + (parseFloat(v.comision_usd) || 0), 0);
+
+    const rows = r.data.map(v => {
+      const nombreProd = v.producto === 'ManualBacktestAnalyzer' ? 'Manual Backtest Analyzer'
+                       : v.producto === 'TDA_RiskReward' ? 'TDA Risk/Reward'
+                       : 'Daily Loss Limiter';
+      const afilNombre = v.afiliados?.nombre || '—';
+      const estadoClass = v.estado_comision === 'pagado' ? 'estado-pagado' : 'estado-pendiente_pago';
+      const estadoLabel = v.estado_comision === 'pagado' ? 'Pagado' : 'Pendiente';
+      return `
+        <div class="admin-row" style="grid-template-columns:1fr 100px 80px 80px 100px auto">
+          <div>
+            <div style="font-weight:600;font-size:13px">${esc(nombreProd)}</div>
+            <div style="font-size:11px;color:var(--gris)">${esc(afilNombre)} · ${v.created_at?.split('T')[0] || '—'}</div>
+            ${v.email_comprador ? `<div style="font-size:11px;color:#666">${esc(v.email_comprador)}</div>` : ''}
+          </div>
+          <div style="color:var(--gris);font-size:12px">${esc(v.metodo_pago || '—')}</div>
+          <div style="font-family:'Bebas Neue',sans-serif;font-size:16px;color:#E57373">$${parseFloat(v.monto_venta).toFixed(0)}</div>
+          <div style="font-family:'Bebas Neue',sans-serif;font-size:16px;color:#4CAF50">$${parseFloat(v.comision_usd).toFixed(2)}</div>
+          <div><span class="estado-badge ${estadoClass}" style="font-size:10px">${estadoLabel}</span></div>
+          <div class="admin-action-btns">
+            ${v.estado_comision !== 'pagado'
+              ? `<button class="admin-btn yellow" onclick="abrirPagarComision('${escAttr(v.id)}', '${escAttr(afilNombre)}', '${parseFloat(v.comision_usd).toFixed(2)}')">Marcar pagado</button>`
+              : '<span style="font-size:11px;color:var(--gris)">✓</span>'
+            }
+          </div>
+        </div>`;
+    }).join('');
+
+    cont.innerHTML = `
+      <div style="background:rgba(255,193,7,0.08);border:1px solid rgba(255,193,7,0.2);border-radius:10px;padding:14px 18px;margin-bottom:16px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px">
+        <span style="font-size:13px;color:#FFC107">⚠️ Comisiones pendientes de pago: <strong>USD ${totalPendiente.toFixed(2)}</strong></span>
+        <button class="admin-btn green" style="padding:9px 20px;font-size:13px" onclick="abrirRegistrarVenta('')">+ Registrar venta</button>
+      </div>
+      <div class="admin-table" style="font-size:13px">
+        <div class="admin-row header" style="grid-template-columns:1fr 100px 80px 80px 100px auto">
+          <div>Producto / Afiliado</div><div>Método</div><div>Venta</div><div>Comisión</div><div>Estado</div><div></div>
+        </div>
+        ${rows}
+      </div>`;
+  }
+
+  function abrirRegistrarVenta(cuponPreset) {
+    if (cuponPreset) document.getElementById('ventaCupon').value = cuponPreset;
+    document.getElementById('ventaMsg').style.display = 'none';
+    document.getElementById('ventaBtn').disabled = false;
+    document.getElementById('ventaBtn').textContent = 'Registrar venta →';
+    document.getElementById('modalRegistrarVenta').classList.add('active');
+  }
+
+  async function registrarVentaAfiliado() {
+    const cupon    = document.getElementById('ventaCupon').value.trim().toUpperCase();
+    const producto = document.getElementById('ventaProducto').value;
+    const monto    = parseFloat(document.getElementById('ventaMonto').value);
+    const metodo   = document.getElementById('ventaMetodo').value;
+    const emailComp = document.getElementById('ventaEmailComprador').value.trim();
+    const msg      = document.getElementById('ventaMsg');
+    const btn      = document.getElementById('ventaBtn');
+
+    if (!cupon || isNaN(monto) || monto <= 0) {
+      showAuthMsg(msg, 'Completá cupón y monto correctamente.', 'err'); return;
+    }
+
+    // Buscar afiliado por cupón
+    const rAfil = await sbFetch(
+      `/rest/v1/afiliados?codigo_cupon=eq.${cupon}&estado=eq.aprobado&select=id,nombre`,
+      {}, sesiónActual.access_token
+    );
+
+    if (!rAfil.ok || !Array.isArray(rAfil.data) || rAfil.data.length === 0) {
+      showAuthMsg(msg, 'No se encontró un afiliado activo con ese cupón.', 'err'); return;
+    }
+
+    const afil = rAfil.data[0];
+    const comision = Math.round(monto * COMISION_PCT) / 100;
+
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner"></span>Registrando...';
+
+    const body = {
+      afiliado_id: afil.id,
+      producto,
+      monto_venta: monto,
+      comision_usd: comision,
+      metodo_pago: metodo,
+      email_comprador: emailComp || null,
+      estado_comision: 'pendiente'
+    };
+
+    const r = await sbFetch('/rest/v1/ventas_afiliados', {
+      method: 'POST',
+      body: JSON.stringify(body),
+      headers: { 'Prefer': 'return=minimal' }
+    }, sesiónActual.access_token);
+
+    btn.disabled = false;
+    btn.textContent = 'Registrar venta →';
+
+    if (r.ok || r.status === 201) {
+      showAuthMsg(msg, `✅ Venta registrada. Comisión: USD ${comision.toFixed(2)} para ${esc(afil.nombre)}.`, 'ok');
+      setTimeout(() => {
+        cerrarModal('modalRegistrarVenta');
+        document.getElementById('ventaCupon').value = '';
+        document.getElementById('ventaMonto').value = '';
+        document.getElementById('ventaEmailComprador').value = '';
+        cargarAdminVentas();
+        cargarAdminAfiliadosActivos();
+      }, 1800);
+    } else {
+      showAuthMsg(msg, 'Error al registrar la venta.', 'err');
+    }
+  }
+
+  function abrirPagarComision(ventaId, afilNombre, monto) {
+    document.getElementById('pagarComisionVentaId').value = ventaId;
+    document.getElementById('pagarComisionDesc').textContent =
+      `Marcar como pagada la comisión de USD ${monto} a ${afilNombre}.`;
+    document.getElementById('pagarComisionMsg').style.display = 'none';
+    document.getElementById('pagarComisionBtn').disabled = false;
+    document.getElementById('pagarComisionBtn').textContent = 'Confirmar pago →';
+    document.getElementById('modalPagarComision').classList.add('active');
+  }
+
+  async function confirmarPagoComision() {
+    const ventaId = document.getElementById('pagarComisionVentaId').value;
+    const msg     = document.getElementById('pagarComisionMsg');
+    const btn     = document.getElementById('pagarComisionBtn');
+
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner"></span>Guardando...';
+
+    const r = await fetch(`${SUPABASE_URL}/rest/v1/ventas_afiliados?id=eq.${ventaId}`, {
+      method: 'PATCH',
+      headers: {
+        'Content-Type': 'application/json',
+        'apikey': SUPABASE_ANON,
+        'Authorization': 'Bearer ' + sesiónActual.access_token,
+        'Prefer': 'return=minimal'
+      },
+      body: JSON.stringify({ estado_comision: 'pagado' })
+    });
+
+    btn.disabled = false;
+    btn.textContent = 'Confirmar pago →';
+
+    if (r.ok || r.status === 204) {
+      showAuthMsg(msg, '✅ Comisión marcada como pagada.', 'ok');
+      setTimeout(() => {
+        cerrarModal('modalPagarComision');
+        cargarAdminVentas();
+      }, 1200);
+    } else {
+      showAuthMsg(msg, 'Error al actualizar.', 'err');
+    }
   }
 
   (function init() {

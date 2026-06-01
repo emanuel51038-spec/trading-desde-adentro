@@ -853,7 +853,7 @@
             <div class="pay-name">MercadoPago</div>
             <div class="pay-desc">Próximamente disponible</div>
           </div>
-          <span class="pay-amount" id="mpAmount">USD 30</span>
+          <span class="pay-amount" id="mpAmount">USD 60</span>
         </button>
       </div>
 
@@ -1255,9 +1255,9 @@
       <div>
         <label class="afil-label">Producto</label>
         <select class="afil-input" id="ventaProducto" style="margin-bottom:0">
-          <option value="DailyLossLimiter">Daily Loss Limiter — USD 30</option>
-          <option value="ManualBacktestAnalyzer">Manual Backtest Analyzer — USD 20</option>
-          <option value="TDA_RiskReward">TDA Risk/Reward — USD 25</option>
+          <option value="DailyLossLimiter">Daily Loss Limiter — USD 60</option>
+          <option value="ManualBacktestAnalyzer">Manual Backtest Analyzer — USD 40</option>
+          <option value="TDA_RiskReward">TDA Risk/Reward — USD 50</option>
         </select>
       </div>
     </div>
@@ -1317,10 +1317,10 @@
   const SUPABASE_URL  = 'https://pjrwdseaomijkgytbglh.supabase.co';
   const SUPABASE_KEY  = 'sb_publishable_02_5qcxJXbiREPQxNtt-Fg_SnjORvmM';
   const SUPABASE_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBqcndkc2Vhb21pamtneXRiZ2xoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQyMDgxNjIsImV4cCI6MjA4OTc4NDE2Mn0.5Nmyu8TwBRVWBL2zDOfFTeEZBMLOyQVu_dDhas07jDI';
-  const PRECIO_USD    = 30;
+  const PRECIO_USD    = 60;
 
   let cotizacion    = 0;
-  let precioFinal   = 30;
+  let precioFinal   = 60;
   let cuponAplicado = null;
   let sesiónActual  = null; // { access_token, user }
   let licenciaEditando = null; // id de licencia que se está cambiando MAC
@@ -1658,7 +1658,7 @@
               </div>
             </div>
             <div style="display:flex;align-items:center;gap:12px">
-              <span style="font-family:'Bebas Neue',sans-serif;font-size:24px;color:#E57373">USD 30</span>
+              <span style="font-family:'Bebas Neue',sans-serif;font-size:24px;color:#E57373">USD 60</span>
               <span style="font-size:20px">→</span>
             </div>
           </div>
@@ -1692,7 +1692,7 @@
               </div>
             </div>
             <div style="display:flex;align-items:center;gap:12px">
-              <span style="font-family:'Bebas Neue',sans-serif;font-size:24px;color:#E57373">USD 20</span>
+              <span style="font-family:'Bebas Neue',sans-serif;font-size:24px;color:#E57373">USD 40</span>
               <span style="font-size:20px">→</span>
             </div>
           </div>
@@ -1726,7 +1726,7 @@
               </div>
             </div>
             <div style="display:flex;align-items:center;gap:12px">
-              <span style="font-family:'Bebas Neue',sans-serif;font-size:24px;color:#E57373">USD 25</span>
+              <span style="font-family:'Bebas Neue',sans-serif;font-size:24px;color:#E57373">USD 50</span>
               <span style="font-size:20px">→</span>
             </div>
           </div>
@@ -1810,8 +1810,8 @@
   function irATiendaProducto(producto) {
     productoSeleccionado = producto || 'DailyLossLimiter';
     // Ajustar precio según producto
-    const PRECIOS = { 'DailyLossLimiter': 30, 'ManualBacktestAnalyzer': 20, 'TDA_RiskReward': 25 };
-    precioFinal = PRECIOS[productoSeleccionado] || 30;
+    const PRECIOS = { 'DailyLossLimiter': 60, 'ManualBacktestAnalyzer': 40, 'TDA_RiskReward': 50 };
+    precioFinal = PRECIOS[productoSeleccionado] || 60;
     cuponAplicado = null;
     actualizarPrecios();
 
@@ -2015,7 +2015,7 @@
             <div class="empty-product-name">Daily Loss Limiter</div>
             <div class="empty-product-desc">Bloqueador automático de pérdidas · NT8</div>
           </div>
-          <div class="empty-product-price">USD 30</div>
+          <div class="empty-product-price">USD 60</div>
         </a>
         <a class="empty-product-card" onclick="irATiendaProducto('ManualBacktestAnalyzer')">
           <div class="empty-product-icon">📊</div>
@@ -2023,7 +2023,7 @@
             <div class="empty-product-name">Manual Backtest Analyzer</div>
             <div class="empty-product-desc">Backtests con envío al Trading Journal · NT8</div>
           </div>
-          <div class="empty-product-price">USD 20</div>
+          <div class="empty-product-price">USD 40</div>
         </a>
         <a class="empty-product-card" onclick="irATiendaProducto('TDA_RiskReward')">
           <div class="empty-product-icon">📐</div>
@@ -2031,7 +2031,7 @@
             <div class="empty-product-name">TDA Risk/Reward</div>
             <div class="empty-product-desc">Herramienta profesional de Risk/Reward · NT8</div>
           </div>
-          <div class="empty-product-price">USD 25</div>
+          <div class="empty-product-price">USD 50</div>
         </a>
       </div>
     </div>`;
@@ -2058,9 +2058,9 @@
     const rows = r.data.map(l => {
       const fecha = l.fecha_pago || l.created_at?.split('T')[0] || '—';
       const metodo = l.metodo_pago || (l.estado?.includes('usdt') ? 'USDT' : l.estado?.includes('ars') ? 'ARS' : '—');
-      const montoDefault = l.producto === 'ManualBacktestAnalyzer' ? 'USD 20'
-                         : l.producto === 'TDA_RiskReward'          ? 'USD 25'
-                         :                                            'USD 30';
+      const montoDefault = l.producto === 'ManualBacktestAnalyzer' ? 'USD 40'
+                         : l.producto === 'TDA_RiskReward'          ? 'USD 50'
+                         :                                            'USD 60';
       const monto  = l.monto ? `USD ${l.monto}` : montoDefault;
       const estadoClass = l.estado === 'activa' ? 'activa' : 'pendiente';
       const estadoLabel = l.estado === 'activa' ? 'Activo' : 'Pendiente';
@@ -2263,8 +2263,8 @@
     msg.className = 'cupon-msg'; msg.textContent = 'Verificando...';
 
     // Precio base del producto seleccionado (no siempre 30)
-    const PRECIOS_BASE = { 'DailyLossLimiter': 30, 'ManualBacktestAnalyzer': 20, 'TDA_RiskReward': 25 };
-    const precioBase = PRECIOS_BASE[productoSeleccionado] || 30;
+    const PRECIOS_BASE = { 'DailyLossLimiter': 60, 'ManualBacktestAnalyzer': 40, 'TDA_RiskReward': 50 };
+    const precioBase = PRECIOS_BASE[productoSeleccionado] || 60;
 
     try {
       const res  = await fetch(`${SUPABASE_URL}/rest/v1/cupones?codigo=eq.${codigo}&activo=eq.true&select=codigo,descuento`, {
@@ -4940,9 +4940,9 @@
      SISTEMA DE AFILIADOS
   ══════════════════════════════════════ */
 
-  const ADMIN_EMAIL = 'tradingdesdeadentro@gmail.com';
+  const ADMIN_EMAIL = 'emanuel51038@gmail.com';
   const COMISION_PCT = 20; // % de comisión fijo para todos los afiliados
-  const PRECIOS_BASE_AFIL = { 'DailyLossLimiter': 30, 'ManualBacktestAnalyzer': 20, 'TDA_RiskReward': 25 };
+  const PRECIOS_BASE_AFIL = { 'DailyLossLimiter': 60, 'ManualBacktestAnalyzer': 40, 'TDA_RiskReward': 50 };
 
   function esAdmin() {
     return sesiónActual?.user?.email === ADMIN_EMAIL;

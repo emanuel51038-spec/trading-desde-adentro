@@ -5134,6 +5134,21 @@
         ${ventasRows}
       </div>
 
+      <div style="background:rgba(139,26,26,0.08);border:1px solid rgba(139,26,26,0.2);border-radius:12px;padding:20px 24px;margin-bottom:16px">
+        <div class="afil-section-title" style="font-size:16px;margin-bottom:12px">💳 BILLETERA USDT</div>
+        <p style="font-size:13px;color:var(--gris);margin-bottom:14px">Ingresá tu dirección USDT (TRC20 o ERC20) para que podamos enviarte tus comisiones sin necesidad de coordinar por otro medio.</p>
+        <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
+          <input type="text" id="afilBilleteraInput" class="afil-input"
+            value="${esc(afil.billetera_usdt || '')}"
+            placeholder="T... o 0x... (dirección USDT)"
+            style="flex:1;min-width:200px;margin-bottom:0;font-family:monospace;font-size:13px">
+          <button class="admin-btn green" style="padding:10px 20px;font-size:13px;white-space:nowrap" onclick="guardarBilletera('${escAttr(afil.id)}')">
+            Guardar
+          </button>
+        </div>
+        <div id="billeteraMsg" style="display:none;margin-top:10px" class="auth-msg"></div>
+      </div>
+
       <div style="background:rgba(139,26,26,0.08);border:1px solid rgba(139,26,26,0.2);border-radius:12px;padding:16px 20px">
         <p style="font-size:13px;color:var(--gris)">💬 Para solicitar el pago de tus comisiones acumuladas, escribinos por Instagram <a href="https://instagram.com/tradingdesdeadentro" target="_blank" style="color:#E57373">@tradingdesdeadentro</a> o a <strong style="color:#ccc">tradingdesdeadentro@gmail.com</strong>.</p>
       </div>`;
@@ -5394,6 +5409,10 @@
           </div>
           <div style="font-family:'Bebas Neue',sans-serif;font-size:18px;color:#E57373;letter-spacing:2px">${esc(a.codigo_cupon)}</div>
           <div style="font-size:12px;color:var(--gris)">${a.descuento_pct || 15}% desc · ${COMISION_PCT}% com</div>
+          ${a.billetera_usdt
+            ? `<div style="font-size:11px;color:#4CAF50;font-family:monospace;margin-top:2px" title="${escAttr(a.billetera_usdt)}">💳 ${esc(a.billetera_usdt.slice(0,16))}...</div>`
+            : `<div style="font-size:11px;color:#666;margin-top:2px">Sin billetera cargada</div>`
+          }
           <div style="font-family:'Bebas Neue',sans-serif;font-size:16px;color:#FFC107">$${pendiente.toFixed(2)} pend.</div>
           <div class="admin-action-btns">
             <button class="admin-btn green" onclick="abrirRegistrarVenta('${escAttr(a.codigo_cupon)}')">+ Venta</button>
@@ -5418,7 +5437,7 @@
     cont.innerHTML = '<div style="color:var(--gris);padding:20px"><span class="spinner"></span> Cargando...</div>';
 
     const r = await sbFetch(
-      `/rest/v1/ventas_afiliados?select=*,afiliados(nombre,codigo_cupon)&order=created_at.desc&limit=50`,
+      `/rest/v1/ventas_afiliados?select=*,afiliados(nombre,codigo_cupon,billetera_usdt)&order=created_at.desc&limit=50`,
       {}, sesiónActual.access_token
     );
 
@@ -5449,7 +5468,7 @@
           <div><span class="estado-badge ${estadoClass}" style="font-size:10px">${estadoLabel}</span></div>
           <div class="admin-action-btns">
             ${v.estado_comision !== 'pagado'
-              ? `<button class="admin-btn yellow" onclick="abrirPagarComision('${escAttr(v.id)}', '${escAttr(afilNombre)}', '${parseFloat(v.comision_usd).toFixed(2)}')">Marcar pagado</button>`
+              ? `<button class="admin-btn yellow" onclick="abrirPagarComision('${escAttr(v.id)}', '${escAttr(afilNombre)}', '${parseFloat(v.comision_usd).toFixed(2)}', '${escAttr(v.afiliados?.billetera_usdt || '')}')">Marcar pagado</button>`
               : '<span style="font-size:11px;color:var(--gris)">✓</span>'
             }
           </div>
@@ -5540,10 +5559,36 @@
     }
   }
 
-  function abrirPagarComision(ventaId, afilNombre, monto) {
+  async function guardarBilletera(afilId) {
+    const valor = document.getElementById('afilBilleteraInput')?.value.trim();
+    const msg   = document.getElementById('billeteraMsg');
+    if (!valor) { showAuthMsg(msg, 'Ingresá una dirección de billetera.', 'err'); return; }
+
+    const r = await fetch(`${SUPABASE_URL}/rest/v1/afiliados?id=eq.${afilId}`, {
+      method: 'PATCH',
+      headers: {
+        'Content-Type': 'application/json',
+        'apikey': SUPABASE_ANON,
+        'Authorization': 'Bearer ' + sesiónActual.access_token,
+        'Prefer': 'return=minimal'
+      },
+      body: JSON.stringify({ billetera_usdt: valor })
+    });
+
+    if (r.ok || r.status === 204) {
+      showAuthMsg(msg, '✅ Billetera guardada correctamente.', 'ok');
+    } else {
+      showAuthMsg(msg, 'Error al guardar. Intentá de nuevo.', 'err');
+    }
+  }
+
+  function abrirPagarComision(ventaId, afilNombre, monto, billetera) {
     document.getElementById('pagarComisionVentaId').value = ventaId;
-    document.getElementById('pagarComisionDesc').textContent =
-      `Marcar como pagada la comisión de USD ${monto} a ${afilNombre}.`;
+    const billeteraHtml = billetera
+      ? `<br><span style="font-size:12px;color:#4CAF50;font-family:monospace">💳 ${esc(billetera)}</span>`
+      : `<br><span style="font-size:12px;color:#666">Sin billetera cargada — coordinar por Instagram</span>`;
+    document.getElementById('pagarComisionDesc').innerHTML =
+      `Marcar como pagada la comisión de <strong>USD ${monto}</strong> a <strong>${esc(afilNombre)}</strong>.${billeteraHtml}`;
     document.getElementById('pagarComisionMsg').style.display = 'none';
     document.getElementById('pagarComisionBtn').disabled = false;
     document.getElementById('pagarComisionBtn').textContent = 'Confirmar pago →';

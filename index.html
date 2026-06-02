@@ -2195,7 +2195,8 @@
         producto: productoSeleccionado,
         version: VERSIONES_PRODUCTOS[productoSeleccionado] || 'V1.0',
         monto: precioFinal,
-        metodo_pago: metodo === 'usdt' ? 'USDT' : 'ARS'
+        metodo_pago: metodo === 'usdt' ? 'USDT' : 'ARS',
+        cupon_usado: cuponAplicado?.codigo || null
       };
       // Si hay sesión activa, vinculamos el user_id
       if (sesiónActual?.user?.id) body.user_id = sesiónActual.user.id;

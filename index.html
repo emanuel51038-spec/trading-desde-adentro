@@ -2303,12 +2303,10 @@
       : 'Daily Loss Limiter';
     try {
       await emailjs.send('service_3zbxaia', 'template_gmveuaa', {
-        nombre:    datos.nombre,
-        email:     datos.email,
-        producto:  nombreProductoEmail,
-        mac_label: 'Tu MAC Address registrada',
-        mac:       datos.mac,
-        mensaje:   `Hemos recibido tu solicitud de compra del ${nombreProductoEmail} correctamente.\n\nPara activar tu licencia, enviá el comprobante de pago a:\ntradingdesdeadentro@gmail.com\n\nUna vez confirmado el pago, activaremos tu licencia en un plazo máximo de 24 horas.`
+        nombre: datos.nombre,
+        email: datos.email,
+        mac: datos.mac,
+        producto: nombreProductoEmail
       });
     } catch(e) { console.error('EmailJS error:', e); }
   }
@@ -5314,17 +5312,17 @@
     });
 
     if (rAfil.ok || rAfil.status === 204) {
-      // 4. Enviar email al afiliado con template reutilizado
+      // 4. Enviar email al afiliado
       if (rAfilData.ok && Array.isArray(rAfilData.data) && rAfilData.data.length > 0) {
         const afil = rAfilData.data[0];
         try {
-          await emailjs.send('service_3zbxaia', 'template_gmveuaa', {
-            nombre:    afil.nombre,
-            email:     afil.email,
-            producto:  '¡Solicitud de afiliado aprobada!',
-            mac_label: 'Tu cupón de descuento',
-            mac:       codigo,
-            mensaje:   `¡Felicitaciones! Tu solicitud para ser afiliado de Trading desde Adentro fue aprobada.\n\nTus referidos obtienen un ${descuento}% de descuento usando tu código, y vos ganás un ${COMISION_PCT}% de comisión por cada venta.\n\nCompartí tu código con tu comunidad y accedé a tu panel en tradingdesdeadentro.com para ver tus estadísticas.`
+          await emailjs.send('service_3zbxaia', 'template_afiliado_aprobado', {
+            nombre:       afil.nombre,
+            email:        afil.email,
+            codigo_cupon: codigo,
+            descuento:    descuento,
+            comision:     COMISION_PCT,
+            link_panel:   'https://www.tradingdesdeadentro.com'
           });
         } catch(e) { console.error('EmailJS afiliado:', e); }
       }

@@ -2262,6 +2262,19 @@
     if (!codigo) { msg.className = 'cupon-msg err'; msg.textContent = 'Ingresá un código de cupón.'; return; }
     msg.className = 'cupon-msg'; msg.textContent = 'Verificando...';
 
+    // Verificar que el usuario no esté usando su propio cupón de afiliado
+    if (sesiónActual) {
+      const rAfil = await sbFetch(
+        `/rest/v1/afiliados?user_id=eq.${sesiónActual.user.id}&codigo_cupon=eq.${codigo}&select=id`,
+        {}, sesiónActual.access_token
+      );
+      if (rAfil.ok && Array.isArray(rAfil.data) && rAfil.data.length > 0) {
+        msg.className = 'cupon-msg err';
+        msg.textContent = 'No podés usar tu propio cupón de afiliado.';
+        return;
+      }
+    }
+
     // Precio base del producto seleccionado (no siempre 30)
     const PRECIOS_BASE = { 'DailyLossLimiter': 60, 'ManualBacktestAnalyzer': 40, 'TDA_RiskReward': 50 };
     const precioBase = PRECIOS_BASE[productoSeleccionado] || 60;

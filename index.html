@@ -5371,7 +5371,7 @@
       <div id="subSecAfiliados"></div>
       <div id="subSecRetiros" style="display:none"></div>`;
     await cargarSubSolicitudesAfiliado();
-    await cargarSubSolicitudesRetiro();
+    setTimeout(() => cargarSubSolicitudesRetiro(), 100);
   }
 
   function switchSubTab(sec, btn) {
@@ -5513,7 +5513,7 @@
     if (!cont) return;
     cont.innerHTML = '<div style="color:var(--gris);padding:20px"><span class="spinner"></span> Cargando...</div>';
 
-    const r = await sbFetch('/rest/v1/cupones?tipo=eq.campana&select=*&order=created_at.desc', {}, sesiónActual.access_token);
+    const r = await sbFetch('/rest/v1/cupones?tipo=eq.campana&select=id,codigo,descuento,activo,fecha_expiracion,descripcion,usos_maximos,usos_actuales,created_at&order=created_at.desc', {}, sesiónActual.access_token);
     const campanas = (r.ok && Array.isArray(r.data)) ? r.data : [];
 
     const ahora = new Date();

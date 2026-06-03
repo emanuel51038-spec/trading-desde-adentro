@@ -2201,7 +2201,7 @@
 
   async function guardarPreRegistro(datos, metodo) {
     try {
-      const PRECIOS_BASE = { 'DailyLossLimiter': 30, 'ManualBacktestAnalyzer': 20, 'TDA_RiskReward': 25 };
+      const PRECIOS_BASE = { 'DailyLossLimiter': 60, 'ManualBacktestAnalyzer': 40, 'TDA_RiskReward': 50 };
       // Version actual de cada producto al momento de la compra (histórico)
       const VERSIONES_PRODUCTOS = { 'DailyLossLimiter': 'V1.0', 'ManualBacktestAnalyzer': 'V1.0', 'TDA_RiskReward': 'V1.3' };
       const body = {
@@ -2232,7 +2232,19 @@
       if (!res.ok) {
         console.error('Error al guardar licencia:', res.status, responseText);
       } else {
-        
+        // Si el cupón es de campaña, incrementar usos_actuales
+        if (cuponAplicado?.tipo === 'campaña' && cuponAplicado?.id) {
+          await fetch(`${SUPABASE_URL}/rest/v1/cupones?id=eq.${cuponAplicado.id}`, {
+            method: 'PATCH',
+            headers: {
+              'Content-Type': 'application/json',
+              'apikey': SUPABASE_ANON,
+              'Authorization': `Bearer ${sesiónActual?.access_token || SUPABASE_ANON}`,
+              'Prefer': 'return=minimal'
+            },
+            body: JSON.stringify({ usos_actuales: (cuponAplicado.usos_actuales || 0) + 1 })
+          });
+        }
       }
     } catch(e) { console.error('guardarPreRegistro exception:', e); }
   }
@@ -2298,12 +2310,27 @@
     const precioBase = PRECIOS_BASE[productoSeleccionado] || 60;
 
     try {
-      const res  = await fetch(`${SUPABASE_URL}/rest/v1/cupones?codigo=eq.${codigo}&activo=eq.true&select=codigo,descuento`, {
+      const res  = await fetch(`${SUPABASE_URL}/rest/v1/cupones?codigo=eq.${codigo}&activo=eq.true&select=*`, {
         headers: { 'apikey': SUPABASE_ANON, 'Authorization': `Bearer ${SUPABASE_ANON}` }
       });
       const data = await res.json();
       if (data && data.length > 0) {
-        const cupon   = data[0];
+        const cupon = data[0];
+
+        // Validar expiración
+        if (cupon.fecha_expiracion && new Date(cupon.fecha_expiracion) < new Date()) {
+          msg.className = 'cupon-msg err'; msg.textContent = 'Este cupón ya expiró.';
+          cuponAplicado = null; precioFinal = precioBase;
+          badge.style.display = 'none'; actualizarPrecios(); return;
+        }
+
+        // Validar usos máximos
+        if (cupon.usos_maximos && (cupon.usos_actuales || 0) >= cupon.usos_maximos) {
+          msg.className = 'cupon-msg err'; msg.textContent = 'Este cupón ya alcanzó su límite de usos.';
+          cuponAplicado = null; precioFinal = precioBase;
+          badge.style.display = 'none'; actualizarPrecios(); return;
+        }
+
         cuponAplicado = cupon;
         precioFinal   = Math.round(precioBase * (1 - cupon.descuento / 100));
         msg.className = 'cupon-msg ok'; msg.textContent = 'Cupón aplicado!';
@@ -5305,28 +5332,32 @@
         <button class="admin-tab-btn" onclick="switchAdminTab('afiliados_activos', this)">Afiliados activos</button>
         <button class="admin-tab-btn" onclick="switchAdminTab('ventas', this)">Ventas</button>
         <button class="admin-tab-btn" onclick="switchAdminTab('flyers_admin', this)">🖼️ Flyers</button>
+        <button class="admin-tab-btn" onclick="switchAdminTab('campanas', this)">🎯 Campañas</button>
       </div>
       <div id="adminSolicitudes" class="admin-section activa"></div>
       <div id="adminAfiliadosActivos" class="admin-section"></div>
       <div id="adminVentas" class="admin-section"></div>
-      <div id="adminFlyers" class="admin-section"></div>`;
+      <div id="adminFlyers" class="admin-section"></div>
+      <div id="adminCampanas" class="admin-section"></div>`;
 
     await cargarAdminSolicitudes();
     await cargarAdminAfiliadosActivos();
     await cargarAdminVentas();
     await cargarAdminFlyers();
+    await cargarAdminCampanas();
   }
 
   function switchAdminTab(sec, btn) {
     document.querySelectorAll('.admin-section').forEach(s => s.classList.remove('activa'));
     document.querySelectorAll('.admin-tab-btn').forEach(b => b.classList.remove('active'));
-    const mapId = { 'solicitudes': 'adminSolicitudes', 'afiliados_activos': 'adminAfiliadosActivos', 'ventas': 'adminVentas', 'flyers_admin': 'adminFlyers' };
+    const mapId = { 'solicitudes': 'adminSolicitudes', 'afiliados_activos': 'adminAfiliadosActivos', 'ventas': 'adminVentas', 'flyers_admin': 'adminFlyers', 'campanas': 'adminCampanas' };
     document.getElementById(mapId[sec]).classList.add('activa');
     btn.classList.add('active');
-    if (sec === 'solicitudes')      cargarAdminSolicitudes();
+    if (sec === 'solicitudes')       cargarAdminSolicitudes();
     if (sec === 'afiliados_activos') cargarAdminAfiliadosActivos();
-    if (sec === 'ventas')           cargarAdminVentas();
-    if (sec === 'flyers_admin')     cargarAdminFlyers();
+    if (sec === 'ventas')            cargarAdminVentas();
+    if (sec === 'flyers_admin')      cargarAdminFlyers();
+    if (sec === 'campanas')          cargarAdminCampanas();
   }
 
   async function cargarAdminSolicitudes() {
@@ -5475,6 +5506,176 @@
       headers: { 'apikey': SUPABASE_ANON, 'Authorization': 'Bearer ' + sesiónActual.access_token }
     });
     if (r.ok || r.status === 204) cargarAdminFlyers();
+  }
+
+  async function cargarAdminCampanas() {
+    const cont = document.getElementById('adminCampanas');
+    if (!cont) return;
+    cont.innerHTML = '<div style="color:var(--gris);padding:20px"><span class="spinner"></span> Cargando...</div>';
+
+    const r = await sbFetch('/rest/v1/cupones?tipo=eq.campaña&select=*&order=created_at.desc', {}, sesiónActual.access_token);
+    const campanas = (r.ok && Array.isArray(r.data)) ? r.data : [];
+
+    const ahora = new Date();
+
+    const campanaRows = campanas.length === 0
+      ? '<div style="padding:20px;color:var(--gris);font-size:14px">No hay campañas creadas todavía.</div>'
+      : campanas.map(c => {
+          const expirada  = c.fecha_expiracion && new Date(c.fecha_expiracion) < ahora;
+          const estadoLabel = !c.activo ? 'Inactiva' : expirada ? 'Expirada' : 'Activa';
+          const estadoClass = !c.activo || expirada ? 'estado-rechazado' : 'estado-aprobado';
+          const fechaExp = c.fecha_expiracion
+            ? new Date(c.fecha_expiracion).toLocaleDateString('es-AR', { day:'2-digit', month:'2-digit', year:'numeric', hour:'2-digit', minute:'2-digit' })
+            : 'Sin vencimiento';
+          const usosHtml = c.usos_maximos
+            ? `${c.usos_actuales || 0} / ${c.usos_maximos} usos`
+            : `${c.usos_actuales || 0} usos`;
+
+          return `
+          <div style="background:#111;border:1px solid var(--negro-border);border-radius:12px;padding:18px 20px;margin-bottom:10px">
+            <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:12px">
+              <div>
+                <div style="font-family:'Bebas Neue',sans-serif;font-size:28px;color:#E57373;letter-spacing:3px">${esc(c.codigo)}</div>
+                ${c.descripcion ? `<div style="font-size:13px;color:var(--gris-claro);margin-bottom:4px">${esc(c.descripcion)}</div>` : ''}
+                <div style="display:flex;gap:12px;flex-wrap:wrap;margin-top:4px">
+                  <span style="font-size:12px;color:#4CAF50;font-weight:600">${c.descuento}% OFF</span>
+                  <span style="font-size:12px;color:var(--gris)">📅 ${fechaExp}</span>
+                  <span style="font-size:12px;color:var(--gris)">🔢 ${usosHtml}</span>
+                </div>
+              </div>
+              <div style="display:flex;align-items:center;gap:8px">
+                <span class="estado-badge ${estadoClass}" style="font-size:10px">${estadoLabel}</span>
+                ${c.activo && !expirada
+                  ? `<button class="admin-btn red" style="padding:5px 12px;font-size:11px" onclick="desactivarCampana('${escAttr(c.id)}')">Desactivar</button>`
+                  : `<button class="admin-btn green" style="padding:5px 12px;font-size:11px" onclick="activarCampana('${escAttr(c.id)}')">Activar</button>`
+                }
+                <button class="admin-btn red" style="padding:5px 12px;font-size:11px" onclick="eliminarCampana('${escAttr(c.id)}')">Eliminar</button>
+              </div>
+            </div>
+          </div>`;
+        }).join('');
+
+    cont.innerHTML = `
+      <div style="background:var(--negro-card);border:1px solid var(--negro-border);border-radius:12px;padding:24px;margin-bottom:20px">
+        <div class="afil-section-title" style="font-size:18px;margin-bottom:4px">🎯 Nueva campaña</div>
+        <p style="font-size:13px;color:var(--gris);margin-bottom:16px">Creá un cupón de descuento especial para eventos o fechas festivas. No genera comisión para afiliados.</p>
+
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px">
+          <div>
+            <label class="afil-label">Código del cupón</label>
+            <input type="text" id="campCodigo" class="afil-input" placeholder="Ej: BLACKFRIDAY30" style="text-transform:uppercase;margin-bottom:0">
+          </div>
+          <div>
+            <label class="afil-label">Descuento (%)</label>
+            <input type="number" id="campDescuento" class="afil-input" placeholder="Ej: 30" min="1" max="99" style="margin-bottom:0">
+          </div>
+        </div>
+
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px">
+          <div>
+            <label class="afil-label">Fecha de expiración (opcional)</label>
+            <input type="datetime-local" id="campExpiracion" class="afil-input" style="margin-bottom:0;color-scheme:dark">
+          </div>
+          <div>
+            <label class="afil-label">Usos máximos (opcional, vacío = ilimitado)</label>
+            <input type="number" id="campUsosMax" class="afil-input" placeholder="Ej: 100" min="1" style="margin-bottom:0">
+          </div>
+        </div>
+
+        <div style="margin-bottom:14px">
+          <label class="afil-label">Descripción interna (opcional)</label>
+          <input type="text" id="campDescripcion" class="afil-input" placeholder="Ej: Black Friday 2026" style="margin-bottom:0">
+        </div>
+
+        <div id="campMsg" style="display:none;margin-bottom:10px" class="auth-msg"></div>
+        <button class="admin-btn green" id="campCrearBtn" style="padding:10px 22px;font-size:13px" onclick="crearCampana()">
+          🎯 Crear campaña
+        </button>
+      </div>
+
+      <div class="afil-section-title" style="font-size:16px;margin-bottom:12px">Campañas (${campanas.length})</div>
+      ${campanaRows}`;
+  }
+
+  async function crearCampana() {
+    const codigo      = document.getElementById('campCodigo')?.value.trim().toUpperCase();
+    const descuento   = parseInt(document.getElementById('campDescuento')?.value);
+    const expiracion  = document.getElementById('campExpiracion')?.value;
+    const usosMax     = parseInt(document.getElementById('campUsosMax')?.value) || null;
+    const descripcion = document.getElementById('campDescripcion')?.value.trim() || null;
+    const msg         = document.getElementById('campMsg');
+    const btn         = document.getElementById('campCrearBtn');
+
+    if (!codigo || codigo.length < 2) { showAuthMsg(msg, 'El código debe tener al menos 2 caracteres.', 'err'); return; }
+    if (isNaN(descuento) || descuento < 1 || descuento > 99) { showAuthMsg(msg, 'El descuento debe estar entre 1 y 99%.', 'err'); return; }
+
+    // Verificar que no exista
+    const check = await sbFetch(`/rest/v1/cupones?codigo=eq.${codigo}&select=codigo`, {}, sesiónActual.access_token);
+    if (check.ok && Array.isArray(check.data) && check.data.length > 0) {
+      showAuthMsg(msg, 'Ya existe un cupón con ese código.', 'err'); return;
+    }
+
+    btn.disabled = true; btn.innerHTML = '<span class="spinner"></span>Creando...';
+
+    const body = {
+      codigo,
+      descuento,
+      activo: true,
+      tipo: 'campaña',
+      descripcion,
+      usos_maximos: usosMax,
+      usos_actuales: 0,
+      fecha_expiracion: expiracion ? new Date(expiracion).toISOString() : null
+    };
+
+    const r = await sbFetch('/rest/v1/cupones', {
+      method: 'POST',
+      body: JSON.stringify(body),
+      headers: { 'Prefer': 'return=minimal' }
+    }, sesiónActual.access_token);
+
+    btn.disabled = false; btn.textContent = '🎯 Crear campaña';
+
+    if (r.ok || r.status === 201) {
+      showAuthMsg(msg, `✅ Campaña "${codigo}" creada con ${descuento}% de descuento.`, 'ok');
+      document.getElementById('campCodigo').value      = '';
+      document.getElementById('campDescuento').value   = '';
+      document.getElementById('campExpiracion').value  = '';
+      document.getElementById('campUsosMax').value     = '';
+      document.getElementById('campDescripcion').value = '';
+      setTimeout(() => cargarAdminCampanas(), 1000);
+    } else {
+      showAuthMsg(msg, 'Error al crear la campaña.', 'err');
+    }
+  }
+
+  async function desactivarCampana(id) {
+    await fetch(`${SUPABASE_URL}/rest/v1/cupones?id=eq.${id}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json', 'apikey': SUPABASE_ANON,
+        'Authorization': 'Bearer ' + sesiónActual.access_token, 'Prefer': 'return=minimal' },
+      body: JSON.stringify({ activo: false })
+    });
+    cargarAdminCampanas();
+  }
+
+  async function activarCampana(id) {
+    await fetch(`${SUPABASE_URL}/rest/v1/cupones?id=eq.${id}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json', 'apikey': SUPABASE_ANON,
+        'Authorization': 'Bearer ' + sesiónActual.access_token, 'Prefer': 'return=minimal' },
+      body: JSON.stringify({ activo: true })
+    });
+    cargarAdminCampanas();
+  }
+
+  async function eliminarCampana(id) {
+    if (!confirm('¿Eliminar esta campaña? Esta acción no se puede deshacer.')) return;
+    await fetch(`${SUPABASE_URL}/rest/v1/cupones?id=eq.${id}`, {
+      method: 'DELETE',
+      headers: { 'apikey': SUPABASE_ANON, 'Authorization': 'Bearer ' + sesiónActual.access_token }
+    });
+    cargarAdminCampanas();
   }
 
   async function cargarSubSolicitudesAfiliado() {

@@ -5397,7 +5397,7 @@
         </div>
         <div style="margin-bottom:14px">
           <label class="afil-label">Archivo (imagen o PDF)</label>
-          <input type="file" id="flyerArchivo" accept="image/*,.pdf"
+          <input type="file" id="flyerArchivo" accept="image/*,.pdf" multiple
             style="width:100%;background:#181818;border:1px dashed #444;border-radius:8px;padding:12px;color:var(--gris);font-family:'DM Sans',sans-serif;cursor:pointer">
         </div>
         <div id="flyerUploadMsg" style="display:none;margin-bottom:10px" class="auth-msg"></div>
@@ -5413,54 +5413,59 @@
   async function subirFlyer() {
     const nombre   = document.getElementById('flyerNombre')?.value.trim();
     const producto = document.getElementById('flyerProducto')?.value;
-    const archivo  = document.getElementById('flyerArchivo')?.files[0];
+    const archivos = document.getElementById('flyerArchivo')?.files;
     const msg      = document.getElementById('flyerUploadMsg');
     const btn      = document.getElementById('flyerSubirBtn');
 
-    if (!nombre || !archivo) { showAuthMsg(msg, 'Completá el nombre y seleccioná un archivo.', 'err'); return; }
-
-    btn.disabled = true; btn.innerHTML = '<span class="spinner"></span>Subiendo...';
-
-    // 1. Subir a Supabase Storage
-    const ext      = archivo.name.split('.').pop();
-    const fileName = `${producto}_${Date.now()}.${ext}`;
-    const formData = new FormData();
-    formData.append('', archivo);
-
-    const uploadRes = await fetch(`${SUPABASE_URL}/storage/v1/object/flyers/${fileName}`, {
-      method: 'POST',
-      headers: {
-        'apikey': SUPABASE_ANON,
-        'Authorization': 'Bearer ' + sesiónActual.access_token
-      },
-      body: archivo
-    });
-
-    if (!uploadRes.ok) {
-      btn.disabled = false; btn.textContent = '⬆️ Subir flyer';
-      showAuthMsg(msg, 'Error al subir el archivo. Verificá el bucket en Supabase.', 'err'); return;
+    if (!nombre || !archivos || archivos.length === 0) {
+      showAuthMsg(msg, 'Completá el nombre y seleccioná al menos un archivo.', 'err'); return;
     }
 
-    // 2. Construir URL pública
-    const publicUrl = `${SUPABASE_URL}/storage/v1/object/public/flyers/${fileName}`;
+    btn.disabled = true;
+    btn.innerHTML = `<span class="spinner"></span>Subiendo 0/${archivos.length}...`;
 
-    // 3. Guardar en tabla flyers
-    const r = await sbFetch('/rest/v1/flyers', {
-      method: 'POST',
-      body: JSON.stringify({ nombre, producto, archivo_url: publicUrl, activo: true }),
-      headers: { 'Prefer': 'return=minimal' }
-    }, sesiónActual.access_token);
+    let exitosos = 0;
+    let errores  = 0;
+
+    for (let i = 0; i < archivos.length; i++) {
+      const archivo  = archivos[i];
+      btn.innerHTML  = `<span class="spinner"></span>Subiendo ${i + 1}/${archivos.length}...`;
+      const ext      = archivo.name.split('.').pop();
+      const fileName = `${producto}_${Date.now()}_${i}.${ext}`;
+      const nombreFlyer = archivos.length > 1 ? `${nombre} (${i + 1})` : nombre;
+
+      // 1. Subir a Storage
+      const uploadRes = await fetch(`${SUPABASE_URL}/storage/v1/object/flyers/${fileName}`, {
+        method: 'POST',
+        headers: { 'apikey': SUPABASE_ANON, 'Authorization': 'Bearer ' + sesiónActual.access_token },
+        body: archivo
+      });
+
+      if (!uploadRes.ok) { errores++; continue; }
+
+      // 2. URL pública
+      const publicUrl = `${SUPABASE_URL}/storage/v1/object/public/flyers/${fileName}`;
+
+      // 3. Guardar en tabla
+      const r = await sbFetch('/rest/v1/flyers', {
+        method: 'POST',
+        body: JSON.stringify({ nombre: nombreFlyer, producto, archivo_url: publicUrl, activo: true }),
+        headers: { 'Prefer': 'return=minimal' }
+      }, sesiónActual.access_token);
+
+      if (r.ok || r.status === 201) exitosos++; else errores++;
+    }
 
     btn.disabled = false; btn.textContent = '⬆️ Subir flyer';
+    document.getElementById('flyerNombre').value  = '';
+    document.getElementById('flyerArchivo').value = '';
 
-    if (r.ok || r.status === 201) {
-      showAuthMsg(msg, '✅ Flyer subido correctamente.', 'ok');
-      document.getElementById('flyerNombre').value = '';
-      document.getElementById('flyerArchivo').value = '';
-      setTimeout(() => cargarAdminFlyers(), 1200);
+    if (errores === 0) {
+      showAuthMsg(msg, `✅ ${exitosos} flyer(s) subido(s) correctamente.`, 'ok');
     } else {
-      showAuthMsg(msg, 'Error al guardar en la base de datos.', 'err');
+      showAuthMsg(msg, `⚠️ ${exitosos} subido(s), ${errores} con error.`, errores === archivos.length ? 'err' : 'ok');
     }
+    setTimeout(() => cargarAdminFlyers(), 1200);
   }
 
   async function eliminarFlyer(flyerId) {

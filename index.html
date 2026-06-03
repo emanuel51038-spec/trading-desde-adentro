@@ -5513,7 +5513,7 @@
     if (!cont) return;
     cont.innerHTML = '<div style="color:var(--gris);padding:20px"><span class="spinner"></span> Cargando...</div>';
 
-    const r = await sbFetch('/rest/v1/cupones?tipo=eq.campaña&select=*&order=created_at.desc', {}, sesiónActual.access_token);
+    const r = await sbFetch('/rest/v1/cupones?tipo=eq.campa%C3%B1a&select=*&order=created_at.desc', {}, sesiónActual.access_token);
     const campanas = (r.ok && Array.isArray(r.data)) ? r.data : [];
 
     const ahora = new Date();

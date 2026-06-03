@@ -5140,6 +5140,11 @@
         </div>
       </div>
 
+      <div class="afil-section-title">📥 MATERIAL PARA COMPARTIR</div>
+      <div id="flyersAfiliado" style="margin-bottom:24px">
+        <div style="color:var(--gris);font-size:13px"><span class="spinner"></span> Cargando flyers...</div>
+      </div>
+
       <div class="afil-section-title">HISTORIAL DE VENTAS</div>
       <div class="afil-ventas-table">
         <div class="afil-ventas-row header">
@@ -5203,6 +5208,46 @@
       <div style="background:rgba(139,26,26,0.08);border:1px solid rgba(139,26,26,0.2);border-radius:12px;padding:16px 20px">
         <p style="font-size:13px;color:var(--gris)">💬 Consultas por Instagram <a href="https://instagram.com/tradingdesdeadentro" target="_blank" style="color:#E57373">@tradingdesdeadentro</a> o a <strong style="color:#ccc">tradingdesdeadentro@gmail.com</strong>.</p>
       </div>`;
+
+    // Cargar flyers asincrónicamente
+    cargarFlyersAfiliado();
+  }
+
+  async function cargarFlyersAfiliado() {
+    const cont = document.getElementById('flyersAfiliado');
+    if (!cont) return;
+
+    const r = await sbFetch('/rest/v1/flyers?activo=eq.true&select=*&order=producto.asc', {}, sesiónActual.access_token);
+    const flyers = (r.ok && Array.isArray(r.data)) ? r.data : [];
+
+    if (flyers.length === 0) {
+      cont.innerHTML = '<div style="color:var(--gris);font-size:13px;padding:12px 0">No hay material disponible por el momento.</div>';
+      return;
+    }
+
+    const nombreProd = p => p === 'ManualBacktestAnalyzer' ? 'Manual Backtest Analyzer'
+                          : p === 'TDA_RiskReward'          ? 'TDA Risk/Reward'
+                          :                                   'Daily Loss Limiter';
+    const iconProd   = p => p === 'ManualBacktestAnalyzer' ? '📊'
+                          : p === 'TDA_RiskReward'          ? '📐' : '🛡️';
+
+    cont.innerHTML = `
+      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:12px">
+        ${flyers.map(f => `
+          <div style="background:var(--negro-card);border:1px solid var(--negro-border);border-radius:12px;padding:18px;display:flex;flex-direction:column;gap:10px">
+            <div style="font-size:28px">${iconProd(f.producto)}</div>
+            <div>
+              <div style="font-weight:700;font-size:13px">${esc(f.nombre)}</div>
+              <div style="font-size:11px;color:var(--gris);margin-top:2px">${esc(nombreProd(f.producto))}</div>
+            </div>
+            <a href="${escAttr(f.archivo_url)}" download target="_blank"
+              style="display:flex;align-items:center;justify-content:center;gap:8px;padding:10px;background:rgba(139,26,26,0.15);border:1px solid rgba(139,26,26,0.3);border-radius:8px;color:#E57373;font-size:13px;font-weight:600;text-decoration:none;transition:background 0.2s"
+              onmouseover="this.style.background='rgba(139,26,26,0.3)'"
+              onmouseout="this.style.background='rgba(139,26,26,0.15)'">
+              ⬇️ Descargar flyer
+            </a>
+          </div>`).join('')}
+      </div>`;
   }
 
   async function enviarSolicitudAfiliado() {
@@ -5259,25 +5304,29 @@
         <button class="admin-tab-btn active" onclick="switchAdminTab('solicitudes', this)">Solicitudes</button>
         <button class="admin-tab-btn" onclick="switchAdminTab('afiliados_activos', this)">Afiliados activos</button>
         <button class="admin-tab-btn" onclick="switchAdminTab('ventas', this)">Ventas</button>
+        <button class="admin-tab-btn" onclick="switchAdminTab('flyers_admin', this)">🖼️ Flyers</button>
       </div>
       <div id="adminSolicitudes" class="admin-section activa"></div>
       <div id="adminAfiliadosActivos" class="admin-section"></div>
-      <div id="adminVentas" class="admin-section"></div>`;
+      <div id="adminVentas" class="admin-section"></div>
+      <div id="adminFlyers" class="admin-section"></div>`;
 
     await cargarAdminSolicitudes();
     await cargarAdminAfiliadosActivos();
     await cargarAdminVentas();
+    await cargarAdminFlyers();
   }
 
   function switchAdminTab(sec, btn) {
     document.querySelectorAll('.admin-section').forEach(s => s.classList.remove('activa'));
     document.querySelectorAll('.admin-tab-btn').forEach(b => b.classList.remove('active'));
-    const mapId = { 'solicitudes': 'adminSolicitudes', 'afiliados_activos': 'adminAfiliadosActivos', 'ventas': 'adminVentas' };
+    const mapId = { 'solicitudes': 'adminSolicitudes', 'afiliados_activos': 'adminAfiliadosActivos', 'ventas': 'adminVentas', 'flyers_admin': 'adminFlyers' };
     document.getElementById(mapId[sec]).classList.add('activa');
     btn.classList.add('active');
-    if (sec === 'solicitudes') cargarAdminSolicitudes();
+    if (sec === 'solicitudes')      cargarAdminSolicitudes();
     if (sec === 'afiliados_activos') cargarAdminAfiliadosActivos();
-    if (sec === 'ventas') cargarAdminVentas();
+    if (sec === 'ventas')           cargarAdminVentas();
+    if (sec === 'flyers_admin')     cargarAdminFlyers();
   }
 
   async function cargarAdminSolicitudes() {
@@ -5299,6 +5348,128 @@
     btn.classList.add('active');
     document.getElementById('subSecAfiliados').style.display = sec === 'afiliados' ? 'block' : 'none';
     document.getElementById('subSecRetiros').style.display   = sec === 'retiros'   ? 'block' : 'none';
+  }
+
+  async function cargarAdminFlyers() {
+    const cont = document.getElementById('adminFlyers');
+    if (!cont) return;
+    cont.innerHTML = '<div style="color:var(--gris);padding:20px"><span class="spinner"></span> Cargando...</div>';
+
+    const r = await sbFetch('/rest/v1/flyers?select=*&order=created_at.desc', {}, sesiónActual.access_token);
+    const flyers = (r.ok && Array.isArray(r.data)) ? r.data : [];
+
+    const nombreProd = p => p === 'ManualBacktestAnalyzer' ? 'Manual Backtest Analyzer'
+                          : p === 'TDA_RiskReward'          ? 'TDA Risk/Reward'
+                          :                                   'Daily Loss Limiter';
+
+    const flyerRows = flyers.length === 0
+      ? '<div style="padding:20px;color:var(--gris)">No hay flyers cargados todavía.</div>'
+      : flyers.map(f => `
+          <div style="background:#111;border:1px solid var(--negro-border);border-radius:10px;padding:14px 18px;margin-bottom:10px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px">
+            <div>
+              <div style="font-weight:600;font-size:13px">${esc(f.nombre)}</div>
+              <div style="font-size:11px;color:var(--gris)">${esc(nombreProd(f.producto))}</div>
+              <a href="${escAttr(f.archivo_url)}" target="_blank" style="font-size:11px;color:#E57373;word-break:break-all">${esc(f.archivo_url.split('/').pop())}</a>
+            </div>
+            <div style="display:flex;gap:8px;align-items:center">
+              <span class="estado-badge ${f.activo ? 'estado-aprobado' : 'estado-rechazado'}" style="font-size:10px">${f.activo ? 'Activo' : 'Inactivo'}</span>
+              <button class="admin-btn red" style="padding:5px 12px;font-size:11px" onclick="eliminarFlyer('${escAttr(f.id)}')">Eliminar</button>
+            </div>
+          </div>`).join('');
+
+    cont.innerHTML = `
+      <div style="background:var(--negro-card);border:1px solid var(--negro-border);border-radius:12px;padding:24px;margin-bottom:20px">
+        <div class="afil-section-title" style="font-size:18px;margin-bottom:4px">Subir nuevo flyer</div>
+        <p style="font-size:13px;color:var(--gris);margin-bottom:16px">Subí un archivo de imagen o PDF. Los afiliados podrán descargarlo desde su panel.</p>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px">
+          <div>
+            <label class="afil-label">Nombre del flyer</label>
+            <input type="text" id="flyerNombre" class="afil-input" placeholder="Ej: Flyer Daily Loss Limiter" style="margin-bottom:0">
+          </div>
+          <div>
+            <label class="afil-label">Producto</label>
+            <select id="flyerProducto" class="afil-input" style="margin-bottom:0">
+              <option value="DailyLossLimiter">Daily Loss Limiter</option>
+              <option value="ManualBacktestAnalyzer">Manual Backtest Analyzer</option>
+              <option value="TDA_RiskReward">TDA Risk/Reward</option>
+            </select>
+          </div>
+        </div>
+        <div style="margin-bottom:14px">
+          <label class="afil-label">Archivo (imagen o PDF)</label>
+          <input type="file" id="flyerArchivo" accept="image/*,.pdf"
+            style="width:100%;background:#181818;border:1px dashed #444;border-radius:8px;padding:12px;color:var(--gris);font-family:'DM Sans',sans-serif;cursor:pointer">
+        </div>
+        <div id="flyerUploadMsg" style="display:none;margin-bottom:10px" class="auth-msg"></div>
+        <button class="admin-btn green" id="flyerSubirBtn" style="padding:10px 22px;font-size:13px" onclick="subirFlyer()">
+          ⬆️ Subir flyer
+        </button>
+      </div>
+
+      <div class="afil-section-title" style="font-size:16px;margin-bottom:12px">Flyers cargados (${flyers.length})</div>
+      ${flyerRows}`;
+  }
+
+  async function subirFlyer() {
+    const nombre   = document.getElementById('flyerNombre')?.value.trim();
+    const producto = document.getElementById('flyerProducto')?.value;
+    const archivo  = document.getElementById('flyerArchivo')?.files[0];
+    const msg      = document.getElementById('flyerUploadMsg');
+    const btn      = document.getElementById('flyerSubirBtn');
+
+    if (!nombre || !archivo) { showAuthMsg(msg, 'Completá el nombre y seleccioná un archivo.', 'err'); return; }
+
+    btn.disabled = true; btn.innerHTML = '<span class="spinner"></span>Subiendo...';
+
+    // 1. Subir a Supabase Storage
+    const ext      = archivo.name.split('.').pop();
+    const fileName = `${producto}_${Date.now()}.${ext}`;
+    const formData = new FormData();
+    formData.append('', archivo);
+
+    const uploadRes = await fetch(`${SUPABASE_URL}/storage/v1/object/flyers/${fileName}`, {
+      method: 'POST',
+      headers: {
+        'apikey': SUPABASE_ANON,
+        'Authorization': 'Bearer ' + sesiónActual.access_token
+      },
+      body: archivo
+    });
+
+    if (!uploadRes.ok) {
+      btn.disabled = false; btn.textContent = '⬆️ Subir flyer';
+      showAuthMsg(msg, 'Error al subir el archivo. Verificá el bucket en Supabase.', 'err'); return;
+    }
+
+    // 2. Construir URL pública
+    const publicUrl = `${SUPABASE_URL}/storage/v1/object/public/flyers/${fileName}`;
+
+    // 3. Guardar en tabla flyers
+    const r = await sbFetch('/rest/v1/flyers', {
+      method: 'POST',
+      body: JSON.stringify({ nombre, producto, archivo_url: publicUrl, activo: true }),
+      headers: { 'Prefer': 'return=minimal' }
+    }, sesiónActual.access_token);
+
+    btn.disabled = false; btn.textContent = '⬆️ Subir flyer';
+
+    if (r.ok || r.status === 201) {
+      showAuthMsg(msg, '✅ Flyer subido correctamente.', 'ok');
+      document.getElementById('flyerNombre').value = '';
+      document.getElementById('flyerArchivo').value = '';
+      setTimeout(() => cargarAdminFlyers(), 1200);
+    } else {
+      showAuthMsg(msg, 'Error al guardar en la base de datos.', 'err');
+    }
+  }
+
+  async function eliminarFlyer(flyerId) {
+    if (!confirm('¿Eliminár este flyer?')) return;
+    const r = await fetch(`${SUPABASE_URL}/rest/v1/flyers?id=eq.${flyerId}`, {
+      method: 'DELETE',
+      headers: { 'apikey': SUPABASE_ANON, 'Authorization': 'Bearer ' + sesiónActual.access_token }
+    });
+    if (r.ok || r.status === 204) cargarAdminFlyers();
   }
 
   async function cargarSubSolicitudesAfiliado() {

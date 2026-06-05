@@ -1312,39 +1312,6 @@
   </div>
 </div>
 
-<!-- MODAL: Subir actualización de herramienta (admin) -->
-<div class="modal-overlay" id="modalSubirActualizacion">
-  <div class="modal" style="max-width:520px">
-    <button class="modal-close" onclick="cerrarModal('modalSubirActualizacion')">✕</button>
-    <h3>Subir actualización</h3>
-    <p class="modal-desc" id="subirActDesc">Actualizá el ZIP y/o la guía de instalación del producto.</p>
-    <input type="hidden" id="subirActProducto">
-    <input type="hidden" id="subirActConfigId">
-
-    <div style="margin-top:16px">
-      <label class="afil-label">Nueva versión</label>
-      <input type="text" class="afil-input" id="subirActVersion" placeholder="Ej: V2.0" style="margin-bottom:0">
-    </div>
-
-    <div style="margin-top:12px">
-      <label class="afil-label">Nuevo ZIP del instalador (opcional)</label>
-      <input type="file" id="subirActZip" accept=".zip"
-        style="width:100%;background:#181818;border:1px dashed #444;border-radius:8px;padding:12px;color:var(--gris);font-family:'DM Sans',sans-serif;cursor:pointer">
-    </div>
-
-    <div style="margin-top:12px">
-      <label class="afil-label">Nueva guía PDF (opcional)</label>
-      <input type="file" id="subirActPdf" accept=".pdf"
-        style="width:100%;background:#181818;border:1px dashed #444;border-radius:8px;padding:12px;color:var(--gris);font-family:'DM Sans',sans-serif;cursor:pointer">
-    </div>
-
-    <div id="subirActMsg" style="display:none;margin-top:12px" class="auth-msg"></div>
-    <button class="modal-confirm" id="subirActBtn" onclick="confirmarSubirActualizacion()" style="margin-top:16px">
-      ⬆️ Subir actualización →
-    </button>
-  </div>
-</div>
-
 <!-- MODAL: Cambiar MAC -->
 <div class="modal-overlay" id="modalCambiarMac">
   <div class="modal">
@@ -1959,12 +1926,11 @@
     cont.innerHTML = '<div style="text-align:center;padding:40px;color:var(--gris)"><span class="spinner"></span> Cargando...</div>';
 
     const userEmail = sesiónActual.user?.email || '';
-
-    // Cargar licencias y config de productos en paralelo
-    const [r, rConfig] = await Promise.all([
-      sbFetch('/rest/v1/licencias?select=*&email=eq.' + userEmail, {}, sesiónActual.access_token),
-      sbFetch('/rest/v1/productos_config?select=*', {}, sesiónActual.access_token)
-    ]);
+    const r = await sbFetch(
+      '/rest/v1/licencias?select=*&email=eq.' + userEmail + '',
+      {},
+      sesiónActual.access_token
+    );
 
     if (!r.ok || !Array.isArray(r.data)) {
       const detalle = typeof r.data === 'object' ? JSON.stringify(r.data) : r.data;
@@ -1972,28 +1938,14 @@
       return;
     }
 
-    // Mapear config por producto
-    const configMap = {};
-    if (rConfig.ok && Array.isArray(rConfig.data)) {
-      rConfig.data.forEach(c => { configMap[c.producto] = c; });
-    }
-
     const licencias = r.data;
+
     if (licencias.length === 0) {
       cont.innerHTML = renderEmptyState();
       return;
     }
 
-    // Inyectar URLs en cada licencia desde configMap
-    const licenciasConConfig = licencias.map(l => ({
-      ...l,
-      zip_url:  configMap[l.producto]?.zip_url  || l.zip_url,
-      guia_url: configMap[l.producto]?.guia_url || l.guia_url,
-      version:  configMap[l.producto]?.version  || l.version || 'V1.0',
-      config_id: configMap[l.producto]?.id
-    }));
-
-    cont.innerHTML = licenciasConConfig.map(renderLicenciaCard).join('');
+    cont.innerHTML = licencias.map(renderLicenciaCard).join('');
   }
 
   function renderLicenciaCard(l) {
@@ -2012,16 +1964,16 @@
     const iconoProducto  = esRR  ? '📐'
                          : esMBA ? '📊'
                          :         '🔒';
-    const installerUrl   = l.zip_url  || (esRR
+    const installerUrl   = esRR
       ? 'https://pjrwdseaomijkgytbglh.supabase.co/storage/v1/object/public/Instaladores/TDARiskReward_1.3.zip'
       : esMBA
       ? 'https://pjrwdseaomijkgytbglh.supabase.co/storage/v1/object/public/Instaladores/TDA_ManualBacktestAnalizer.zip'
-      : 'https://pjrwdseaomijkgytbglh.supabase.co/storage/v1/object/public/Instaladores/dailylosslimiter.zip');
-    const guideUrl = l.guia_url || (esRR
+      : 'https://pjrwdseaomijkgytbglh.supabase.co/storage/v1/object/public/Instaladores/dailylosslimiter.zip';
+    const guideUrl = esRR
       ? 'https://pjrwdseaomijkgytbglh.supabase.co/storage/v1/object/public/Instaladores/GUIA_INSTALACION-TDA-RISKREWARD_V1.3.pdf'
       : esMBA
       ? 'https://pjrwdseaomijkgytbglh.supabase.co/storage/v1/object/public/Instaladores/GUIA_INSTALACION_MANUALBACKTESTANALYZER-V2.pdf'
-      : 'https://pjrwdseaomijkgytbglh.supabase.co/storage/v1/object/public/Instaladores/GUIA_INSTALACION_DAILYLOSSLIMITER.pdf');
+      : 'https://pjrwdseaomijkgytbglh.supabase.co/storage/v1/object/public/Instaladores/GUIA_INSTALACION_DAILYLOSSLIMITER.pdf';
 
     return `
     <div class="licencia-card">
@@ -2062,14 +2014,6 @@
           <a href="https://instagram.com/tradingdesdeadentro" target="_blank" rel="noopener noreferrer" class="action-btn">
             <span class="ab-icon">📸</span> Soporte en Instagram
           </a>
-          ${esAdmin() ? `
-          <div style="margin-top:16px;padding-top:16px;border-top:1px solid var(--negro-border)">
-            <div style="font-size:11px;font-weight:600;letter-spacing:1px;text-transform:uppercase;color:#E57373;margin-bottom:8px">Admin</div>
-            <button class="action-btn" style="background:rgba(139,26,26,0.15);border-color:rgba(139,26,26,0.4)"
-              onclick="abrirSubirActualizacion('${escAttr(l.producto)}', '${escAttr(l.config_id || '')}', '${escAttr(l.version || 'V1.0')}')">
-              <span class="ab-icon">⬆️</span> Subir actualización
-            </button>
-          </div>` : ''}
         </div>
       </div>
     </div>`;
@@ -2170,111 +2114,6 @@
   /* ══════════════════════
      CAMBIAR MAC
   ══════════════════════ */
-  function abrirSubirActualizacion(producto, configId, versionActual) {
-    const nombreProd = producto === 'ManualBacktestAnalyzer' ? 'Manual Backtest Analyzer'
-                     : producto === 'TDA_RiskReward'         ? 'TDA Risk/Reward'
-                     :                                         'Daily Loss Limiter';
-    document.getElementById('subirActProducto').value  = producto;
-    document.getElementById('subirActConfigId').value  = configId;
-    document.getElementById('subirActVersion').value   = versionActual;
-    document.getElementById('subirActDesc').textContent = `Actualizando: ${nombreProd}`;
-    document.getElementById('subirActZip').value  = '';
-    document.getElementById('subirActPdf').value  = '';
-    document.getElementById('subirActMsg').style.display = 'none';
-    document.getElementById('subirActBtn').disabled = false;
-    document.getElementById('subirActBtn').textContent = '⬆️ Subir actualización →';
-    document.getElementById('modalSubirActualizacion').classList.add('active');
-  }
-
-  async function confirmarSubirActualizacion() {
-    const producto  = document.getElementById('subirActProducto').value;
-    const configId  = document.getElementById('subirActConfigId').value;
-    const version   = document.getElementById('subirActVersion').value.trim();
-    const zipFile   = document.getElementById('subirActZip').files[0];
-    const pdfFile   = document.getElementById('subirActPdf').files[0];
-    const msg       = document.getElementById('subirActMsg');
-    const btn       = document.getElementById('subirActBtn');
-
-    if (!version) { showAuthMsg(msg, 'Ingresá la versión.', 'err'); return; }
-    if (!zipFile && !pdfFile) { showAuthMsg(msg, 'Seleccioná al menos un archivo (ZIP o PDF).', 'err'); return; }
-
-    btn.disabled = true; btn.innerHTML = '<span class="spinner"></span>Subiendo...';
-
-    let zipUrl  = null;
-    let pdfUrl  = null;
-    let errores = 0;
-
-    // Subir ZIP
-    if (zipFile) {
-      btn.innerHTML = '<span class="spinner"></span>Subiendo ZIP...';
-      const fileName = `${producto}_${version.replace(/\./g,'_')}.zip`;
-      const res = await fetch(`${SUPABASE_URL}/storage/v1/object/Instaladores/${fileName}`, {
-        method: 'POST',
-        headers: { 'apikey': SUPABASE_ANON, 'Authorization': 'Bearer ' + sesiónActual.access_token,
-          'x-upsert': 'true' },
-        body: zipFile
-      });
-      if (res.ok) {
-        zipUrl = `${SUPABASE_URL}/storage/v1/object/public/Instaladores/${fileName}`;
-      } else { errores++; }
-    }
-
-    // Subir PDF
-    if (pdfFile) {
-      btn.innerHTML = '<span class="spinner"></span>Subiendo PDF...';
-      const fileName = `GUIA_${producto}_${version.replace(/\./g,'_')}.pdf`;
-      const res = await fetch(`${SUPABASE_URL}/storage/v1/object/Instaladores/${fileName}`, {
-        method: 'POST',
-        headers: { 'apikey': SUPABASE_ANON, 'Authorization': 'Bearer ' + sesiónActual.access_token,
-          'x-upsert': 'true' },
-        body: pdfFile
-      });
-      if (res.ok) {
-        pdfUrl = `${SUPABASE_URL}/storage/v1/object/public/Instaladores/${fileName}`;
-      } else { errores++; }
-    }
-
-    if (errores > 0 && !zipUrl && !pdfUrl) {
-      btn.disabled = false; btn.textContent = '⬆️ Subir actualización →';
-      showAuthMsg(msg, 'Error al subir los archivos. Verificá los permisos del bucket.', 'err'); return;
-    }
-
-    // Actualizar tabla productos_config
-    const patch = { version };
-    if (zipUrl) patch.zip_url = zipUrl;
-    if (pdfUrl) patch.guia_url = pdfUrl;
-
-    let rPatch;
-    if (configId) {
-      // Actualizar registro existente
-      rPatch = await fetch(`${SUPABASE_URL}/rest/v1/productos_config?id=eq.${configId}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json', 'apikey': SUPABASE_ANON,
-          'Authorization': 'Bearer ' + sesiónActual.access_token, 'Prefer': 'return=minimal' },
-        body: JSON.stringify(patch)
-      });
-    } else {
-      // Insertar nuevo registro
-      rPatch = await sbFetch('/rest/v1/productos_config', {
-        method: 'POST',
-        body: JSON.stringify({ ...patch, producto }),
-        headers: { 'Prefer': 'return=minimal' }
-      }, sesiónActual.access_token);
-    }
-
-    btn.disabled = false; btn.textContent = '⬆️ Subir actualización →';
-
-    if (rPatch.ok || rPatch.status === 204 || rPatch.status === 201) {
-      showAuthMsg(msg, `✅ Actualización ${version} subida correctamente. Todos los usuarios verán el nuevo archivo.`, 'ok');
-      setTimeout(() => {
-        cerrarModal('modalSubirActualizacion');
-        cargarHerramientas();
-      }, 2000);
-    } else {
-      showAuthMsg(msg, 'Archivos subidos pero error al actualizar la base de datos.', 'err');
-    }
-  }
-
   function abrirCambiarMac(licenciaId, macActual) {
     licenciaEditando = licenciaId;
     document.getElementById('nuevaMacInput').value = '';

@@ -5532,7 +5532,15 @@
       <div id="subSecAfiliados"></div>
       <div id="subSecRetiros" style="display:none"></div>`;
     await cargarSubSolicitudesAfiliado();
-    setTimeout(() => cargarSubSolicitudesRetiro(), 100);
+    // Esperar a que el DOM esté listo antes de cargar retiros
+    const esperarSubSecRetiros = () => {
+      if (document.getElementById('subSecRetiros')) {
+        cargarSubSolicitudesRetiro();
+      } else {
+        setTimeout(esperarSubSecRetiros, 50);
+      }
+    };
+    setTimeout(esperarSubSecRetiros, 50);
   }
 
   function switchSubTab(sec, btn) {

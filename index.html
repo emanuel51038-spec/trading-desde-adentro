@@ -5297,8 +5297,8 @@
 
     const totalVentas = ventas.length;
     const totalComision = ventas.reduce((acc, v) => acc + (parseFloat(v.comision_usd) || 0), 0);
-    const comisionPendiente = ventas.filter(v => v.estado_comision === 'pendiente').reduce((acc, v) => acc + (parseFloat(v.comision_usd) || 0), 0);
     const comisionPagada = retiros.filter(r => r.estado === 'pagado').reduce((acc, r) => acc + (parseFloat(r.monto_pagado) || 0), 0);
+    const comisionPendiente = Math.max(0, totalComision - comisionPagada);
 
     const ventasRows = ventas.length === 0
       ? `<div class="historial-empty">Aún no hay ventas registradas con tu cupón.</div>`
@@ -6170,11 +6170,10 @@
       const ventas = (rv.ok && Array.isArray(rv.data)) ? rv.data : [];
       const totalVentas   = ventas.length;
       const totalComision = ventas.reduce((acc, v) => acc + (parseFloat(v.comision_usd) || 0), 0);
-      const pendiente     = ventas.filter(v => v.estado_comision === 'pendiente').reduce((acc, v) => acc + (parseFloat(v.comision_usd) || 0), 0);
-
       const rr = await sbFetch(`/rest/v1/retiros_afiliados?afiliado_id=eq.${a.id}&select=monto_pagado,estado&order=created_at.desc`, {}, sesiónActual.access_token);
       const retiros = (rr.ok && Array.isArray(rr.data)) ? rr.data : [];
       const pagado = retiros.filter(r => r.estado === 'pagado').reduce((acc, r) => acc + (parseFloat(r.monto_pagado) || 0), 0);
+      const pendiente = Math.max(0, totalComision - pagado);
 
       const billeteraHtml = a.billetera_usdt
         ? `<div style="display:flex;align-items:center;gap:8px;margin-top:6px;flex-wrap:wrap">

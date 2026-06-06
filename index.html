@@ -5298,7 +5298,7 @@
     const totalVentas = ventas.length;
     const totalComision = ventas.reduce((acc, v) => acc + (parseFloat(v.comision_usd) || 0), 0);
     const comisionPendiente = ventas.filter(v => v.estado_comision === 'pendiente').reduce((acc, v) => acc + (parseFloat(v.comision_usd) || 0), 0);
-    const comisionPagada = ventas.filter(v => v.estado_comision === 'pagado').reduce((acc, v) => acc + (parseFloat(v.comision_usd) || 0), 0);
+    const comisionPagada = retiros.filter(r => r.estado === 'pagado').reduce((acc, r) => acc + (parseFloat(r.monto_pagado) || 0), 0);
 
     const ventasRows = ventas.length === 0
       ? `<div class="historial-empty">Aún no hay ventas registradas con tu cupón.</div>`
@@ -6171,7 +6171,10 @@
       const totalVentas   = ventas.length;
       const totalComision = ventas.reduce((acc, v) => acc + (parseFloat(v.comision_usd) || 0), 0);
       const pendiente     = ventas.filter(v => v.estado_comision === 'pendiente').reduce((acc, v) => acc + (parseFloat(v.comision_usd) || 0), 0);
-      const pagado        = ventas.filter(v => v.estado_comision === 'pagado').reduce((acc, v) => acc + (parseFloat(v.comision_usd) || 0), 0);
+
+      const rr = await sbFetch(`/rest/v1/retiros_afiliados?afiliado_id=eq.${a.id}&select=monto_pagado,estado&order=created_at.desc`, {}, sesiónActual.access_token);
+      const retiros = (rr.ok && Array.isArray(rr.data)) ? rr.data : [];
+      const pagado = retiros.filter(r => r.estado === 'pagado').reduce((acc, r) => acc + (parseFloat(r.monto_pagado) || 0), 0);
 
       const billeteraHtml = a.billetera_usdt
         ? `<div style="display:flex;align-items:center;gap:8px;margin-top:6px;flex-wrap:wrap">
@@ -6190,7 +6193,7 @@
               <div style="font-family:'Bebas Neue',sans-serif;font-size:22px;color:#E57373;letter-spacing:3px;margin-top:4px">${esc(a.codigo_cupon)}</div>
               <div style="font-size:11px;color:var(--gris)">${a.descuento_pct || 15}% desc para referidos · ${COMISION_PCT}% comisión</div>
             </div>
-            <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;text-align:center">
+            <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;text-align:center">
               <div style="background:#111;border-radius:8px;padding:10px 14px">
                 <div style="font-size:10px;color:var(--gris);text-transform:uppercase;letter-spacing:1px">Ventas</div>
                 <div style="font-family:'Bebas Neue',sans-serif;font-size:22px">${totalVentas}</div>
@@ -6202,6 +6205,10 @@
               <div style="background:#111;border-radius:8px;padding:10px 14px">
                 <div style="font-size:10px;color:var(--gris);text-transform:uppercase;letter-spacing:1px">Pendiente</div>
                 <div style="font-family:'Bebas Neue',sans-serif;font-size:22px;color:#FFC107">$${pendiente.toFixed(2)}</div>
+              </div>
+              <div style="background:#111;border-radius:8px;padding:10px 14px">
+                <div style="font-size:10px;color:var(--gris);text-transform:uppercase;letter-spacing:1px">Pagado</div>
+                <div style="font-family:'Bebas Neue',sans-serif;font-size:22px;color:#aaa">$${pagado.toFixed(2)}</div>
               </div>
             </div>
           </div>

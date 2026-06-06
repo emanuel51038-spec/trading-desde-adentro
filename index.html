@@ -6230,22 +6230,31 @@
       {}, sesiónActual.access_token
     );
 
+
     if (!r.ok || !Array.isArray(r.data) || r.data.length === 0) {
       cont.innerHTML = '<div style="padding:20px;color:var(--gris);font-size:14px">No hay ventas registradas todavía.</div>';
       return;
     }
 
-    const totalPendiente = r.data.filter(v => v.estado_comision === 'pendiente').reduce((acc, v) => acc + (parseFloat(v.comision_usd) || 0), 0);
+    // Calcular pendiente real por afiliado (total comisiones − retiros pagados)
+    const afiliadoIds = [...new Set(r.data.map(v => v.afiliado_id).filter(Boolean))];
+    let totalPendienteReal = 0;
+    for (const aId of afiliadoIds) {
+      const ventasAfil = r.data.filter(v => v.afiliado_id === aId);
+      const totalComAfil = ventasAfil.reduce((acc, v) => acc + (parseFloat(v.comision_usd) || 0), 0);
+      const rr = await sbFetch(`/rest/v1/retiros_afiliados?afiliado_id=eq.${aId}&select=monto_pagado,estado`, {}, sesiónActual.access_token);
+      const retirosAfil = (rr.ok && Array.isArray(rr.data)) ? rr.data : [];
+      const pagadoAfil = retirosAfil.filter(r => r.estado === 'pagado').reduce((acc, r) => acc + (parseFloat(r.monto_pagado) || 0), 0);
+      totalPendienteReal += Math.max(0, totalComAfil - pagadoAfil);
+    }
 
     const rows = r.data.map(v => {
       const nombreProd = v.producto === 'ManualBacktestAnalyzer' ? 'Manual Backtest Analyzer'
                        : v.producto === 'TDA_RiskReward' ? 'TDA Risk/Reward'
                        : 'Daily Loss Limiter';
       const afilNombre = v.afiliados?.nombre || '—';
-      const estadoClass = v.estado_comision === 'pagado' ? 'estado-pagado' : 'estado-pendiente_pago';
-      const estadoLabel = v.estado_comision === 'pagado' ? 'Pagado' : 'Pendiente';
       return `
-        <div class="admin-row" style="grid-template-columns:1fr 100px 80px 80px 100px auto">
+        <div class="admin-row" style="grid-template-columns:1fr 100px 80px 80px">
           <div>
             <div style="font-weight:600;font-size:13px">${esc(nombreProd)}</div>
             <div style="font-size:11px;color:var(--gris)">${esc(afilNombre)} · ${v.created_at?.split('T')[0] || '—'}</div>
@@ -6254,24 +6263,17 @@
           <div style="color:var(--gris);font-size:12px">${esc(v.metodo_pago || '—')}</div>
           <div style="font-family:'Bebas Neue',sans-serif;font-size:16px;color:#E57373">$${parseFloat(v.monto_venta).toFixed(0)}</div>
           <div style="font-family:'Bebas Neue',sans-serif;font-size:16px;color:#4CAF50">$${parseFloat(v.comision_usd).toFixed(2)}</div>
-          <div><span class="estado-badge ${estadoClass}" style="font-size:10px">${estadoLabel}</span></div>
-          <div class="admin-action-btns">
-            ${v.estado_comision !== 'pagado'
-              ? `<span style="font-size:11px;color:#FFC107">Pendiente de retiro</span>`
-              : '<span style="font-size:11px;color:var(--gris)">✓</span>'
-            }
-          </div>
         </div>`;
     }).join('');
 
     cont.innerHTML = `
       <div style="background:rgba(255,193,7,0.08);border:1px solid rgba(255,193,7,0.2);border-radius:10px;padding:14px 18px;margin-bottom:16px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px">
-        <span style="font-size:13px;color:#FFC107">⚠️ Comisiones pendientes de pago: <strong>USD ${totalPendiente.toFixed(2)}</strong></span>
+        <span style="font-size:13px;color:#FFC107">⚠️ Comisiones a pagar (neto): <strong>USD ${totalPendienteReal.toFixed(2)}</strong></span>
         <button class="admin-btn green" style="padding:9px 20px;font-size:13px" onclick="abrirRegistrarVenta('')">+ Registrar venta</button>
       </div>
       <div class="admin-table" style="font-size:13px">
-        <div class="admin-row header" style="grid-template-columns:1fr 100px 80px 80px 100px auto">
-          <div>Producto / Afiliado</div><div>Método</div><div>Venta</div><div>Comisión</div><div>Estado</div><div></div>
+        <div class="admin-row header" style="grid-template-columns:1fr 100px 80px 80px">
+          <div>Producto / Afiliado</div><div>Método</div><div>Venta</div><div>Comisión</div>
         </div>
         ${rows}
       </div>`;

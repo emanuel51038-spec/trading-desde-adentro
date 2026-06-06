@@ -5289,6 +5289,12 @@
     );
     const ventas = (rVentas.ok && Array.isArray(rVentas.data)) ? rVentas.data : [];
 
+    const rRetiros = await sbFetch(
+      `/rest/v1/retiros_afiliados?afiliado_id=eq.${afil.id}&select=*&order=created_at.desc`,
+      {}, sesiónActual.access_token
+    );
+    const retiros = (rRetiros.ok && Array.isArray(rRetiros.data)) ? rRetiros.data : [];
+
     const totalVentas = ventas.length;
     const totalComision = ventas.reduce((acc, v) => acc + (parseFloat(v.comision_usd) || 0), 0);
     const comisionPendiente = ventas.filter(v => v.estado_comision === 'pendiente').reduce((acc, v) => acc + (parseFloat(v.comision_usd) || 0), 0);
@@ -5370,6 +5376,30 @@
           <div>Estado</div>
         </div>
         ${ventasRows}
+      </div>
+
+      <div class="afil-section-title" style="margin-top:24px">HISTORIAL DE RETIROS</div>
+      <div class="afil-ventas-table">
+        <div class="afil-ventas-row header">
+          <div>Fecha</div>
+          <div class="afil-col-meta">Solicitado</div>
+          <div>Pagado</div>
+          <div>Estado</div>
+        </div>
+        ${retiros.length === 0
+          ? `<div class="historial-empty">Aún no hay retiros registrados.</div>`
+          : retiros.map(r => {
+              const estadoClass = r.estado === 'pagado' ? 'estado-pagado' : 'estado-pendiente_pago';
+              const estadoLabel = r.estado === 'pagado' ? 'Pagado' : 'Pendiente';
+              return `
+              <div class="afil-ventas-row">
+                <div style="font-size:13px;color:var(--gris)">${r.created_at?.split('T')[0] || '—'}</div>
+                <div class="afil-col-meta" style="font-family:'Bebas Neue',sans-serif;font-size:15px;color:#FFC107">USD ${parseFloat(r.monto_solicitado).toFixed(2)}</div>
+                <div style="font-family:'Bebas Neue',sans-serif;font-size:15px;color:#4CAF50">${r.monto_pagado ? 'USD ' + parseFloat(r.monto_pagado).toFixed(2) : '—'}</div>
+                <div><span class="estado-badge ${estadoClass}" style="font-size:10px">${estadoLabel}</span></div>
+              </div>`;
+            }).join('')
+        }
       </div>
 
       <div style="background:rgba(139,26,26,0.08);border:1px solid rgba(139,26,26,0.2);border-radius:12px;padding:20px 24px;margin-bottom:16px">
@@ -6439,13 +6469,18 @@
     let restante = monto;
     for (const v of ventas) {
       if (restante <= 0) break;
-      await fetch(`${SUPABASE_URL}/rest/v1/ventas_afiliados?id=eq.${v.id}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json', 'apikey': SUPABASE_ANON,
-          'Authorization': 'Bearer ' + sesiónActual.access_token, 'Prefer': 'return=minimal' },
-        body: JSON.stringify({ estado_comision: 'pagado' })
-      });
-      restante -= parseFloat(v.comision_usd);
+      const comision = parseFloat(v.comision_usd);
+      if (comision <= restante) {
+        // Esta venta queda completamente cubierta
+        await fetch(`${SUPABASE_URL}/rest/v1/ventas_afiliados?id=eq.${v.id}`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json', 'apikey': SUPABASE_ANON,
+            'Authorization': 'Bearer ' + sesiónActual.access_token, 'Prefer': 'return=minimal' },
+          body: JSON.stringify({ estado_comision: 'pagado' })
+        });
+        restante -= comision;
+      }
+      // Si comision > restante, esta venta no se marca (queda pendiente)
     }
 
     btn.disabled = false; btn.textContent = 'Confirmar pago →';

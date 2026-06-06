@@ -6,9 +6,7 @@
   <meta name="referrer" content="strict-origin-when-cross-origin">
   <title>Trading desde Adentro</title>
   <link rel="icon" type="image/png" href="logo.png">
-  <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
-  <script>emailjs.init("rp9MNqIfMeyq1q0lG");</script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
   <style>
@@ -1365,6 +1363,23 @@
      CONSTANTES
   ══════════════════════ */
   const SUPABASE_URL  = 'https://pjrwdseaomijkgytbglh.supabase.co';
+  const EDGE_URL      = 'https://pjrwdseaomijkgytbglh.supabase.co/functions/v1/send-email';
+
+  async function sendEmail(tipo, datos, to) {
+    try {
+      const res = await fetch(EDGE_URL, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer ' + (sesiónActual?.access_token || SUPABASE_ANON)
+        },
+        body: JSON.stringify({ tipo, datos, to })
+      });
+      const data = await res.json();
+      if (!res.ok) console.error('sendEmail error:', data);
+      return data;
+    } catch(e) { console.error('sendEmail exception:', e); }
+  }
   const SUPABASE_KEY  = 'sb_publishable_02_5qcxJXbiREPQxNtt-Fg_SnjORvmM';
   const SUPABASE_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBqcndkc2Vhb21pamtneXRiZ2xoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQyMDgxNjIsImV4cCI6MjA4OTc4NDE2Mn0.5Nmyu8TwBRVWBL2zDOfFTeEZBMLOyQVu_dDhas07jDI';
   const PRECIO_USD    = 60;
@@ -2265,7 +2280,24 @@
     btn.disabled = false; btn.textContent = '⬆️ Subir actualización →';
 
     if (rPatch.ok || rPatch.status === 204 || rPatch.status === 201) {
-      showAuthMsg(msg, `✅ Actualización ${version} subida correctamente. Todos los usuarios verán el nuevo archivo.`, 'ok');
+      // Notificar a todos los usuarios con esa herramienta activa
+      const nombreProd = producto === 'ManualBacktestAnalyzer' ? 'Manual Backtest Analyzer'
+                       : producto === 'TDA_RiskReward'         ? 'TDA Risk/Reward'
+                       :                                         'Daily Loss Limiter';
+      const rUsers = await sbFetch(
+        `/rest/v1/licencias?producto=eq.${producto}&estado=eq.activa&select=nombre,email`,
+        {}, sesiónActual.access_token
+      );
+      if (rUsers.ok && Array.isArray(rUsers.data) && rUsers.data.length > 0) {
+        for (const u of rUsers.data) {
+          sendEmail('nueva_actualizacion', {
+            nombre:   u.nombre,
+            producto: nombreProd,
+            version
+          }, u.email);
+        }
+      }
+      showAuthMsg(msg, `✅ Actualización ${version} subida. Email enviado a ${rUsers?.data?.length || 0} usuario(s).`, 'ok');
       setTimeout(() => {
         cerrarModal('modalSubirActualizacion');
         cargarHerramientas();
@@ -2406,6 +2438,14 @@
             body: JSON.stringify({ usos_actuales: (cuponAplicado.usos_actuales || 0) + 1 })
           });
         }
+        // Email de compra recibida al cliente
+        const nombreProductoEmail = productoSeleccionado === 'ManualBacktestAnalyzer' ? 'Manual Backtest Analyzer'
+          : productoSeleccionado === 'TDA_RiskReward' ? 'TDA Risk/Reward' : 'Daily Loss Limiter';
+        sendEmail('compra_recibida', {
+          nombre:  datos.nombre,
+          producto: nombreProductoEmail,
+          mac:     datos.mac
+        }, datos.email);
       }
     } catch(e) { console.error('guardarPreRegistro exception:', e); }
   }
@@ -2515,19 +2555,6 @@
     const msg = document.getElementById('msg');
     msg.className = 'msg ok';
     msg.innerHTML = 'Hemos recibido tu solicitud correctamente. Te enviamos un email de confirmación.<br><strong>Revisá tu carpeta de spam</strong> si no lo encontrás.<br>Recordá enviar el comprobante a <strong>tradingdesdeadentro&#64;gmail.com</strong>.';
-    const nombreProductoEmail = productoSeleccionado === 'ManualBacktestAnalyzer'
-      ? 'Manual Backtest Analyzer'
-      : productoSeleccionado === 'TDA_RiskReward'
-      ? 'TDA Risk/Reward'
-      : 'Daily Loss Limiter';
-    try {
-      await emailjs.send('service_3zbxaia', 'template_gmveuaa', {
-        nombre: datos.nombre,
-        email: datos.email,
-        mac: datos.mac,
-        producto: nombreProductoEmail
-      });
-    } catch(e) { console.error('EmailJS error:', e); }
   }
 
   function copiar(texto, btn) {
@@ -5474,6 +5501,8 @@
     btn.textContent = 'Enviar solicitud →';
 
     if (r.ok || r.status === 201) {
+      // Email al solicitante
+      sendEmail('solicitud_afiliado', { nombre }, sesiónActual.user.email);
       showAuthMsg(msg, '✅ Solicitud enviada. Te avisamos por email cuando sea aprobada.', 'ok');
       setTimeout(() => cargarAfiliados(), 2000);
     } else {
@@ -5494,12 +5523,14 @@
         <button class="admin-tab-btn" onclick="switchAdminTab('ventas', this)">Ventas</button>
         <button class="admin-tab-btn" onclick="switchAdminTab('flyers_admin', this)">🖼️ Flyers</button>
         <button class="admin-tab-btn" onclick="switchAdminTab('campanas', this)">🎯 Campañas</button>
+        <button class="admin-tab-btn" onclick="switchAdminTab('email_masivo', this)">📧 Email masivo</button>
       </div>
       <div id="adminSolicitudes" class="admin-section activa"></div>
       <div id="adminAfiliadosActivos" class="admin-section"></div>
       <div id="adminVentas" class="admin-section"></div>
       <div id="adminFlyers" class="admin-section"></div>
-      <div id="adminCampanas" class="admin-section"></div>`;
+      <div id="adminCampanas" class="admin-section"></div>
+      <div id="adminEmailMasivo" class="admin-section"></div>`;
 
     await cargarAdminSolicitudes();
     await cargarAdminAfiliadosActivos();
@@ -5511,7 +5542,14 @@
   function switchAdminTab(sec, btn) {
     document.querySelectorAll('.admin-section').forEach(s => s.classList.remove('activa'));
     document.querySelectorAll('.admin-tab-btn').forEach(b => b.classList.remove('active'));
-    const mapId = { 'solicitudes': 'adminSolicitudes', 'afiliados_activos': 'adminAfiliadosActivos', 'ventas': 'adminVentas', 'flyers_admin': 'adminFlyers', 'campanas': 'adminCampanas' };
+    const mapId = {
+      'solicitudes': 'adminSolicitudes',
+      'afiliados_activos': 'adminAfiliadosActivos',
+      'ventas': 'adminVentas',
+      'flyers_admin': 'adminFlyers',
+      'campanas': 'adminCampanas',
+      'email_masivo': 'adminEmailMasivo'
+    };
     document.getElementById(mapId[sec]).classList.add('activa');
     btn.classList.add('active');
     if (sec === 'solicitudes')       cargarAdminSolicitudes();
@@ -5519,6 +5557,59 @@
     if (sec === 'ventas')            cargarAdminVentas();
     if (sec === 'flyers_admin')      cargarAdminFlyers();
     if (sec === 'campanas')          cargarAdminCampanas();
+    if (sec === 'email_masivo')      cargarAdminEmailMasivo();
+  }
+
+  function cargarAdminEmailMasivo() {
+    const cont = document.getElementById('adminEmailMasivo');
+    if (!cont) return;
+    cont.innerHTML = `
+      <div style="background:var(--negro-card);border:1px solid var(--negro-border);border-radius:12px;padding:24px;max-width:640px">
+        <div class="afil-section-title" style="font-size:18px;margin-bottom:4px">📧 Email masivo a afiliados</div>
+        <p style="font-size:13px;color:var(--gris);margin-bottom:16px">Redactá un mensaje para todos los afiliados activos. Se enviará a cada uno personalizado con su nombre.</p>
+        <div style="margin-bottom:14px">
+          <label class="afil-label">Asunto</label>
+          <input type="text" id="masivo-asunto" class="afil-input" placeholder="Ej: Novedades de Trading desde Adentro" style="margin-bottom:0">
+        </div>
+        <div style="margin-bottom:14px">
+          <label class="afil-label">Mensaje</label>
+          <textarea id="masivo-mensaje" class="afil-input" rows="8" placeholder="Redactá tu mensaje aquí. Podés usar saltos de línea." style="margin-bottom:0;resize:vertical"></textarea>
+        </div>
+        <div id="masivo-msg" style="display:none;margin-bottom:10px" class="auth-msg"></div>
+        <button class="admin-btn green" id="masivo-btn" style="padding:10px 22px;font-size:13px" onclick="enviarEmailMasivo()">
+          📧 Enviar a todos los afiliados activos
+        </button>
+      </div>`;
+  }
+
+  async function enviarEmailMasivo() {
+    const asunto  = document.getElementById('masivo-asunto')?.value.trim();
+    const mensaje = document.getElementById('masivo-mensaje')?.value.trim();
+    const msg     = document.getElementById('masivo-msg');
+    const btn     = document.getElementById('masivo-btn');
+
+    if (!asunto || !mensaje) { showAuthMsg(msg, 'Completá asunto y mensaje.', 'err'); return; }
+
+    btn.disabled = true; btn.innerHTML = '<span class="spinner"></span>Enviando...';
+
+    const r = await sbFetch('/rest/v1/afiliados?estado=eq.aprobado&select=nombre,email', {}, sesiónActual.access_token);
+    const afiliados = (r.ok && Array.isArray(r.data)) ? r.data : [];
+
+    if (afiliados.length === 0) {
+      btn.disabled = false; btn.textContent = '📧 Enviar a todos los afiliados activos';
+      showAuthMsg(msg, 'No hay afiliados activos.', 'err'); return;
+    }
+
+    let enviados = 0;
+    for (const a of afiliados) {
+      await sendEmail('email_masivo', { nombre: a.nombre, asunto, mensaje }, a.email);
+      enviados++;
+    }
+
+    btn.disabled = false; btn.textContent = '📧 Enviar a todos los afiliados activos';
+    showAuthMsg(msg, `✅ Email enviado a ${enviados} afiliado(s).`, 'ok');
+    document.getElementById('masivo-asunto').value  = '';
+    document.getElementById('masivo-mensaje').value = '';
   }
 
   async function cargarAdminSolicitudes() {
@@ -5995,16 +6086,12 @@
       // 4. Enviar email al afiliado
       if (rAfilData.ok && Array.isArray(rAfilData.data) && rAfilData.data.length > 0) {
         const afil = rAfilData.data[0];
-        try {
-          await emailjs.send('service_3zbxaia', 'template_afiliado_aprobado', {
-            nombre:       afil.nombre,
-            email:        afil.email,
-            codigo_cupon: codigo,
-            descuento:    descuento,
-            comision:     COMISION_PCT,
-            link_panel:   'https://www.tradingdesdeadentro.com'
-          });
-        } catch(e) { console.error('EmailJS afiliado:', e); }
+        sendEmail('afiliado_aprobado', {
+          nombre:       afil.nombre,
+          codigo_cupon: codigo,
+          descuento:    descuento,
+          comision:     COMISION_PCT
+        }, afil.email);
       }
 
       showAuthMsg(msg, `✅ Afiliado aprobado con cupón ${codigo}. Email enviado.`, 'ok');
@@ -6290,6 +6377,15 @@
     if (btn) { btn.disabled = false; btn.textContent = 'Solicitar retiro →'; }
 
     if (r.ok || r.status === 201) {
+      // Email al afiliado
+      const rMe = await sbFetch(`/rest/v1/afiliados?id=eq.${afilId}&select=nombre,email`, {}, sesiónActual.access_token);
+      if (rMe.ok && rMe.data?.length > 0) {
+        sendEmail('retiro_recibido', {
+          nombre:   rMe.data[0].nombre,
+          monto:    montoInput.toFixed(2),
+          billetera: afil.billetera_usdt
+        }, rMe.data[0].email);
+      }
       showAuthMsg(msg, '✅ Solicitud de retiro iniciada. De corresponder será abonado en un plazo de 24 a 48hs a la billetera que configuraste.', 'ok');
       setTimeout(() => cargarAfiliados(), 3000);
     } else {
@@ -6353,6 +6449,17 @@
     }
 
     btn.disabled = false; btn.textContent = 'Confirmar pago →';
+
+    // Email al afiliado avisando el pago
+    const rAfil = await sbFetch(`/rest/v1/afiliados?id=eq.${afiliadoId}&select=nombre,email,billetera_usdt`, {}, sesiónActual.access_token);
+    if (rAfil.ok && rAfil.data?.length > 0) {
+      sendEmail('retiro_pagado', {
+        nombre:    rAfil.data[0].nombre,
+        monto:     monto.toFixed(2),
+        billetera: rAfil.data[0].billetera_usdt || '—'
+      }, rAfil.data[0].email);
+    }
+
     showAuthMsg(msg, '✅ Pago registrado. Balance del afiliado actualizado.', 'ok');
     setTimeout(() => {
       cerrarModal('modalPagarRetiro');

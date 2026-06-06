@@ -2425,17 +2425,16 @@
       if (!res.ok) {
         console.error('Error al guardar licencia:', res.status, responseText);
       } else {
-        // Si el cupón es de campaña, incrementar usos_actuales
+        // Si el cupón es de campaña, incrementar usos_actuales atómicamente
         if (cuponAplicado?.tipo === 'campana' && cuponAplicado?.id) {
-          await fetch(`${SUPABASE_URL}/rest/v1/cupones?id=eq.${cuponAplicado.id}`, {
-            method: 'PATCH',
+          await fetch(`${SUPABASE_URL}/rest/v1/rpc/incrementar_uso_cupon`, {
+            method: 'POST',
             headers: {
               'Content-Type': 'application/json',
               'apikey': SUPABASE_ANON,
-              'Authorization': `Bearer ${sesiónActual?.access_token || SUPABASE_ANON}`,
-              'Prefer': 'return=minimal'
+              'Authorization': `Bearer ${sesiónActual?.access_token || SUPABASE_ANON}`
             },
-            body: JSON.stringify({ usos_actuales: (cuponAplicado.usos_actuales || 0) + 1 })
+            body: JSON.stringify({ cupon_id: cuponAplicado.id })
           });
         }
         // Email de compra recibida al cliente

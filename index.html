@@ -5306,8 +5306,6 @@
           const nombreProd = v.producto === 'ManualBacktestAnalyzer' ? 'Manual Backtest Analyzer'
                            : v.producto === 'TDA_RiskReward' ? 'TDA Risk/Reward'
                            : 'Daily Loss Limiter';
-          const estadoComClass = v.estado_comision === 'pagado' ? 'estado-pagado' : 'estado-pendiente_pago';
-          const estadoComLabel = v.estado_comision === 'pagado' ? 'Pagado' : 'Pendiente';
           return `
           <div class="afil-ventas-row">
             <div>
@@ -5317,7 +5315,6 @@
             <div class="afil-col-meta" style="color:var(--gris);font-size:12px">${esc(v.metodo_pago || '—')}</div>
             <div style="font-family:'Bebas Neue',sans-serif;font-size:16px;color:#E57373">USD ${parseFloat(v.monto_venta).toFixed(0)}</div>
             <div style="font-family:'Bebas Neue',sans-serif;font-size:16px;color:#4CAF50">USD ${parseFloat(v.comision_usd).toFixed(2)}</div>
-            <div><span class="estado-badge ${estadoComClass}" style="font-size:10px">${estadoComLabel}</span></div>
           </div>`;
         }).join('');
 
@@ -5373,7 +5370,6 @@
           <div class="afil-col-meta">Método</div>
           <div>Venta</div>
           <div>Comisión</div>
-          <div>Estado</div>
         </div>
         ${ventasRows}
       </div>

@@ -6717,8 +6717,7 @@
       instrumento,
       direccion,
       pnl:        pnlVal,
-      cantidad,
-      origen:     'manual'
+      cantidad
     };
     if (cuenta)                  payload.cuenta           = cuenta;
     if (estrategia)              payload.estrategia       = estrategia;
@@ -6729,7 +6728,7 @@
 
     const r = await sbFetch(
       '/rest/v1/operaciones_journal',
-      { method: 'POST', body: JSON.stringify(payload) },
+      { method: 'POST', body: JSON.stringify(payload), headers: { 'Prefer': 'return=minimal' } },
       sesiónActual.access_token
     );
 
@@ -6737,7 +6736,8 @@
       if (msg) { msg.style.display='block'; msg.style.background='rgba(76,175,80,0.1)'; msg.style.color='var(--verde)'; msg.style.border='1px solid rgba(76,175,80,0.3)'; msg.textContent='✓ Trade guardado.'; }
       setTimeout(() => { cerrarModal('modalAgregarTrade'); cargarJournal(); }, 700);
     } else {
-      if (msg) { msg.style.display='block'; msg.style.background='rgba(229,115,115,0.1)'; msg.style.color='#E57373'; msg.style.border='1px solid rgba(229,115,115,0.3)'; msg.textContent='Error al guardar. Verificá los campos.'; }
+      const errDetail = (r.data && typeof r.data === 'object' && r.data.message) ? r.data.message : (r.data && typeof r.data === 'string' ? r.data.substring(0,80) : '');
+      if (msg) { msg.style.display='block'; msg.style.background='rgba(229,115,115,0.1)'; msg.style.color='#E57373'; msg.style.border='1px solid rgba(229,115,115,0.3)'; msg.textContent=`Error ${r.status}${errDetail ? ': ' + errDetail : '. Verificá los campos.'}` ; }
       if (btn) { btn.disabled=false; btn.textContent='Guardar trade'; }
     }
   }

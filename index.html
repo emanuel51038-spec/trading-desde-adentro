@@ -2697,6 +2697,9 @@
           <p style="font-size:13px;color:var(--gris)">Registro cuantitativo y cualitativo de tus operaciones.</p>
         </div>
         <div style="display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end">
+          <button onclick="abrirAgregarTradeManual()" style="background:var(--rojo);border:1px solid var(--rojo);color:white;padding:10px 16px;border-radius:8px;cursor:pointer;font-size:12px;font-weight:600;display:flex;align-items:center;gap:6px">
+            ➕ Agregar Trade
+          </button>
           <button onclick="abrirComisiones()" style="background:#1A1A1A;border:1px solid #2A2A2A;color:var(--gris);padding:10px 14px;border-radius:8px;cursor:pointer;font-size:12px;font-weight:600;display:flex;align-items:center;gap:6px">
             💲 Comisiones
           </button>
@@ -2915,7 +2918,11 @@
         </div>
         <div id="monteCarloContent"><div style="text-align:center;color:var(--gris);font-size:13px;padding:20px">Presioná <strong style="color:var(--blanco)">🎲 Simular</strong> o <strong style="color:var(--blanco)">F9</strong> para correr una simulación de Monte Carlo.</div></div>
       </div>
-      <div style="overflow-x:auto;background:var(--negro-card);border:1px solid var(--negro-border);border-radius:16px">
+      <div id="journalTableScroller" style="overflow-x:auto;background:var(--negro-card);border:1px solid var(--negro-border);border-radius:16px">
+        <div id="journalTableScrollTop" style="overflow-x:auto;overflow-y:hidden;height:12px;border-bottom:1px solid #1A1A1A" onscroll="document.getElementById('journalTableScroller').scrollLeft=this.scrollLeft">
+          <div id="journalTableScrollTopInner" style="height:1px"></div>
+        </div>
+        <div style="overflow-x:auto" id="journalTableInner" onscroll="document.getElementById('journalTableScrollTop').scrollLeft=this.scrollLeft">
         <table style="width:100%;border-collapse:collapse;font-size:13px">
           <thead>
             <tr style="border-bottom:1px solid #1E1E1E;color:var(--gris)">
@@ -2932,10 +2939,25 @@
           </thead>
           <tbody id="journalTbody">${ops.map(renderOpFila).join('')}</tbody>
         </table>
+        </div>
       </div>`;
     _drawEquityAfterRender(ops);
     // Cerrar el wrapper journalRealContent
     cont.innerHTML += '</div>';
+    // Sincronizar scrollbar superior con ancho real de la tabla
+    setTimeout(() => {
+      const inner = document.getElementById('journalTableInner');
+      const topInner = document.getElementById('journalTableScrollTopInner');
+      if (inner && topInner) {
+        topInner.style.width = inner.scrollWidth + 'px';
+        inner.addEventListener('scroll', () => {
+          const top = document.getElementById('journalTableScrollTop');
+          if (top) top.scrollLeft = inner.scrollLeft;
+        });
+        const top = document.getElementById('journalTableScrollTop');
+        if (top) top.addEventListener('scroll', () => { inner.scrollLeft = top.scrollLeft; });
+      }
+    }, 100);
     setTimeout(() => iniciarCalendario(ops), 60);
     setTimeout(() => dibujarRadar(ops), 100);
     setTimeout(() => dibujarRadarPerf(ops), 110);
@@ -6549,6 +6571,174 @@
       }, 1200);
     } else {
       showAuthMsg(msg, 'Error al actualizar.', 'err');
+    }
+  }
+
+  // ─── AGREGAR TRADE MANUAL ─────────────────────────────────────────────────
+  async function abrirAgregarTradeManual() {
+    const [estRes, rgRes] = await Promise.all([
+      sbFetch('/rest/v1/estrategias?select=*&user_id=eq.' + sesiónActual.user.id + '&order=created_at', {}, sesiónActual.access_token),
+      sbFetch('/rest/v1/reglas_generales_sesion?select=reglas&user_id=eq.' + sesiónActual.user.id + '&limit=1', {}, sesiónActual.access_token)
+    ]);
+    const estrategias     = estRes.ok && Array.isArray(estRes.data) ? estRes.data : [];
+    const reglasGenerales = rgRes.ok && Array.isArray(rgRes.data) && rgRes.data.length > 0 ? (rgRes.data[0].reglas || []) : [];
+    _editStrategias = estrategias;
+
+    const emociones = ['Disciplinado','Ansioso','Confiado','Miedoso','Neutral','Revanchista','Eufórico','Frustrado','Paciente','Impulsivo'];
+    const hoy = new Date().toISOString().substring(0,16);
+
+    let modal = document.getElementById('modalAgregarTrade');
+    if (!modal) { modal = document.createElement('div'); modal.id='modalAgregarTrade'; modal.className='modal-overlay'; document.body.appendChild(modal); }
+
+    modal.innerHTML = `
+      <div class="modal" style="max-width:500px;max-height:90vh;overflow-y:auto">
+        <button class="modal-close" onclick="cerrarModal('modalAgregarTrade')">✕</button>
+        <h3 style="margin-bottom:4px">Agregar Trade Manual</h3>
+        <p class="modal-desc">Para trades que NinjaTrader no registró automáticamente.</p>
+
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px">
+          <div>
+            <label style="font-size:11px;color:var(--gris);display:block;margin-bottom:6px;text-transform:uppercase;letter-spacing:1px">Fecha y hora</label>
+            <input type="datetime-local" id="newTradesFecha" value="${hoy}"
+              style="width:100%;background:#181818;border:1px solid #2A2A2A;color:var(--blanco);padding:9px 12px;border-radius:7px;font-size:13px;outline:none;font-family:'DM Sans',sans-serif;color-scheme:dark">
+          </div>
+          <div>
+            <label style="font-size:11px;color:var(--gris);display:block;margin-bottom:6px;text-transform:uppercase;letter-spacing:1px">Instrumento</label>
+            <input type="text" id="newTradeInstrumento" placeholder="MNQ, NQ, NAS100..."
+              style="width:100%;background:#181818;border:1px solid #2A2A2A;color:var(--blanco);padding:9px 12px;border-radius:7px;font-size:13px;outline:none;font-family:'DM Sans',sans-serif">
+          </div>
+        </div>
+
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:16px">
+          <div>
+            <label style="font-size:11px;color:var(--gris);display:block;margin-bottom:6px;text-transform:uppercase;letter-spacing:1px">Dirección</label>
+            <select id="newTradeDireccion" style="width:100%;background:#181818;border:1px solid #2A2A2A;color:var(--blanco);padding:9px 12px;border-radius:7px;font-size:13px;outline:none;font-family:'DM Sans',sans-serif">
+              <option value="Long">🟢 Long</option>
+              <option value="Short">🔴 Short</option>
+            </select>
+          </div>
+          <div>
+            <label style="font-size:11px;color:var(--gris);display:block;margin-bottom:6px;text-transform:uppercase;letter-spacing:1px">PnL bruto</label>
+            <input type="number" id="newTradePnl" step="0.01" placeholder="0.00"
+              style="width:100%;background:#181818;border:1px solid #2A2A2A;color:var(--blanco);padding:9px 12px;border-radius:7px;font-size:13px;outline:none;font-family:'DM Sans',sans-serif">
+          </div>
+          <div>
+            <label style="font-size:11px;color:var(--gris);display:block;margin-bottom:6px;text-transform:uppercase;letter-spacing:1px">Contratos</label>
+            <input type="number" id="newTradeCantidad" step="1" min="1" value="1"
+              style="width:100%;background:#181818;border:1px solid #2A2A2A;color:var(--blanco);padding:9px 12px;border-radius:7px;font-size:13px;outline:none;font-family:'DM Sans',sans-serif">
+          </div>
+        </div>
+
+        <label style="font-size:11px;color:var(--gris);display:block;margin-bottom:6px;text-transform:uppercase;letter-spacing:1px">Cuenta</label>
+        <input type="text" id="newTradeCuenta" placeholder="Sim101, LFE05079..."
+          style="width:100%;background:#181818;border:1px solid #2A2A2A;color:var(--blanco);padding:9px 12px;border-radius:7px;font-size:13px;outline:none;font-family:'DM Sans',sans-serif;margin-bottom:16px">
+
+        <label style="font-size:11px;color:var(--gris);display:block;margin-bottom:6px;text-transform:uppercase;letter-spacing:1px">Estrategia</label>
+        <select id="newTradeEstrategia" onchange="actualizarReglasNuevoTrade(_editStrategias)"
+          style="width:100%;background:#181818;border:1px solid #2A2A2A;color:var(--blanco);padding:9px 12px;border-radius:7px;font-size:13px;margin-bottom:16px;outline:none;font-family:'DM Sans',sans-serif">
+          <option value="">— Sin estrategia —</option>
+          ${estrategias.map(e=>`<option value="${escAttr(e.nombre)}">${esc(e.nombre)}</option>`).join('')}
+        </select>
+
+        <div id="newTradeReglasContainer" style="margin-bottom:16px"></div>
+
+        ${reglasGenerales.length>0?`
+        <label style="font-size:11px;color:var(--gris);display:block;margin-bottom:6px;text-transform:uppercase;letter-spacing:1px">Reglas generales</label>
+        <div id="newTradeReglasGenContainer" style="margin-bottom:16px">${renderReglasEdicion(reglasGenerales,[],true)}</div>`:''}
+
+        <label style="font-size:11px;color:var(--gris);display:block;margin-bottom:6px;text-transform:uppercase;letter-spacing:1px">Emoción</label>
+        <select id="newTradeEmocion" style="width:100%;background:#181818;border:1px solid #2A2A2A;color:var(--blanco);padding:9px 12px;border-radius:7px;font-size:13px;margin-bottom:16px;outline:none;font-family:'DM Sans',sans-serif">
+          <option value="">— Sin registrar —</option>
+          ${emociones.map(em=>`<option value="${escAttr(em)}">${esc(em)}</option>`).join('')}
+        </select>
+
+        <label style="font-size:11px;color:var(--gris);display:block;margin-bottom:6px;text-transform:uppercase;letter-spacing:1px">Notas</label>
+        <textarea id="newTradeNotas" placeholder="Observaciones sobre el trade..."
+          style="width:100%;background:#181818;border:1px solid #2A2A2A;color:var(--blanco);padding:9px 12px;border-radius:7px;font-size:13px;min-height:70px;resize:vertical;outline:none;font-family:'DM Sans',sans-serif;margin-bottom:16px"></textarea>
+
+        <div id="newTradeMsg" style="display:none;margin-bottom:12px;font-size:12px;padding:8px 12px;border-radius:6px"></div>
+        <div style="display:flex;gap:8px">
+          <button id="btnGuardarNuevoTrade" onclick="guardarTradeManual()" class="modal-confirm" style="flex:1">Guardar trade</button>
+          <button onclick="cerrarModal('modalAgregarTrade')" style="background:#1E1E1E;border:1px solid #2A2A2A;color:var(--gris);padding:12px 18px;border-radius:8px;cursor:pointer;font-size:13px;font-weight:600">Cancelar</button>
+        </div>
+      </div>`;
+    modal.classList.add('active');
+  }
+
+  function actualizarReglasNuevoTrade(estrategias) {
+    const sel = document.getElementById('newTradeEstrategia');
+    if (!sel) return;
+    const estObj = estrategias.find(e => e.nombre === sel.value);
+    const cont = document.getElementById('newTradeReglasContainer');
+    if (cont) cont.innerHTML = estObj && estObj.reglas && estObj.reglas.length
+      ? renderReglasEdicion(estObj.reglas, [])
+      : '';
+  }
+
+  async function guardarTradeManual() {
+    const btn = document.getElementById('btnGuardarNuevoTrade');
+    const msg = document.getElementById('newTradeMsg');
+    if (btn) { btn.disabled=true; btn.textContent='Guardando...'; }
+
+    const fechaVal     = document.getElementById('newTradesFecha')?.value;
+    const instrumento  = document.getElementById('newTradeInstrumento')?.value?.trim().toUpperCase();
+    const direccion    = document.getElementById('newTradeDireccion')?.value || 'Long';
+    const pnlVal       = parseFloat(document.getElementById('newTradePnl')?.value || '0');
+    const cantidad     = parseInt(document.getElementById('newTradeCantidad')?.value || '1') || 1;
+    const cuenta       = document.getElementById('newTradeCuenta')?.value?.trim() || '';
+    const estrategia   = document.getElementById('newTradeEstrategia')?.value || '';
+    const emocion      = document.getElementById('newTradeEmocion')?.value || '';
+    const notas        = document.getElementById('newTradeNotas')?.value?.trim() || '';
+
+    if (!fechaVal || !instrumento) {
+      if (msg) { msg.style.display='block'; msg.style.background='rgba(229,115,115,0.1)'; msg.style.color='#E57373'; msg.style.border='1px solid rgba(229,115,115,0.3)'; msg.textContent='Completá fecha e instrumento.'; }
+      if (btn) { btn.disabled=false; btn.textContent='Guardar trade'; }
+      return;
+    }
+
+    if (isNaN(pnlVal)) {
+      if (msg) { msg.style.display='block'; msg.style.background='rgba(229,115,115,0.1)'; msg.style.color='#E57373'; msg.style.border='1px solid rgba(229,115,115,0.3)'; msg.textContent='Ingresá un PnL válido.'; }
+      if (btn) { btn.disabled=false; btn.textContent='Guardar trade'; }
+      return;
+    }
+
+    const reglasCumplidas = [];
+    const reglasGenerales = [];
+    document.querySelectorAll('#modalAgregarTrade .editReglaCheck').forEach(cb => {
+      const esGen = cb.dataset.gen === 'true';
+      const valor = cb.checked ? cb.dataset.regla : 'NO:' + cb.dataset.regla;
+      if (esGen) reglasGenerales.push(valor);
+      else reglasCumplidas.push(valor);
+    });
+
+    const payload = {
+      user_id:    sesiónActual.user.id,
+      fecha:      new Date(fechaVal).toISOString(),
+      instrumento,
+      direccion,
+      pnl:        pnlVal,
+      cantidad,
+      origen:     'manual'
+    };
+    if (cuenta)                  payload.cuenta           = cuenta;
+    if (estrategia)              payload.estrategia       = estrategia;
+    if (emocion)                 payload.emocion          = emocion;
+    if (notas)                   payload.notas            = notas;
+    if (reglasCumplidas.length)  payload.reglas_cumplidas = reglasCumplidas;
+    if (reglasGenerales.length)  payload.reglas_generales = reglasGenerales;
+
+    const r = await sbFetch(
+      '/rest/v1/operaciones_journal',
+      { method: 'POST', body: JSON.stringify(payload) },
+      sesiónActual.access_token
+    );
+
+    if (r.ok) {
+      if (msg) { msg.style.display='block'; msg.style.background='rgba(76,175,80,0.1)'; msg.style.color='var(--verde)'; msg.style.border='1px solid rgba(76,175,80,0.3)'; msg.textContent='✓ Trade guardado.'; }
+      setTimeout(() => { cerrarModal('modalAgregarTrade'); cargarJournal(); }, 700);
+    } else {
+      if (msg) { msg.style.display='block'; msg.style.background='rgba(229,115,115,0.1)'; msg.style.color='#E57373'; msg.style.border='1px solid rgba(229,115,115,0.3)'; msg.textContent='Error al guardar. Verificá los campos.'; }
+      if (btn) { btn.disabled=false; btn.textContent='Guardar trade'; }
     }
   }
 

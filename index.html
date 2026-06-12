@@ -6576,12 +6576,16 @@
 
   // ─── AGREGAR TRADE MANUAL ─────────────────────────────────────────────────
   async function abrirAgregarTradeManual() {
-    const [estRes, rgRes] = await Promise.all([
+    const [estRes, rgRes, cuentasRes] = await Promise.all([
       sbFetch('/rest/v1/estrategias?select=*&user_id=eq.' + sesiónActual.user.id + '&order=created_at', {}, sesiónActual.access_token),
-      sbFetch('/rest/v1/reglas_generales_sesion?select=reglas&user_id=eq.' + sesiónActual.user.id + '&limit=1', {}, sesiónActual.access_token)
+      sbFetch('/rest/v1/reglas_generales_sesion?select=reglas&user_id=eq.' + sesiónActual.user.id + '&limit=1', {}, sesiónActual.access_token),
+      sbFetch('/rest/v1/operaciones_journal?select=cuenta&user_id=eq.' + sesiónActual.user.id, {}, sesiónActual.access_token)
     ]);
     const estrategias     = estRes.ok && Array.isArray(estRes.data) ? estRes.data : [];
     const reglasGenerales = rgRes.ok && Array.isArray(rgRes.data) && rgRes.data.length > 0 ? (rgRes.data[0].reglas || []) : [];
+    const cuentasUnicas   = cuentasRes.ok && Array.isArray(cuentasRes.data)
+      ? [...new Set(cuentasRes.data.map(o => o.cuenta).filter(Boolean))].sort()
+      : [];
     _editStrategias = estrategias;
 
     const emociones = ['Disciplinado','Ansioso','Confiado','Miedoso','Neutral','Revanchista','Eufórico','Frustrado','Paciente','Impulsivo'];
@@ -6630,8 +6634,13 @@
         </div>
 
         <label style="font-size:11px;color:var(--gris);display:block;margin-bottom:6px;text-transform:uppercase;letter-spacing:1px">Cuenta</label>
+        ${cuentasUnicas.length > 0 ? `
+        <select id="newTradeCuenta" style="width:100%;background:#181818;border:1px solid #2A2A2A;color:var(--blanco);padding:9px 12px;border-radius:7px;font-size:13px;margin-bottom:16px;outline:none;font-family:'DM Sans',sans-serif">
+          <option value="">— Seleccionar cuenta —</option>
+          ${cuentasUnicas.map(c => `<option value="${escAttr(c)}">${esc(c)}</option>`).join('')}
+        </select>` : `
         <input type="text" id="newTradeCuenta" placeholder="Sim101, LFE05079..."
-          style="width:100%;background:#181818;border:1px solid #2A2A2A;color:var(--blanco);padding:9px 12px;border-radius:7px;font-size:13px;outline:none;font-family:'DM Sans',sans-serif;margin-bottom:16px">
+          style="width:100%;background:#181818;border:1px solid #2A2A2A;color:var(--blanco);padding:9px 12px;border-radius:7px;font-size:13px;outline:none;font-family:'DM Sans',sans-serif;margin-bottom:16px">`}
 
         <label style="font-size:11px;color:var(--gris);display:block;margin-bottom:6px;text-transform:uppercase;letter-spacing:1px">Estrategia</label>
         <select id="newTradeEstrategia" onchange="actualizarReglasNuevoTrade(_editStrategias)"

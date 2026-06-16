@@ -1325,6 +1325,12 @@
     </div>
 
     <div style="margin-top:12px">
+      <label class="afil-label">Descripción de cambios (changelog)</label>
+      <textarea id="subirActChangelog" placeholder="Ej: • Corregido bug en el cierre automático&#10;• Nuevo parámetro de tolerancia&#10;• Mejoras de rendimiento"
+        style="width:100%;background:#181818;border:1px solid #2A2A2A;border-radius:8px;padding:12px;color:var(--blanco);font-family:'DM Sans',sans-serif;font-size:13px;min-height:90px;resize:vertical;outline:none;line-height:1.5"></textarea>
+    </div>
+
+    <div style="margin-top:12px">
       <label class="afil-label">Nuevo ZIP del instalador (opcional)</label>
       <input type="file" id="subirActZip" accept=".zip"
         style="width:100%;background:#181818;border:1px dashed #444;border-radius:8px;padding:12px;color:var(--gris);font-family:'DM Sans',sans-serif;cursor:pointer">
@@ -2193,6 +2199,7 @@
     document.getElementById('subirActConfigId').value  = configId;
     document.getElementById('subirActVersion').value   = versionActual;
     document.getElementById('subirActDesc').textContent = `Actualizando: ${nombreProd}`;
+    document.getElementById('subirActChangelog').value = '';
     document.getElementById('subirActZip').value  = '';
     document.getElementById('subirActPdf').value  = '';
     document.getElementById('subirActMsg').style.display = 'none';
@@ -2207,6 +2214,7 @@
     const version   = document.getElementById('subirActVersion').value.trim();
     const zipFile   = document.getElementById('subirActZip').files[0];
     const pdfFile   = document.getElementById('subirActPdf').files[0];
+    const changelog = document.getElementById('subirActChangelog').value.trim();
     const msg       = document.getElementById('subirActMsg');
     const btn       = document.getElementById('subirActBtn');
 
@@ -2256,8 +2264,9 @@
 
     // Actualizar tabla productos_config
     const patch = { version };
-    if (zipUrl) patch.zip_url = zipUrl;
-    if (pdfUrl) patch.guia_url = pdfUrl;
+    if (zipUrl)    patch.zip_url    = zipUrl;
+    if (pdfUrl)    patch.guia_url   = pdfUrl;
+    if (changelog) patch.changelog  = changelog;
 
     let rPatch;
     if (configId) {
@@ -2293,7 +2302,8 @@
           sendEmail('nueva_actualizacion', {
             nombre:   u.nombre,
             producto: nombreProd,
-            version
+            version,
+            changelog: changelog || 'Sin descripción de cambios.'
           }, u.email);
         }
       }

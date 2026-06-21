@@ -2325,7 +2325,7 @@
       );
       if (rUsers.ok && Array.isArray(rUsers.data) && rUsers.data.length > 0) {
         for (const u of rUsers.data) {
-          sendEmail('nueva_actualizacion', {
+          await sendEmail('nueva_actualizacion', {
             nombre:   u.nombre,
             producto: nombreProd,
             version,

@@ -2231,35 +2231,61 @@
     if (zipFile) {
       btn.innerHTML = '<span class="spinner"></span>Subiendo ZIP...';
       const fileName = `${producto}_${version.replace(/\./g,'_')}.zip`;
-      const res = await fetch(`${SUPABASE_URL}/storage/v1/object/Instaladores/${fileName}`, {
-        method: 'POST',
+      // Intentar PUT primero (upsert), si falla con 404 intentar POST (archivo nuevo)
+      let res = await fetch(`${SUPABASE_URL}/storage/v1/object/Instaladores/${encodeURIComponent(fileName)}`, {
+        method: 'PUT',
         headers: { 'apikey': SUPABASE_ANON, 'Authorization': 'Bearer ' + sesiónActual.access_token,
-          'x-upsert': 'true' },
+          'Content-Type': 'application/zip', 'x-upsert': 'true' },
         body: zipFile
       });
+      if (!res.ok) {
+        res = await fetch(`${SUPABASE_URL}/storage/v1/object/Instaladores/${encodeURIComponent(fileName)}`, {
+          method: 'POST',
+          headers: { 'apikey': SUPABASE_ANON, 'Authorization': 'Bearer ' + sesiónActual.access_token,
+            'Content-Type': 'application/zip', 'x-upsert': 'true' },
+          body: zipFile
+        });
+      }
       if (res.ok) {
-        zipUrl = `${SUPABASE_URL}/storage/v1/object/public/Instaladores/${fileName}`;
-      } else { errores++; }
+        zipUrl = `${SUPABASE_URL}/storage/v1/object/public/Instaladores/${encodeURIComponent(fileName)}`;
+      } else {
+        const errTxt = await res.text();
+        console.error('ZIP upload error', res.status, errTxt);
+        errores++;
+      }
     }
 
     // Subir PDF
     if (pdfFile) {
       btn.innerHTML = '<span class="spinner"></span>Subiendo PDF...';
       const fileName = `GUIA_${producto}_${version.replace(/\./g,'_')}.pdf`;
-      const res = await fetch(`${SUPABASE_URL}/storage/v1/object/Instaladores/${fileName}`, {
-        method: 'POST',
+      let res = await fetch(`${SUPABASE_URL}/storage/v1/object/Instaladores/${encodeURIComponent(fileName)}`, {
+        method: 'PUT',
         headers: { 'apikey': SUPABASE_ANON, 'Authorization': 'Bearer ' + sesiónActual.access_token,
-          'x-upsert': 'true' },
+          'Content-Type': 'application/pdf', 'x-upsert': 'true' },
         body: pdfFile
       });
+      if (!res.ok) {
+        res = await fetch(`${SUPABASE_URL}/storage/v1/object/Instaladores/${encodeURIComponent(fileName)}`, {
+          method: 'POST',
+          headers: { 'apikey': SUPABASE_ANON, 'Authorization': 'Bearer ' + sesiónActual.access_token,
+            'Content-Type': 'application/pdf', 'x-upsert': 'true' },
+          body: pdfFile
+        });
+      }
       if (res.ok) {
-        pdfUrl = `${SUPABASE_URL}/storage/v1/object/public/Instaladores/${fileName}`;
-      } else { errores++; }
+        pdfUrl = `${SUPABASE_URL}/storage/v1/object/public/Instaladores/${encodeURIComponent(fileName)}`;
+      } else {
+        const errTxt = await res.text();
+        console.error('PDF upload error', res.status, errTxt);
+        errores++;
+      }
     }
 
     if (errores > 0 && !zipUrl && !pdfUrl) {
       btn.disabled = false; btn.textContent = '⬆️ Subir actualización →';
-      showAuthMsg(msg, 'Error al subir los archivos. Verificá los permisos del bucket.', 'err'); return;
+      const statusInfo = errores > 0 ? ' Revisá la consola (F12) para el detalle del error.' : '';
+      showAuthMsg(msg, 'Error al subir los archivos. Verificá que el bucket "Instaladores" exista y tenga permisos de INSERT.' + statusInfo, 'err'); return;
     }
 
     // Actualizar tabla productos_config

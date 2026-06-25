@@ -749,6 +749,56 @@
     /* Modal registrar venta */
     .afil-form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
     @media (max-width: 480px) { .afil-form-row { grid-template-columns: 1fr; } }
+
+    /* ── COMUNIDAD ─────────────────────────────────── */
+    .com-header { display:flex; justify-content:space-between; align-items:center; margin-bottom:24px; flex-wrap:wrap; gap:12px; }
+    .com-header h2 { font-size:22px; font-weight:700; color:var(--blanco); margin:0; }
+    .com-btn-nuevo { background:var(--rojo); border:none; color:white; padding:10px 20px; border-radius:8px; cursor:pointer; font-size:13px; font-weight:600; display:flex; align-items:center; gap:6px; }
+    .com-btn-nuevo:hover { opacity:.85; }
+    .com-filtros { display:flex; gap:8px; margin-bottom:20px; flex-wrap:wrap; }
+    .com-filtro-btn { background:#1A1A1A; border:1px solid #2A2A2A; color:var(--gris); padding:6px 14px; border-radius:20px; cursor:pointer; font-size:12px; font-weight:600; transition:all .2s; }
+    .com-filtro-btn.active, .com-filtro-btn:hover { background:var(--rojo); border-color:var(--rojo); color:white; }
+    .com-feed { display:flex; flex-direction:column; gap:16px; }
+    .com-post { background:var(--negro-card); border:1px solid var(--negro-border); border-radius:16px; padding:20px; }
+    .com-post-header { display:flex; align-items:center; gap:12px; margin-bottom:14px; }
+    .com-avatar { width:40px; height:40px; border-radius:50%; background:var(--rojo); display:flex; align-items:center; justify-content:center; font-weight:700; font-size:16px; color:white; flex-shrink:0; }
+    .com-post-meta { flex:1; min-width:0; }
+    .com-post-autor { font-weight:700; font-size:14px; color:var(--blanco); cursor:pointer; }
+    .com-post-autor:hover { color:var(--rojo); }
+    .com-post-fecha { font-size:11px; color:var(--gris); margin-top:2px; }
+    .com-trade-badge { display:inline-flex; align-items:center; gap:6px; background:#111; border:1px solid #2A2A2A; border-radius:8px; padding:8px 14px; margin-bottom:12px; flex-wrap:wrap; gap:10px; }
+    .com-badge-item { font-size:12px; font-weight:600; }
+    .com-badge-sep { color:#333; }
+    .com-pnl-pos { color:var(--verde); }
+    .com-pnl-neg { color:#E57373; }
+    .com-post-texto { font-size:14px; color:#CCC; line-height:1.6; margin-bottom:14px; white-space:pre-wrap; word-break:break-word; }
+    .com-post-img { width:100%; max-height:340px; object-fit:cover; border-radius:10px; margin-bottom:14px; cursor:pointer; }
+    .com-reacciones { display:flex; gap:8px; flex-wrap:wrap; }
+    .com-reac-btn { background:#111; border:1px solid #222; border-radius:20px; padding:5px 12px; cursor:pointer; font-size:13px; display:flex; align-items:center; gap:5px; color:var(--gris); transition:all .15s; }
+    .com-reac-btn:hover, .com-reac-btn.mia { background:#1E1E1E; border-color:var(--rojo); color:var(--blanco); }
+    .com-reac-count { font-size:12px; font-weight:600; }
+    .com-empty { text-align:center; padding:60px 20px; color:var(--gris); }
+    .com-empty-icon { font-size:40px; margin-bottom:12px; }
+    .com-perfil-banner { background:var(--negro-card); border:1px solid var(--negro-border); border-radius:16px; padding:24px; margin-bottom:20px; }
+    .com-perfil-stats { display:grid; grid-template-columns:repeat(auto-fit,minmax(120px,1fr)); gap:12px; margin-top:16px; }
+    .com-stat-card { background:#111; border:1px solid #1E1E1E; border-radius:10px; padding:14px; text-align:center; }
+    .com-stat-val { font-size:20px; font-weight:700; color:var(--blanco); }
+    .com-stat-lbl { font-size:10px; color:var(--gris); text-transform:uppercase; letter-spacing:.8px; margin-top:4px; }
+    .com-toggle-row { display:flex; align-items:center; justify-content:space-between; padding:14px 0; border-bottom:1px solid #1A1A1A; }
+    .com-toggle-lbl { font-size:13px; color:var(--blanco); }
+    .com-toggle-desc { font-size:11px; color:var(--gris); margin-top:2px; }
+    .com-switch { position:relative; width:44px; height:24px; flex-shrink:0; }
+    .com-switch input { opacity:0; width:0; height:0; }
+    .com-switch-slider { position:absolute; inset:0; background:#333; border-radius:24px; cursor:pointer; transition:.3s; }
+    .com-switch-slider:before { content:''; position:absolute; width:18px; height:18px; left:3px; top:3px; background:white; border-radius:50%; transition:.3s; }
+    .com-switch input:checked + .com-switch-slider { background:var(--rojo); }
+    .com-switch input:checked + .com-switch-slider:before { transform:translateX(20px); }
+    .com-post-acciones { display:flex; gap:8px; margin-left:auto; }
+    .com-btn-eliminar { background:rgba(229,115,115,.1); border:1px solid rgba(229,115,115,.2); color:#E57373; border-radius:6px; padding:4px 10px; font-size:11px; cursor:pointer; }
+    .com-btn-eliminar:hover { background:rgba(229,115,115,.25); }
+    .com-load-more { text-align:center; margin-top:20px; }
+    .com-load-more button { background:#1A1A1A; border:1px solid #2A2A2A; color:var(--gris); padding:10px 24px; border-radius:8px; cursor:pointer; font-size:13px; }
+    .com-load-more button:hover { color:var(--blanco); border-color:#444; }
   </style>
   <script defer src="/_vercel/insights/script.js"></script>
 </head>
@@ -1183,6 +1233,7 @@
       <button class="panel-nav-btn" onclick="switchPanelTab('journal', this)">📒 Trading Journal</button>
       <button class="panel-nav-btn" onclick="switchPanelTab('fondeos', this)">🏦 Fondeos</button>
       <button class="panel-nav-btn" id="tabAfiliados" onclick="switchPanelTab('afiliados', this)">🤝 Afiliados</button>
+      <button class="panel-nav-btn" id="tabComunidad" onclick="switchPanelTab('comunidad', this)">🌐 Comunidad</button>
     </nav>
 
     <!-- Content -->
@@ -1234,9 +1285,78 @@
       <div class="panel-section" id="sec-afiliados">
         <div id="afiladosContainer"></div>
       </div>
+
+      <!-- Sección: Comunidad -->
+      <div class="panel-section" id="sec-comunidad">
+        <div id="comunidadContainer">
+          <div style="text-align:center;padding:40px;color:var(--gris)"><span class="spinner"></span> Cargando comunidad...</div>
+        </div>
+      </div>
     </div>
 
   </div>
+</div>
+
+
+<!-- MODAL: Nuevo post comunidad -->
+<div class="modal-overlay" id="modalNuevoPost">
+  <div class="modal" style="max-width:520px;max-height:90vh;overflow-y:auto">
+    <button class="modal-close" onclick="cerrarModal('modalNuevoPost')">✕</button>
+    <h3 style="margin-bottom:4px">Compartir trade</h3>
+    <p class="modal-desc">Compartí tu operación con la comunidad.</p>
+
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:16px">
+      <div>
+        <label class="afil-label">Instrumento</label>
+        <input type="text" id="postInstrumento" placeholder="MNQ, NAS100..."
+          style="width:100%;background:#181818;border:1px solid #2A2A2A;color:var(--blanco);padding:9px 12px;border-radius:7px;font-size:13px;outline:none;font-family:'DM Sans',sans-serif">
+      </div>
+      <div>
+        <label class="afil-label">Dirección</label>
+        <select id="postDireccion" style="width:100%;background:#181818;border:1px solid #2A2A2A;color:var(--blanco);padding:9px 12px;border-radius:7px;font-size:13px;outline:none;font-family:'DM Sans',sans-serif">
+          <option value="Long">🟢 Long</option>
+          <option value="Short">🔴 Short</option>
+        </select>
+      </div>
+      <div>
+        <label class="afil-label">PnL (USD)</label>
+        <input type="number" id="postPnl" step="0.01" placeholder="0.00"
+          style="width:100%;background:#181818;border:1px solid #2A2A2A;color:var(--blanco);padding:9px 12px;border-radius:7px;font-size:13px;outline:none;font-family:'DM Sans',sans-serif">
+      </div>
+    </div>
+
+    <label class="afil-label">Reflexión / Análisis</label>
+    <textarea id="postTexto" placeholder="¿Qué salió bien? ¿Qué aprendiste? Compartilo con la comunidad..."
+      style="width:100%;background:#181818;border:1px solid #2A2A2A;color:var(--blanco);padding:12px;border-radius:7px;font-size:13px;min-height:100px;resize:vertical;outline:none;font-family:'DM Sans',sans-serif;line-height:1.5;margin-bottom:16px"></textarea>
+
+    <label class="afil-label">Imagen / Captura de pantalla (opcional)</label>
+    <input type="file" id="postImagen" accept="image/*"
+      style="width:100%;background:#181818;border:1px dashed #444;border-radius:8px;padding:12px;color:var(--gris);font-family:'DM Sans',sans-serif;cursor:pointer;margin-bottom:8px">
+    <div id="postImagenPreview" style="display:none;margin-bottom:16px">
+      <img id="postImagenPreviewImg" style="width:100%;max-height:200px;object-fit:cover;border-radius:8px;border:1px solid #2A2A2A">
+    </div>
+
+    <div id="postMsg" style="display:none;margin-bottom:12px;font-size:12px;padding:8px 12px;border-radius:6px"></div>
+    <div style="display:flex;gap:8px">
+      <button id="btnPublicarPost" onclick="publicarPost()" class="modal-confirm" style="flex:1">🚀 Publicar</button>
+      <button onclick="cerrarModal('modalNuevoPost')" style="background:#1E1E1E;border:1px solid #2A2A2A;color:var(--gris);padding:12px 18px;border-radius:8px;cursor:pointer;font-size:13px;font-weight:600">Cancelar</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: Perfil público de usuario -->
+<div class="modal-overlay" id="modalPerfilUsuario">
+  <div class="modal" style="max-width:560px;max-height:90vh;overflow-y:auto">
+    <button class="modal-close" onclick="cerrarModal('modalPerfilUsuario')">✕</button>
+    <div id="modalPerfilUsuarioContent">
+      <div style="text-align:center;padding:40px;color:var(--gris)"><span class="spinner"></span></div>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: Imagen ampliada -->
+<div class="modal-overlay" id="modalImagenAmpliada" onclick="cerrarModal('modalImagenAmpliada')" style="cursor:zoom-out;align-items:center;justify-content:center">
+  <img id="imgAmpliadaSrc" style="max-width:95vw;max-height:90vh;border-radius:12px;object-fit:contain">
 </div>
 
 <!-- MODAL: Registrar venta afiliado (admin) -->
@@ -1440,6 +1560,7 @@
     if (sec === 'journal') cargarJournal();
     if (sec === 'fondeos') cargarFondeos();
     if (sec === 'afiliados') cargarAfiliados();
+    if (sec === 'comunidad') cargarComunidad();
   }
 
   /* ══════════════════════
@@ -6784,6 +6905,402 @@
       const errDetail = (r.data && typeof r.data === 'object' && r.data.message) ? r.data.message : (r.data && typeof r.data === 'string' ? r.data.substring(0,80) : '');
       if (msg) { msg.style.display='block'; msg.style.background='rgba(229,115,115,0.1)'; msg.style.color='#E57373'; msg.style.border='1px solid rgba(229,115,115,0.3)'; msg.textContent=`Error ${r.status}${errDetail ? ': ' + errDetail : '. Verificá los campos.'}` ; }
       if (btn) { btn.disabled=false; btn.textContent='Guardar trade'; }
+    }
+  }
+
+
+  // ─── COMUNIDAD ────────────────────────────────────────────────────────────
+  const REACCIONES_DEF = ['🔥','💎','📈','💪','😅'];
+  let _comFiltro = 'todos';
+  let _comOffset = 0;
+  const _comLimit = 15;
+  let _comPerfilPublico = null; // { mostrar_journal, mostrar_winrate, mostrar_pnl_promedio }
+
+  async function cargarComunidad() {
+    _comOffset = 0;
+    const cont = document.getElementById('comunidadContainer');
+    cont.innerHTML = '<div style="text-align:center;padding:40px;color:var(--gris)"><span class="spinner"></span> Cargando...</div>';
+    // Cargar perfil del usuario (config de privacidad)
+    const rPerfil = await sbFetch(
+      '/rest/v1/perfiles_comunidad?user_id=eq.' + sesiónActual.user.id + '&select=*',
+      {}, sesiónActual.access_token
+    );
+    _comPerfilPublico = (rPerfil.ok && Array.isArray(rPerfil.data) && rPerfil.data.length > 0)
+      ? rPerfil.data[0]
+      : { mostrar_journal: false, mostrar_winrate: false, mostrar_pnl_promedio: false };
+    await renderComunidad(false);
+  }
+
+  async function renderComunidad(append) {
+    const cont = document.getElementById('comunidadContainer');
+    if (!append) _comOffset = 0;
+
+    // Fetch posts
+    let url = '/rest/v1/posts_comunidad?select=*,perfiles_comunidad(nombre,mostrar_winrate,mostrar_pnl_promedio,winrate,pnl_promedio)&order=created_at.desc&limit=' + _comLimit + '&offset=' + _comOffset;
+    if (_comFiltro !== 'todos') url += '&instrumento=eq.' + encodeURIComponent(_comFiltro);
+
+    const [rPosts, rMisReac] = await Promise.all([
+      sbFetch(url, {}, sesiónActual.access_token),
+      sbFetch('/rest/v1/reacciones_comunidad?user_id=eq.' + sesiónActual.user.id + '&select=post_id,emoji', {}, sesiónActual.access_token)
+    ]);
+
+    const posts = (rPosts.ok && Array.isArray(rPosts.data)) ? rPosts.data : [];
+    const misReac = (rMisReac.ok && Array.isArray(rMisReac.data)) ? rMisReac.data : [];
+    const misReacMap = {}; // post_id -> [emojis]
+    misReac.forEach(r => { if (!misReacMap[r.post_id]) misReacMap[r.post_id] = []; misReacMap[r.post_id].push(r.emoji); });
+
+    const html = _renderComunidadHTML(posts, misReacMap, _comPerfilPublico);
+
+    if (!append) {
+      cont.innerHTML = html;
+    } else {
+      const feedEl = document.getElementById('comFeed');
+      if (feedEl) feedEl.insertAdjacentHTML('beforeend', _renderPostsHTML(posts, misReacMap));
+      const loadMore = document.getElementById('comLoadMore');
+      if (loadMore) loadMore.remove();
+      if (posts.length === _comLimit) {
+        cont.insertAdjacentHTML('beforeend', '<div class="com-load-more" id="comLoadMore"><button onclick="cargarMasPosts()">Cargar más</button></div>');
+      }
+    }
+    _comOffset += posts.length;
+
+    // Preview imagen en modal nuevo post
+    const imgInput = document.getElementById('postImagen');
+    if (imgInput && !imgInput._listenerAdded) {
+      imgInput._listenerAdded = true;
+      imgInput.addEventListener('change', function() {
+        const file = this.files[0];
+        const prev = document.getElementById('postImagenPreview');
+        const img  = document.getElementById('postImagenPreviewImg');
+        if (file && prev && img) {
+          img.src = URL.createObjectURL(file);
+          prev.style.display = 'block';
+        } else if (prev) { prev.style.display = 'none'; }
+      });
+    }
+  }
+
+  function _renderComunidadHTML(posts, misReacMap, perfil) {
+    const instrumentos = ['todos','MNQ','NQ','NAS100','ES','MES'];
+    const filtrosHTML = instrumentos.map(f =>
+      `<button class="com-filtro-btn${_comFiltro===f?' active':''}" onclick="filtrarComunidad('${f}',this)">${f==='todos'?'🌐 Todos':f}</button>`
+    ).join('');
+
+    const perfilToggle = `
+    <div class="com-perfil-banner">
+      <div style="display:flex;align-items:center;gap:12px;margin-bottom:12px">
+        <div class="com-avatar">${(sesiónActual.user.user_metadata?.nombre||sesiónActual.user.email||'?')[0].toUpperCase()}</div>
+        <div>
+          <div style="font-weight:700;font-size:15px;color:var(--blanco)">${sesiónActual.user.user_metadata?.nombre||'Mi perfil'}</div>
+          <div style="font-size:11px;color:var(--gris)">Tu perfil público en la comunidad</div>
+        </div>
+        <button onclick="abrirConfigPerfilComunidad()" style="margin-left:auto;background:#1A1A1A;border:1px solid #2A2A2A;color:var(--gris);padding:8px 14px;border-radius:7px;cursor:pointer;font-size:12px">⚙️ Privacidad</button>
+      </div>
+    </div>`;
+
+    return `
+    <div>${perfilToggle}</div>
+    <div class="com-header">
+      <h2>🌐 Comunidad</h2>
+      <button class="com-btn-nuevo" onclick="abrirNuevoPost()">✏️ Publicar trade</button>
+    </div>
+    <div class="com-filtros">${filtrosHTML}</div>
+    <div class="com-feed" id="comFeed">
+      ${posts.length > 0 ? _renderPostsHTML(posts, misReacMap) : '<div class="com-empty"><div class="com-empty-icon">📭</div><p>No hay posts aún. ¡Sé el primero en compartir un trade!</p></div>'}
+    </div>
+    ${posts.length === _comLimit ? '<div class="com-load-more" id="comLoadMore"><button onclick="cargarMasPosts()">Cargar más</button></div>' : ''}`;
+  }
+
+  function _renderPostsHTML(posts, misReacMap) {
+    return posts.map(p => {
+      const nombre = p.perfiles_comunidad?.nombre || p.nombre_usuario || 'Trader';
+      const inicial = nombre[0].toUpperCase();
+      const esMio = p.user_id === sesiónActual.user.id;
+      const pnl = parseFloat(p.pnl || 0);
+      const pnlClass = pnl >= 0 ? 'com-pnl-pos' : 'com-pnl-neg';
+      const pnlStr = (pnl >= 0 ? '+' : '') + '$' + Math.abs(pnl).toFixed(2);
+      const dirIcon = p.direccion === 'Long' ? '🟢' : '🔴';
+      const fecha = new Date(p.created_at).toLocaleDateString('es-AR', {day:'2-digit',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'});
+      const reacs = p.reacciones || {};
+      const reacHTML = REACCIONES_DEF.map(emoji => {
+        const count = reacs[emoji] || 0;
+        const mia = misReacMap[p.id]?.includes(emoji);
+        return `<button class="com-reac-btn${mia?' mia':''}" onclick="toggleReaccion('${p.id}','${emoji}',this)">
+          ${emoji} <span class="com-reac-count">${count > 0 ? count : ''}</span>
+        </button>`;
+      }).join('');
+
+      return `<div class="com-post" id="post-${p.id}">
+        <div class="com-post-header">
+          <div class="com-avatar">${inicial}</div>
+          <div class="com-post-meta">
+            <div class="com-post-autor" onclick="verPerfilUsuario('${p.user_id}')">${esc(nombre)}</div>
+            <div class="com-post-fecha">${fecha}</div>
+          </div>
+          ${esMio ? `<div class="com-post-acciones"><button class="com-btn-eliminar" onclick="eliminarPost('${p.id}')">🗑️ Eliminar</button></div>` : ''}
+        </div>
+        <div class="com-trade-badge">
+          <span class="com-badge-item">${dirIcon} ${esc(p.instrumento||'')}</span>
+          <span class="com-badge-sep">|</span>
+          <span class="com-badge-item ${pnlClass}">${pnlStr}</span>
+          ${p.estrategia ? `<span class="com-badge-sep">|</span><span class="com-badge-item" style="color:var(--gris)">${esc(p.estrategia)}</span>` : ''}
+        </div>
+        ${p.texto ? `<div class="com-post-texto">${esc(p.texto)}</div>` : ''}
+        ${p.imagen_url ? `<img class="com-post-img" src="${p.imagen_url}" onclick="ampliarImagen('${p.imagen_url}')" loading="lazy">` : ''}
+        <div class="com-reacciones">${reacHTML}</div>
+      </div>`;
+    }).join('');
+  }
+
+  function filtrarComunidad(filtro, btn) {
+    _comFiltro = filtro;
+    document.querySelectorAll('.com-filtro-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    renderComunidad(false);
+  }
+
+  async function cargarMasPosts() {
+    await renderComunidad(true);
+  }
+
+  function abrirNuevoPost() {
+    document.getElementById('postInstrumento').value = '';
+    document.getElementById('postDireccion').value = 'Long';
+    document.getElementById('postPnl').value = '';
+    document.getElementById('postTexto').value = '';
+    document.getElementById('postImagen').value = '';
+    document.getElementById('postImagenPreview').style.display = 'none';
+    const msg = document.getElementById('postMsg');
+    if (msg) msg.style.display = 'none';
+    document.getElementById('modalNuevoPost').classList.add('active');
+  }
+
+  async function publicarPost() {
+    const instrumento = document.getElementById('postInstrumento').value.trim().toUpperCase();
+    const direccion   = document.getElementById('postDireccion').value;
+    const pnlVal      = parseFloat(document.getElementById('postPnl').value || '0');
+    const texto       = document.getElementById('postTexto').value.trim();
+    const imgFile     = document.getElementById('postImagen').files[0];
+    const msg         = document.getElementById('postMsg');
+    const btn         = document.getElementById('btnPublicarPost');
+
+    if (!instrumento) {
+      msg.style.display='block'; msg.style.background='rgba(229,115,115,.1)'; msg.style.color='#E57373'; msg.style.border='1px solid rgba(229,115,115,.3)';
+      msg.textContent='Ingresá el instrumento.'; return;
+    }
+    if (isNaN(pnlVal)) {
+      msg.style.display='block'; msg.style.background='rgba(229,115,115,.1)'; msg.style.color='#E57373'; msg.style.border='1px solid rgba(229,115,115,.3)';
+      msg.textContent='Ingresá un PnL válido.'; return;
+    }
+
+    btn.disabled = true; btn.textContent = 'Publicando...';
+
+    let imagen_url = null;
+    if (imgFile) {
+      const ext = imgFile.name.split('.').pop();
+      const fileName = `${sesiónActual.user.id}_${Date.now()}.${ext}`;
+      let resImg = await fetch(`${SUPABASE_URL}/storage/v1/object/comunidad-imagenes/${encodeURIComponent(fileName)}`, {
+        method: 'POST',
+        headers: { 'apikey': SUPABASE_ANON, 'Authorization': 'Bearer ' + sesiónActual.access_token, 'Content-Type': imgFile.type, 'x-upsert': 'true' },
+        body: imgFile
+      });
+      if (resImg.ok) imagen_url = `${SUPABASE_URL}/storage/v1/object/public/comunidad-imagenes/${encodeURIComponent(fileName)}`;
+    }
+
+    const nombre = sesiónActual.user.user_metadata?.nombre || sesiónActual.user.email.split('@')[0];
+    const payload = { user_id: sesiónActual.user.id, nombre_usuario: nombre, instrumento, direccion, pnl: pnlVal, texto, reacciones: {} };
+    if (imagen_url) payload.imagen_url = imagen_url;
+
+    const r = await sbFetch('/rest/v1/posts_comunidad', {
+      method: 'POST', body: JSON.stringify(payload), headers: { 'Prefer': 'return=minimal' }
+    }, sesiónActual.access_token);
+
+    btn.disabled = false; btn.textContent = '🚀 Publicar';
+
+    if (r.ok) {
+      cerrarModal('modalNuevoPost');
+      cargarComunidad();
+    } else {
+      msg.style.display='block'; msg.style.background='rgba(229,115,115,.1)'; msg.style.color='#E57373'; msg.style.border='1px solid rgba(229,115,115,.3)';
+      msg.textContent='Error al publicar. Intentá de nuevo.';
+    }
+  }
+
+  async function toggleReaccion(postId, emoji, btn) {
+    const mia = btn.classList.contains('mia');
+    const countEl = btn.querySelector('.com-reac-count');
+
+    if (mia) {
+      // Quitar reacción
+      btn.classList.remove('mia');
+      const curr = parseInt(countEl.textContent || '0');
+      countEl.textContent = curr > 1 ? curr - 1 : '';
+      await sbFetch(`/rest/v1/reacciones_comunidad?user_id=eq.${sesiónActual.user.id}&post_id=eq.${postId}&emoji=eq.${encodeURIComponent(emoji)}`,
+        { method: 'DELETE' }, sesiónActual.access_token);
+      await _actualizarContadorReaccion(postId, emoji, -1);
+    } else {
+      // Agregar reacción
+      btn.classList.add('mia');
+      const curr = parseInt(countEl.textContent || '0');
+      countEl.textContent = curr + 1;
+      await sbFetch('/rest/v1/reacciones_comunidad', {
+        method: 'POST', body: JSON.stringify({ user_id: sesiónActual.user.id, post_id: postId, emoji }),
+        headers: { 'Prefer': 'return=minimal' }
+      }, sesiónActual.access_token);
+      await _actualizarContadorReaccion(postId, emoji, +1);
+    }
+  }
+
+  async function _actualizarContadorReaccion(postId, emoji, delta) {
+    const rPost = await sbFetch(`/rest/v1/posts_comunidad?id=eq.${postId}&select=reacciones`, {}, sesiónActual.access_token);
+    if (!rPost.ok || !rPost.data[0]) return;
+    const reacs = rPost.data[0].reacciones || {};
+    reacs[emoji] = Math.max(0, (reacs[emoji] || 0) + delta);
+    await sbFetch(`/rest/v1/posts_comunidad?id=eq.${postId}`, {
+      method: 'PATCH', body: JSON.stringify({ reacciones: reacs }), headers: { 'Prefer': 'return=minimal' }
+    }, sesiónActual.access_token);
+  }
+
+  async function eliminarPost(postId) {
+    if (!confirm('¿Eliminar este post?')) return;
+    await sbFetch(`/rest/v1/posts_comunidad?id=eq.${postId}&user_id=eq.${sesiónActual.user.id}`,
+      { method: 'DELETE' }, sesiónActual.access_token);
+    document.getElementById('post-' + postId)?.remove();
+  }
+
+  function ampliarImagen(url) {
+    document.getElementById('imgAmpliadaSrc').src = url;
+    document.getElementById('modalImagenAmpliada').classList.add('active');
+  }
+
+  async function verPerfilUsuario(userId) {
+    document.getElementById('modalPerfilUsuario').classList.add('active');
+    const cont = document.getElementById('modalPerfilUsuarioContent');
+    cont.innerHTML = '<div style="text-align:center;padding:40px;color:var(--gris)"><span class="spinner"></span></div>';
+
+    const [rPerfil, rPosts] = await Promise.all([
+      sbFetch(`/rest/v1/perfiles_comunidad?user_id=eq.${userId}&select=*`, {}, sesiónActual.access_token),
+      sbFetch(`/rest/v1/posts_comunidad?user_id=eq.${userId}&select=*&order=created_at.desc&limit=5`, {}, sesiónActual.access_token)
+    ]);
+
+    const perfil = (rPerfil.ok && rPerfil.data?.length > 0) ? rPerfil.data[0] : null;
+    const posts  = (rPosts.ok && Array.isArray(rPosts.data)) ? rPosts.data : [];
+    const nombre = perfil?.nombre || 'Trader';
+    const esMiPerfil = userId === sesiónActual.user.id;
+
+    let statsHTML = '';
+    if (perfil) {
+      const stats = [];
+      if (perfil.mostrar_winrate && perfil.winrate != null)
+        stats.push(`<div class="com-stat-card"><div class="com-stat-val" style="color:var(--verde)">${perfil.winrate.toFixed(1)}%</div><div class="com-stat-lbl">Win Rate</div></div>`);
+      if (perfil.mostrar_pnl_promedio && perfil.pnl_promedio != null) {
+        const pA = parseFloat(perfil.pnl_promedio);
+        stats.push(`<div class="com-stat-card"><div class="com-stat-val ${pA>=0?'com-pnl-pos':'com-pnl-neg'}">${pA>=0?'+':''}$${Math.abs(pA).toFixed(2)}</div><div class="com-stat-lbl">PnL Promedio</div></div>`);
+      }
+      if (stats.length > 0) statsHTML = `<div class="com-perfil-stats">${stats.join('')}</div>`;
+    }
+
+    const postsHTML = posts.length > 0 ? posts.map(p => {
+      const pnl = parseFloat(p.pnl || 0);
+      const pnlClass = pnl >= 0 ? 'com-pnl-pos' : 'com-pnl-neg';
+      return `<div style="border-bottom:1px solid #1A1A1A;padding:12px 0;font-size:13px">
+        <span style="color:var(--gris)">${p.direccion==='Long'?'🟢':'🔴'} ${esc(p.instrumento||'')}</span>
+        <span class="${pnlClass}" style="font-weight:700;margin-left:10px">${pnl>=0?'+':''}$${Math.abs(pnl).toFixed(2)}</span>
+        ${p.texto ? `<div style="color:#AAA;margin-top:4px;font-size:12px">${esc(p.texto.substring(0,80))}${p.texto.length>80?'…':''}</div>` : ''}
+      </div>`;
+    }).join('') : '<div style="color:var(--gris);font-size:13px;padding:12px 0">Sin posts aún.</div>';
+
+    cont.innerHTML = `
+      <div style="display:flex;align-items:center;gap:14px;margin-bottom:20px">
+        <div class="com-avatar" style="width:52px;height:52px;font-size:20px">${nombre[0].toUpperCase()}</div>
+        <div>
+          <div style="font-weight:700;font-size:18px;color:var(--blanco)">${esc(nombre)}</div>
+          <div style="font-size:12px;color:var(--gris)">Miembro de la comunidad</div>
+        </div>
+        ${esMiPerfil ? `<button onclick="abrirConfigPerfilComunidad();cerrarModal('modalPerfilUsuario')" style="margin-left:auto;background:#1A1A1A;border:1px solid #2A2A2A;color:var(--gris);padding:8px 14px;border-radius:7px;cursor:pointer;font-size:12px">⚙️ Editar perfil</button>` : ''}
+      </div>
+      ${statsHTML}
+      <div style="margin-top:${statsHTML?'20':'0'}px">
+        <div style="font-size:11px;color:var(--gris);text-transform:uppercase;letter-spacing:1px;margin-bottom:8px">Últimos posts</div>
+        ${postsHTML}
+      </div>`;
+  }
+
+  async function abrirConfigPerfilComunidad() {
+    // Crear modal de config si no existe
+    let modal = document.getElementById('modalConfigPerfil');
+    if (!modal) {
+      modal = document.createElement('div');
+      modal.id = 'modalConfigPerfil';
+      modal.className = 'modal-overlay';
+      document.body.appendChild(modal);
+    }
+
+    const p = _comPerfilPublico || {};
+    modal.innerHTML = `
+      <div class="modal" style="max-width:460px">
+        <button class="modal-close" onclick="cerrarModal('modalConfigPerfil')">✕</button>
+        <h3 style="margin-bottom:4px">Privacidad del perfil</h3>
+        <p class="modal-desc">Elegí qué información querés mostrar en tu perfil público.</p>
+
+        <div class="com-toggle-row">
+          <div>
+            <div class="com-toggle-lbl">Mostrar Win Rate</div>
+            <div class="com-toggle-desc">Calculado en base a tu journal</div>
+          </div>
+          <label class="com-switch"><input type="checkbox" id="togWinrate" ${p.mostrar_winrate?'checked':''}><span class="com-switch-slider"></span></label>
+        </div>
+        <div class="com-toggle-row" style="border-bottom:none">
+          <div>
+            <div class="com-toggle-lbl">Mostrar PnL Promedio</div>
+            <div class="com-toggle-desc">Promedio de PnL por operación</div>
+          </div>
+          <label class="com-switch"><input type="checkbox" id="togPnlProm" ${p.mostrar_pnl_promedio?'checked':''}><span class="com-switch-slider"></span></label>
+        </div>
+
+        <div id="configPerfilMsg" style="display:none;margin-top:12px;font-size:12px;padding:8px 12px;border-radius:6px"></div>
+        <button onclick="guardarConfigPerfil()" class="modal-confirm" style="width:100%;margin-top:16px">Guardar cambios</button>
+      </div>`;
+    modal.classList.add('active');
+  }
+
+  async function guardarConfigPerfil() {
+    const mostrar_winrate       = document.getElementById('togWinrate').checked;
+    const mostrar_pnl_promedio  = document.getElementById('togPnlProm').checked;
+    const msg = document.getElementById('configPerfilMsg');
+
+    // Calcular stats del journal para guardar en el perfil
+    const rOps = await sbFetch(
+      '/rest/v1/operaciones_journal?user_id=eq.' + sesiónActual.user.id + '&select=pnl',
+      {}, sesiónActual.access_token
+    );
+    let winrate = null, pnl_promedio = null;
+    if (rOps.ok && Array.isArray(rOps.data) && rOps.data.length > 0) {
+      const ops = rOps.data.map(o => parseFloat(o.pnl || 0));
+      const ganadoras = ops.filter(p => p > 0).length;
+      winrate = Math.round((ganadoras / ops.length) * 1000) / 10;
+      pnl_promedio = Math.round((ops.reduce((a,b) => a+b, 0) / ops.length) * 100) / 100;
+    }
+
+    const nombre = sesiónActual.user.user_metadata?.nombre || sesiónActual.user.email.split('@')[0];
+    const payload = { user_id: sesiónActual.user.id, nombre, mostrar_winrate, mostrar_pnl_promedio };
+    if (winrate !== null)      payload.winrate = winrate;
+    if (pnl_promedio !== null) payload.pnl_promedio = pnl_promedio;
+
+    const r = await sbFetch('/rest/v1/perfiles_comunidad', {
+      method: 'POST',
+      body: JSON.stringify(payload),
+      headers: { 'Prefer': 'resolution=merge-duplicates,return=minimal' }
+    }, sesiónActual.access_token);
+
+    if (r.ok) {
+      _comPerfilPublico = { ..._comPerfilPublico, ...payload };
+      msg.style.display='block'; msg.style.background='rgba(76,175,80,.1)'; msg.style.color='var(--verde)'; msg.style.border='1px solid rgba(76,175,80,.3)';
+      msg.textContent='✓ Perfil actualizado.';
+      setTimeout(() => cerrarModal('modalConfigPerfil'), 900);
+    } else {
+      msg.style.display='block'; msg.style.background='rgba(229,115,115,.1)'; msg.style.color='#E57373'; msg.style.border='1px solid rgba(229,115,115,.3)';
+      msg.textContent='Error al guardar. Verificá la tabla perfiles_comunidad.';
     }
   }
 

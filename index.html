@@ -6936,7 +6936,7 @@
     if (!append) _comOffset = 0;
 
     // Fetch posts
-    let url = '/rest/v1/posts_comunidad?select=*,perfiles_comunidad(nombre,mostrar_winrate,mostrar_pnl_promedio,winrate,pnl_promedio)&order=created_at.desc&limit=' + _comLimit + '&offset=' + _comOffset;
+    let url = '/rest/v1/posts_comunidad?select=*&order=created_at.desc&limit=' + _comLimit + '&offset=' + _comOffset;
     if (_comFiltro !== 'todos') url += '&instrumento=eq.' + encodeURIComponent(_comFiltro);
 
     const [rPosts, rMisReac] = await Promise.all([
@@ -7013,7 +7013,7 @@
 
   function _renderPostsHTML(posts, misReacMap) {
     return posts.map(p => {
-      const nombre = p.perfiles_comunidad?.nombre || p.nombre_usuario || 'Trader';
+      const nombre = p.nombre_usuario || 'Trader';
       const inicial = nombre[0].toUpperCase();
       const esMio = p.user_id === sesiónActual.user.id;
       const pnl = parseFloat(p.pnl || 0);
@@ -7099,12 +7099,23 @@
     if (imgFile) {
       const ext = imgFile.name.split('.').pop();
       const fileName = `${sesiónActual.user.id}_${Date.now()}.${ext}`;
-      let resImg = await fetch(`${SUPABASE_URL}/storage/v1/object/comunidad-imagenes/${encodeURIComponent(fileName)}`, {
-        method: 'POST',
-        headers: { 'apikey': SUPABASE_ANON, 'Authorization': 'Bearer ' + sesiónActual.access_token, 'Content-Type': imgFile.type, 'x-upsert': 'true' },
-        body: imgFile
-      });
-      if (resImg.ok) imagen_url = `${SUPABASE_URL}/storage/v1/object/public/comunidad-imagenes/${encodeURIComponent(fileName)}`;
+      try {
+        let resImg = await fetch(`${SUPABASE_URL}/storage/v1/object/comunidad-imagenes/${encodeURIComponent(fileName)}`, {
+          method: 'POST',
+          headers: { 'apikey': SUPABASE_ANON, 'Authorization': 'Bearer ' + sesiónActual.access_token, 'Content-Type': imgFile.type, 'x-upsert': 'true' },
+          body: imgFile
+        });
+        if (!resImg.ok) {
+          // Intentar PUT si POST falla
+          resImg = await fetch(`${SUPABASE_URL}/storage/v1/object/comunidad-imagenes/${encodeURIComponent(fileName)}`, {
+            method: 'PUT',
+            headers: { 'apikey': SUPABASE_ANON, 'Authorization': 'Bearer ' + sesiónActual.access_token, 'Content-Type': imgFile.type, 'x-upsert': 'true' },
+            body: imgFile
+          });
+        }
+        if (resImg.ok) imagen_url = `${SUPABASE_URL}/storage/v1/object/public/comunidad-imagenes/${encodeURIComponent(fileName)}`;
+        else console.warn('Imagen no se pudo subir, publicando sin imagen. Status:', resImg.status);
+      } catch(e) { console.warn('Error al subir imagen:', e); }
     }
 
     const nombre = sesiónActual.user.user_metadata?.nombre || sesiónActual.user.email.split('@')[0];

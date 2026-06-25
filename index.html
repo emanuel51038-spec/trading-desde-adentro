@@ -7191,13 +7191,29 @@
 
     const esMiPerfil = userId === sesiónActual.user.id;
 
-    const [rPerfil, rPosts, rOps] = await Promise.all([
-      sbFetch(`/rest/v1/perfiles_comunidad?user_id=eq.${userId}&select=*`, {}, sesiónActual.access_token),
+    // Primero cargar perfil para conocer la cuenta elegida
+    const rPerfil = await sbFetch(`/rest/v1/perfiles_comunidad?user_id=eq.${userId}&select=*`, {}, sesiónActual.access_token);
+    const perfil = (rPerfil.ok && rPerfil.data?.length > 0) ? rPerfil.data[0] : null;
+
+    const [rPosts, rOps] = await Promise.all([
       sbFetch(`/rest/v1/posts_comunidad?user_id=eq.${userId}&select=*&order=created_at.desc&limit=6`, {}, sesiónActual.access_token),
-      sbFetch(`/rest/v1/operaciones_journal?user_id=eq.${userId}&select=fecha,pnl,instrumento,direccion,estrategia&order=fecha.desc`, {}, sesiónActual.access_token)
+      (async () => {
+        const pCuenta = perfil?.cuenta_compartir || '';
+        // Intentar con filtro de origen (excluye manuales)
+        let url = `/rest/v1/operaciones_journal?user_id=eq.${userId}&select=fecha,pnl,instrumento,direccion,estrategia,cuenta,origen&order=fecha.desc`;
+        if (pCuenta) url += `&cuenta=eq.${encodeURIComponent(pCuenta)}`;
+        const r = await sbFetch(url, {}, sesiónActual.access_token);
+        if (r.ok && Array.isArray(r.data)) {
+          // Filtrar manuales en cliente si la columna existe
+          return { ok: true, data: r.data.filter(o => o.origen !== 'manual') };
+        }
+        // fallback sin filtro origen
+        let url2 = `/rest/v1/operaciones_journal?user_id=eq.${userId}&select=fecha,pnl,instrumento,direccion,estrategia,cuenta&order=fecha.desc`;
+        if (pCuenta) url2 += `&cuenta=eq.${encodeURIComponent(pCuenta)}`;
+        return sbFetch(url2, {}, sesiónActual.access_token);
+      })()
     ]);
 
-    const perfil = (rPerfil.ok && rPerfil.data?.length > 0) ? rPerfil.data[0] : null;
     const posts  = (rPosts.ok && Array.isArray(rPosts.data)) ? rPosts.data : [];
     const nombre = perfil?.nombre || 'Trader';
     const mostrarJournal = perfil?.mostrar_journal || esMiPerfil;
@@ -7315,7 +7331,6 @@
   }
 
   async function abrirConfigPerfilComunidad() {
-    // Crear modal de config si no existe
     let modal = document.getElementById('modalConfigPerfil');
     if (!modal) {
       modal = document.createElement('div');
@@ -7324,7 +7339,26 @@
       document.body.appendChild(modal);
     }
 
+    // Cargar cuentas únicas del journal (solo ops NO manuales)
+    const rCuentas = await sbFetch(
+      '/rest/v1/operaciones_journal?user_id=eq.' + sesiónActual.user.id + '&select=cuenta&origen=neq.manual',
+      {}, sesiónActual.access_token
+    );
+    // Si no tiene columna origen, traer todas y filtrar las que tengan cuenta
+    const rCuentasFallback = await sbFetch(
+      '/rest/v1/operaciones_journal?user_id=eq.' + sesiónActual.user.id + '&select=cuenta',
+      {}, sesiónActual.access_token
+    );
+    const allOps = (rCuentasFallback.ok && Array.isArray(rCuentasFallback.data)) ? rCuentasFallback.data : [];
+    const cuentas = [...new Set(allOps.map(o => o.cuenta).filter(Boolean))].sort();
+
     const p = _comPerfilPublico || {};
+    const cuentaActual = p.cuenta_compartir || '';
+
+    const cuentasOptions = cuentas.length > 0
+      ? cuentas.map(c => `<option value="${c}" ${cuentaActual===c?'selected':''}>${c}</option>`).join('')
+      : '<option value="">Sin cuentas registradas</option>';
+
     modal.innerHTML = `
       <div class="modal" style="max-width:460px">
         <button class="modal-close" onclick="cerrarModal('modalConfigPerfil')">✕</button>
@@ -7338,6 +7372,16 @@
           </div>
           <label class="com-switch"><input type="checkbox" id="togJournal" ${p.mostrar_journal?'checked':''}><span class="com-switch-slider"></span></label>
         </div>
+
+        <div id="cuentaCompartirRow" style="padding:14px 0;border-bottom:1px solid #1A1A1A;${p.mostrar_journal?'':'display:none'}">
+          <label style="font-size:11px;color:var(--gris);text-transform:uppercase;letter-spacing:1px;display:block;margin-bottom:8px">Cuenta a mostrar</label>
+          <select id="selectCuentaCompartir" style="width:100%;background:#181818;border:1px solid #2A2A2A;color:var(--blanco);padding:9px 12px;border-radius:7px;font-size:13px;outline:none;font-family:'DM Sans',sans-serif">
+            <option value="">— Todas las cuentas —</option>
+            ${cuentasOptions}
+          </select>
+          <div style="font-size:11px;color:var(--gris);margin-top:6px">Solo se mostrarán trades de NinjaTrader (no manuales).</div>
+        </div>
+
         <div class="com-toggle-row">
           <div>
             <div class="com-toggle-lbl">Mostrar Win Rate</div>
@@ -7357,29 +7401,41 @@
         <button onclick="guardarConfigPerfil()" class="modal-confirm" style="width:100%;margin-top:16px">Guardar cambios</button>
       </div>`;
     modal.classList.add('active');
+
+    // Mostrar/ocultar selector de cuenta según el toggle
+    document.getElementById('togJournal').addEventListener('change', function() {
+      document.getElementById('cuentaCompartirRow').style.display = this.checked ? '' : 'none';
+    });
   }
 
   async function guardarConfigPerfil() {
     const mostrar_journal       = document.getElementById('togJournal').checked;
     const mostrar_winrate       = document.getElementById('togWinrate').checked;
     const mostrar_pnl_promedio  = document.getElementById('togPnlProm').checked;
+    const cuenta_compartir      = document.getElementById('selectCuentaCompartir')?.value || '';
     const msg = document.getElementById('configPerfilMsg');
 
-    // Calcular stats del journal para guardar en el perfil
-    const rOps = await sbFetch(
-      '/rest/v1/operaciones_journal?user_id=eq.' + sesiónActual.user.id + '&select=pnl',
-      {}, sesiónActual.access_token
-    );
+    // Calcular stats del journal (filtradas por cuenta si se eligió una)
+    let opsUrl = '/rest/v1/operaciones_journal?user_id=eq.' + sesiónActual.user.id + '&select=pnl&origen=neq.manual';
+    if (cuenta_compartir) opsUrl += '&cuenta=eq.' + encodeURIComponent(cuenta_compartir);
+    const rOps = await sbFetch(opsUrl, {}, sesiónActual.access_token);
+    // fallback sin filtro de origen si falla
+    const rOpsFb = (!rOps.ok || !rOps.data?.length)
+      ? await sbFetch('/rest/v1/operaciones_journal?user_id=eq.' + sesiónActual.user.id + '&select=pnl' + (cuenta_compartir ? '&cuenta=eq.' + encodeURIComponent(cuenta_compartir) : ''), {}, sesiónActual.access_token)
+      : null;
+    const opsData = (rOps.ok && Array.isArray(rOps.data) && rOps.data.length > 0) ? rOps.data
+                  : (rOpsFb?.ok && Array.isArray(rOpsFb.data)) ? rOpsFb.data : [];
+
     let winrate = null, pnl_promedio = null;
-    if (rOps.ok && Array.isArray(rOps.data) && rOps.data.length > 0) {
-      const ops = rOps.data.map(o => parseFloat(o.pnl || 0));
+    if (opsData.length > 0) {
+      const ops = opsData.map(o => parseFloat(o.pnl || 0));
       const ganadoras = ops.filter(p => p > 0).length;
       winrate = Math.round((ganadoras / ops.length) * 1000) / 10;
       pnl_promedio = Math.round((ops.reduce((a,b) => a+b, 0) / ops.length) * 100) / 100;
     }
 
     const nombre = sesiónActual.user.user_metadata?.nombre || sesiónActual.user.email.split('@')[0];
-    const payload = { user_id: sesiónActual.user.id, nombre, mostrar_journal, mostrar_winrate, mostrar_pnl_promedio };
+    const payload = { user_id: sesiónActual.user.id, nombre, mostrar_journal, mostrar_winrate, mostrar_pnl_promedio, cuenta_compartir };
     if (winrate !== null)      payload.winrate = winrate;
     if (pnl_promedio !== null) payload.pnl_promedio = pnl_promedio;
 

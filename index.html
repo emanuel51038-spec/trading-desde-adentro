@@ -1561,6 +1561,7 @@
     if (sec === 'fondeos') cargarFondeos();
     if (sec === 'afiliados') cargarAfiliados();
     if (sec === 'comunidad') cargarComunidad();
+    if (sec === 'tienda') renderTienda();
   }
 
   /* ══════════════════════
@@ -1827,116 +1828,63 @@
   /* ══════════════════════
      MI PANEL
   ══════════════════════ */
-  function renderTienda() {
+  async function renderTienda() {
     const cont = document.getElementById('tiendaContainer');
     if (!cont) return;
+    cont.innerHTML = '<div style="text-align:center;padding:40px;color:var(--gris)"><span class="spinner"></span></div>';
+
+    // Fetchear versiones actuales desde productos_config
+    const rCfg = await sbFetch('/rest/v1/productos_config?select=producto,version', {}, sesiónActual.access_token);
+    const cfgMap = {};
+    if (rCfg.ok && Array.isArray(rCfg.data)) {
+      rCfg.data.forEach(c => { if (c.producto && c.version) cfgMap[c.producto] = c.version; });
+    }
+    const vDLL  = cfgMap['DailyLossLimiter']      || 'V1.0';
+    const vMBA  = cfgMap['ManualBacktestAnalyzer'] || 'V1.0';
+    const vRR   = cfgMap['TDA_RiskReward']         || 'V1.3';
+
+    const cardHTML = (id, icon, nombre, precio, version, col1lbl, col1val, col2lbl, col2val, col3lbl, col3val) => `
+        <div class="licencia-card" style="cursor:pointer;transition:border-color 0.2s"
+             onmouseover="this.style.borderColor='rgba(139,26,26,0.6)'"
+             onmouseout="this.style.borderColor='#1E1E1E'"
+             onclick="irATiendaProducto('${id}')">
+          <div class="licencia-card-header" style="border-bottom:none">
+            <div class="licencia-card-header-left">
+              <div class="licencia-product-icon">${icon}</div>
+              <div>
+                <div class="licencia-product-name">${nombre}</div>
+                <div class="licencia-product-version">${version} · NinjaTrader 8 · Licencia permanente</div>
+              </div>
+            </div>
+            <div style="display:flex;align-items:center;gap:12px">
+              <span style="font-family:'Bebas Neue',sans-serif;font-size:24px;color:#E57373">USD ${precio}</span>
+              <span style="font-size:20px">→</span>
+            </div>
+          </div>
+          <div style="padding:0 24px 20px;display:grid;grid-template-columns:repeat(3,1fr);gap:12px">
+            <div style="background:#0D0D0D;border-radius:8px;padding:10px 14px">
+              <div style="font-size:10px;color:var(--gris);text-transform:uppercase;letter-spacing:1px;margin-bottom:4px">${col1lbl}</div>
+              <div style="font-size:12px;font-weight:600">${col1val}</div>
+            </div>
+            <div style="background:#0D0D0D;border-radius:8px;padding:10px 14px">
+              <div style="font-size:10px;color:var(--gris);text-transform:uppercase;letter-spacing:1px;margin-bottom:4px">${col2lbl}</div>
+              <div style="font-size:12px;font-weight:600">${col2val}</div>
+            </div>
+            <div style="background:#0D0D0D;border-radius:8px;padding:10px 14px">
+              <div style="font-size:10px;color:var(--gris);text-transform:uppercase;letter-spacing:1px;margin-bottom:4px">${col3lbl}</div>
+              <div style="font-size:12px;font-weight:600">${col3val}</div>
+            </div>
+          </div>
+        </div>`;
+
     cont.innerHTML = `
       <div style="margin-bottom:24px">
         <p style="font-size:14px;color:var(--gris)">Seleccioná una herramienta para obtener tu licencia.</p>
       </div>
       <div style="display:flex;flex-direction:column;gap:16px;max-width:600px">
-
-        <!-- Daily Loss Limiter -->
-        <div class="licencia-card" style="cursor:pointer;transition:border-color 0.2s" 
-             onmouseover="this.style.borderColor='rgba(139,26,26,0.6)'" 
-             onmouseout="this.style.borderColor='#1E1E1E'"
-             onclick="irATiendaProducto('DailyLossLimiter')">
-          <div class="licencia-card-header" style="border-bottom:none">
-            <div class="licencia-card-header-left">
-              <div class="licencia-product-icon">🔒</div>
-              <div>
-                <div class="licencia-product-name">Daily Loss Limiter</div>
-                <div class="licencia-product-version">V1.0 · NinjaTrader 8 · Licencia permanente</div>
-              </div>
-            </div>
-            <div style="display:flex;align-items:center;gap:12px">
-              <span style="font-family:'Bebas Neue',sans-serif;font-size:24px;color:#E57373">USD 60</span>
-              <span style="font-size:20px">→</span>
-            </div>
-          </div>
-          <div style="padding:0 24px 20px;display:grid;grid-template-columns:repeat(3,1fr);gap:12px">
-            <div style="background:#0D0D0D;border-radius:8px;padding:10px 14px">
-              <div style="font-size:10px;color:var(--gris);text-transform:uppercase;letter-spacing:1px;margin-bottom:4px">Bloqueo</div>
-              <div style="font-size:12px;font-weight:600">Automático</div>
-            </div>
-            <div style="background:#0D0D0D;border-radius:8px;padding:10px 14px">
-              <div style="font-size:10px;color:var(--gris);text-transform:uppercase;letter-spacing:1px;margin-bottom:4px">Licencia</div>
-              <div style="font-size:12px;font-weight:600">1 equipo</div>
-            </div>
-            <div style="background:#0D0D0D;border-radius:8px;padding:10px 14px">
-              <div style="font-size:10px;color:var(--gris);text-transform:uppercase;letter-spacing:1px;margin-bottom:4px">Pago</div>
-              <div style="font-size:12px;font-weight:600">Único</div>
-            </div>
-          </div>
-        </div>
-
-        <!-- Manual Backtest Analyzer -->
-        <div class="licencia-card" style="cursor:pointer;transition:border-color 0.2s" 
-             onmouseover="this.style.borderColor='rgba(139,26,26,0.6)'" 
-             onmouseout="this.style.borderColor='#1E1E1E'"
-             onclick="irATiendaProducto('ManualBacktestAnalyzer')">
-          <div class="licencia-card-header" style="border-bottom:none">
-            <div class="licencia-card-header-left">
-              <div class="licencia-product-icon">📊</div>
-              <div>
-                <div class="licencia-product-name">Manual Backtest Analyzer</div>
-                <div class="licencia-product-version">V1.0 · NinjaTrader 8 · Licencia permanente</div>
-              </div>
-            </div>
-            <div style="display:flex;align-items:center;gap:12px">
-              <span style="font-family:'Bebas Neue',sans-serif;font-size:24px;color:#E57373">USD 40</span>
-              <span style="font-size:20px">→</span>
-            </div>
-          </div>
-          <div style="padding:0 24px 20px;display:grid;grid-template-columns:repeat(3,1fr);gap:12px">
-            <div style="background:#0D0D0D;border-radius:8px;padding:10px 14px">
-              <div style="font-size:10px;color:var(--gris);text-transform:uppercase;letter-spacing:1px;margin-bottom:4px">Análisis</div>
-              <div style="font-size:12px;font-weight:600">Automático</div>
-            </div>
-            <div style="background:#0D0D0D;border-radius:8px;padding:10px 14px">
-              <div style="font-size:10px;color:var(--gris);text-transform:uppercase;letter-spacing:1px;margin-bottom:4px">Licencia</div>
-              <div style="font-size:12px;font-weight:600">1 equipo</div>
-            </div>
-            <div style="background:#0D0D0D;border-radius:8px;padding:10px 14px">
-              <div style="font-size:10px;color:var(--gris);text-transform:uppercase;letter-spacing:1px;margin-bottom:4px">Pago</div>
-              <div style="font-size:12px;font-weight:600">Único</div>
-            </div>
-          </div>
-        </div>
-
-        <!-- TDA Risk/Reward -->
-        <div class="licencia-card" style="cursor:pointer;transition:border-color 0.2s" 
-             onmouseover="this.style.borderColor='rgba(139,26,26,0.6)'" 
-             onmouseout="this.style.borderColor='#1E1E1E'"
-             onclick="irATiendaProducto('TDA_RiskReward')">
-          <div class="licencia-card-header" style="border-bottom:none">
-            <div class="licencia-card-header-left">
-              <div class="licencia-product-icon">📐</div>
-              <div>
-                <div class="licencia-product-name">TDA Risk/Reward</div>
-                <div class="licencia-product-version">V1.3 · NinjaTrader 8 · Licencia permanente</div>
-              </div>
-            </div>
-            <div style="display:flex;align-items:center;gap:12px">
-              <span style="font-family:'Bebas Neue',sans-serif;font-size:24px;color:#E57373">USD 50</span>
-              <span style="font-size:20px">→</span>
-            </div>
-          </div>
-          <div style="padding:0 24px 20px;display:grid;grid-template-columns:repeat(3,1fr);gap:12px">
-            <div style="background:#0D0D0D;border-radius:8px;padding:10px 14px">
-              <div style="font-size:10px;color:var(--gris);text-transform:uppercase;letter-spacing:1px;margin-bottom:4px">Dibujo</div>
-              <div style="font-size:12px;font-weight:600">2 clicks</div>
-            </div>
-            <div style="background:#0D0D0D;border-radius:8px;padding:10px 14px">
-              <div style="font-size:10px;color:var(--gris);text-transform:uppercase;letter-spacing:1px;margin-bottom:4px">Licencia</div>
-              <div style="font-size:12px;font-weight:600">1 equipo</div>
-            </div>
-            <div style="background:#0D0D0D;border-radius:8px;padding:10px 14px">
-              <div style="font-size:10px;color:var(--gris);text-transform:uppercase;letter-spacing:1px;margin-bottom:4px">Pago</div>
-              <div style="font-size:12px;font-weight:600">Único</div>
-            </div>
-          </div>
-        </div>
+        ${cardHTML('DailyLossLimiter',      '🔒', 'Daily Loss Limiter',      '60', vDLL, 'Bloqueo',  'Automático', 'Licencia', '1 equipo', 'Pago', 'Único')}
+        ${cardHTML('ManualBacktestAnalyzer', '📊', 'Manual Backtest Analyzer','40', vMBA, 'Análisis', 'Automático', 'Licencia', '1 equipo', 'Pago', 'Único')}
+        ${cardHTML('TDA_RiskReward',         '📐', 'TDA Risk/Reward',         '50', vRR,  'Dibujo',   '2 clicks',   'Licencia', '1 equipo', 'Pago', 'Único')}
 
       </div>`;
   }
@@ -2092,7 +2040,7 @@
 
     await cargarHerramientas();
     await cargarHistorial();
-    renderTienda();
+    renderTienda(); // async — carga versiones desde productos_config
     renderRecursos();
   }
 
@@ -2279,9 +2227,11 @@
       const monto  = l.monto ? `USD ${l.monto}` : montoDefault;
       const estadoClass = l.estado === 'activa' ? 'activa' : 'pendiente';
       const estadoLabel = l.estado === 'activa' ? 'Activo' : 'Pendiente';
-      const nombreProducto = l.producto === 'ManualBacktestAnalyzer' ? 'Manual Backtest Analyzer V1.0'
-                           : l.producto === 'TDA_RiskReward'          ? 'TDA Risk/Reward V1.3'
-                           :                                            'Daily Loss Limiter V1.0';
+      const _vLic = l.version || '';
+      const _nBase = l.producto === 'ManualBacktestAnalyzer' ? 'Manual Backtest Analyzer'
+                   : l.producto === 'TDA_RiskReward'          ? 'TDA Risk/Reward'
+                   :                                            'Daily Loss Limiter';
+      const nombreProducto = _nBase + (_vLic ? ' ' + _vLic : '');
       return `
       <div class="historial-row">
         <div>
@@ -2552,15 +2502,16 @@
   async function guardarPreRegistro(datos, metodo) {
     try {
       const PRECIOS_BASE = { 'DailyLossLimiter': 60, 'ManualBacktestAnalyzer': 40, 'TDA_RiskReward': 50 };
-      // Version actual de cada producto al momento de la compra (histórico)
-      const VERSIONES_PRODUCTOS = { 'DailyLossLimiter': 'V1.0', 'ManualBacktestAnalyzer': 'V1.0', 'TDA_RiskReward': 'V1.3' };
+      // Obtener version actual desde productos_config
+      const rVer = await sbFetch('/rest/v1/productos_config?select=producto,version&producto=eq.' + productoSeleccionado, {}, sesiónActual?.access_token || null);
+      const versionActual = (rVer.ok && rVer.data?.length > 0) ? rVer.data[0].version : 'V1.0';
       const body = {
         nombre: datos.nombre,
         email:  datos.email,
         machine_id: datos.mac,
         estado: 'pendiente_' + metodo,
         producto: productoSeleccionado,
-        version: VERSIONES_PRODUCTOS[productoSeleccionado] || 'V1.0',
+        version: versionActual,
         monto: precioFinal,
         metodo_pago: metodo === 'usdt' ? 'USDT' : 'ARS',
         cupon_usado: cuponAplicado?.codigo || null

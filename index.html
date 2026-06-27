@@ -799,6 +799,28 @@
     .com-load-more { text-align:center; margin-top:20px; }
     .com-load-more button { background:#1A1A1A; border:1px solid #2A2A2A; color:var(--gris); padding:10px 24px; border-radius:8px; cursor:pointer; font-size:13px; }
     .com-load-more button:hover { color:var(--blanco); border-color:#444; }
+
+    /* ── RESEÑAS ────────────────────────────────────── */
+    .resenas-section { padding: 48px 24px; max-width: 900px; margin: 0 auto; }
+    .resenas-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 24px; flex-wrap: wrap; gap: 12px; }
+    .resenas-titulo { font-size: 18px; font-weight: 700; color: var(--blanco); }
+    .resenas-promedio { display: flex; align-items: center; gap: 10px; }
+    .resenas-estrellas-big { font-size: 22px; letter-spacing: 2px; }
+    .resenas-num { font-size: 28px; font-weight: 700; color: var(--blanco); }
+    .resenas-total { font-size: 12px; color: var(--gris); }
+    .resenas-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 16px; }
+    .resena-card { background: #0D0D0D; border: 1px solid #1E1E1E; border-radius: 14px; padding: 18px; display: flex; flex-direction: column; gap: 10px; }
+    .resena-card-header { display: flex; align-items: center; gap: 10px; }
+    .resena-avatar { width: 36px; height: 36px; border-radius: 50%; background: var(--rojo); display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 15px; color: white; flex-shrink: 0; }
+    .resena-autor { font-weight: 600; font-size: 13px; color: var(--blanco); }
+    .resena-fecha { font-size: 11px; color: var(--gris); }
+    .resena-estrellas { font-size: 16px; letter-spacing: 2px; }
+    .resena-texto { font-size: 13px; color: #BBB; line-height: 1.55; }
+    .resenas-btn-dejar { background: var(--rojo); border: none; color: white; padding: 10px 20px; border-radius: 8px; cursor: pointer; font-size: 13px; font-weight: 600; }
+    .resenas-btn-dejar:hover { opacity: .85; }
+    .star-selector { display: flex; gap: 6px; margin: 4px 0 12px; }
+    .star-selector span { font-size: 28px; cursor: pointer; opacity: .35; transition: opacity .15s, transform .15s; }
+    .star-selector span.activa, .star-selector span:hover { opacity: 1; transform: scale(1.15); }
   </style>
   <script defer src="/_vercel/insights/script.js"></script>
 </head>
@@ -839,6 +861,30 @@
       <div class="feature-card"><div class="feature-icon">🛡️</div><h3>Licencia por equipo</h3><p>Licencia vinculada a tu MAC Address. No se puede compartir ni usar en otra PC.</p></div>
     </div>
   </section>
+
+
+  <!-- RESEÑAS DEL PRODUCTO -->
+  <div class="resenas-section" id="resenasSection">
+    <div class="resenas-header">
+      <div>
+        <div class="resenas-titulo">⭐ Reseñas verificadas</div>
+        <div style="font-size:12px;color:var(--gris);margin-top:3px">Solo de compradores con licencia activa</div>
+      </div>
+      <div style="display:flex;align-items:center;gap:16px;flex-wrap:wrap">
+        <div class="resenas-promedio" id="resenasPromedio" style="display:none">
+          <div class="resenas-num" id="resenasNumProm">—</div>
+          <div>
+            <div class="resenas-estrellas-big" id="resenasEstrellasBig">☆☆☆☆☆</div>
+            <div class="resenas-total" id="resenasTotal">0 reseñas</div>
+          </div>
+        </div>
+        <button class="resenas-btn-dejar" id="btnDejarResena" onclick="abrirModalResena()" style="display:none">✍️ Dejar reseña</button>
+      </div>
+    </div>
+    <div id="resenasGrid" class="resenas-grid">
+      <div style="color:var(--gris);font-size:13px;padding:20px 0">Cargando reseñas...</div>
+    </div>
+  </div>
 
   <section class="registro" id="registro">
     <div class="form-card">
@@ -1094,6 +1140,23 @@
       }, 3000);
     })();
   </script>
+
+  <!-- RESEÑAS PÚBLICAS -->
+  <div class="home-section" style="padding-top:0" id="resenasHomeSection">
+    <h2 class="home-section-title">LO QUE DICEN LOS TRADERS</h2>
+    <p class="home-section-sub">Reseñas verificadas de compradores con licencia activa.</p>
+    <div id="resenasHomePromedio" style="display:flex;align-items:center;gap:16px;margin-bottom:32px;flex-wrap:wrap">
+      <div style="text-align:center;background:#0D0D0D;border:1px solid #1E1E1E;border-radius:14px;padding:20px 32px">
+        <div id="resenasHomeProm" style="font-size:48px;font-weight:700;color:var(--blanco);line-height:1">—</div>
+        <div id="resenasHomeStars" style="font-size:22px;letter-spacing:3px;margin:6px 0">☆☆☆☆☆</div>
+        <div id="resenasHomeTotal" style="font-size:12px;color:var(--gris)">Cargando...</div>
+      </div>
+      <div id="resenasHomeBarras" style="flex:1;min-width:200px;display:flex;flex-direction:column;gap:6px"></div>
+    </div>
+    <div id="resenasHomeGrid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:16px">
+      <div style="color:var(--gris);font-size:13px">Cargando reseñas...</div>
+    </div>
+  </div>
 
   <!-- CALENDARIO ECONOMICO -->
   <div class="home-section" style="padding-top:0">
@@ -1357,6 +1420,36 @@
 <!-- MODAL: Imagen ampliada -->
 <div class="modal-overlay" id="modalImagenAmpliada" onclick="cerrarModal('modalImagenAmpliada')" style="cursor:zoom-out;align-items:center;justify-content:center">
   <img id="imgAmpliadaSrc" style="max-width:95vw;max-height:90vh;border-radius:12px;object-fit:contain">
+</div>
+
+
+<!-- MODAL: Dejar reseña -->
+<div class="modal-overlay" id="modalResena">
+  <div class="modal" style="max-width:460px">
+    <button class="modal-close" onclick="cerrarModal('modalResena')">✕</button>
+    <h3 style="margin-bottom:4px">Dejar reseña</h3>
+    <p class="modal-desc" id="modalResenaProducto">Daily Loss Limiter</p>
+
+    <label class="afil-label">Puntuación</label>
+    <div class="star-selector" id="starSelector">
+      <span onclick="seleccionarEstrellas(1)">⭐</span>
+      <span onclick="seleccionarEstrellas(2)">⭐</span>
+      <span onclick="seleccionarEstrellas(3)">⭐</span>
+      <span onclick="seleccionarEstrellas(4)">⭐</span>
+      <span onclick="seleccionarEstrellas(5)">⭐</span>
+    </div>
+
+    <label class="afil-label">Comentario (opcional)</label>
+    <textarea id="resenaTexto" maxlength="300" placeholder="Contá tu experiencia con la herramienta..."
+      style="width:100%;background:#181818;border:1px solid #2A2A2A;color:var(--blanco);padding:12px;border-radius:7px;font-size:13px;min-height:90px;resize:vertical;outline:none;font-family:'DM Sans',sans-serif;line-height:1.5;margin-bottom:4px"></textarea>
+    <div style="text-align:right;font-size:11px;color:var(--gris);margin-bottom:16px"><span id="resenaCharCount">0</span>/300</div>
+
+    <div id="resenaMsg" style="display:none;margin-bottom:12px;font-size:12px;padding:8px 12px;border-radius:6px"></div>
+    <div style="display:flex;gap:8px">
+      <button id="btnGuardarResena" onclick="guardarResena()" class="modal-confirm" style="flex:1">Publicar reseña</button>
+      <button onclick="cerrarModal('modalResena')" style="background:#1E1E1E;border:1px solid #2A2A2A;color:var(--gris);padding:12px 18px;border-radius:8px;cursor:pointer;font-size:13px;font-weight:600">Cancelar</button>
+    </div>
+  </div>
 </div>
 
 <!-- MODAL: Registrar venta afiliado (admin) -->
@@ -2018,6 +2111,7 @@
 
     // Ir a la landing y hacer scroll al formulario de compra
     irA('landing');
+    cargarResenas(productoSeleccionado);
     setTimeout(() => {
       const reg = document.getElementById('registro');
       if (reg) reg.scrollIntoView({ behavior: 'smooth' });
@@ -2152,6 +2246,9 @@
           <a href="https://instagram.com/tradingdesdeadentro" target="_blank" rel="noopener noreferrer" class="action-btn">
             <span class="ab-icon">📸</span> Soporte en Instagram
           </a>
+          ${esActiva ? `<button class="action-btn" id="btnResena_${l.id}" onclick="abrirModalResenaDesdePanel('${escAttr(l.producto)}')" style="margin-top:2px">
+            <span class="ab-icon">⭐</span> Dejar reseña
+          </button>` : ''}
           ${esAdmin() ? `
           <div style="margin-top:16px;padding-top:16px;border-top:1px solid var(--negro-border)">
             <div style="font-size:11px;font-weight:600;letter-spacing:1px;text-transform:uppercase;color:#E57373;margin-bottom:8px">Admin</div>
@@ -7416,8 +7513,242 @@
     }
   }
 
+
+  // ─── RESEÑAS ──────────────────────────────────────────────────────────────
+  let _resenasEstrellas = 0;
+
+  async function cargarResenas(producto) {
+    const grid    = document.getElementById('resenasGrid');
+    const promDiv = document.getElementById('resenasPromedio');
+    const btnDejar= document.getElementById('btnDejarResena');
+    if (!grid) return;
+
+    grid.innerHTML = '<div style="color:var(--gris);font-size:13px;padding:20px 0">Cargando reseñas...</div>';
+    if (promDiv) promDiv.style.display = 'none';
+    if (btnDejar) btnDejar.style.display = 'none';
+
+    const [rResenas, rLic] = await Promise.all([
+      sbFetch(`/rest/v1/resenas?producto=eq.${encodeURIComponent(producto)}&select=*&order=created_at.desc`, {}, sesiónActual?.access_token || null),
+      sesiónActual ? sbFetch(`/rest/v1/licencias?user_id=eq.${sesiónActual.user.id}&producto=eq.${encodeURIComponent(producto)}&estado=eq.activa&select=id&limit=1`, {}, sesiónActual.access_token) : { ok: false, data: [] }
+    ]);
+
+    const resenas = (rResenas.ok && Array.isArray(rResenas.data)) ? rResenas.data : [];
+    const tieneLic = rLic.ok && Array.isArray(rLic.data) && rLic.data.length > 0;
+
+    // Chequear si ya dejó reseña
+    const yaReseno = sesiónActual && resenas.some(r => r.user_id === sesiónActual.user.id);
+
+    // Botón dejar reseña
+    if (btnDejar) {
+      if (tieneLic && !yaReseno) {
+        btnDejar.style.display = 'flex';
+        btnDejar.textContent = '✍️ Dejar reseña';
+        btnDejar.disabled = false;
+      } else if (tieneLic && yaReseno) {
+        btnDejar.style.display = 'flex';
+        btnDejar.textContent = '✅ Ya dejaste tu reseña';
+        btnDejar.disabled = true;
+        btnDejar.style.opacity = '0.5';
+        btnDejar.style.cursor = 'default';
+      }
+    }
+
+    // Promedio
+    if (resenas.length > 0) {
+      const prom = resenas.reduce((a, r) => a + r.puntuacion, 0) / resenas.length;
+      const promRedondeado = Math.round(prom * 10) / 10;
+      const estrellas = _renderEstrellas(prom);
+      document.getElementById('resenasNumProm').textContent = promRedondeado.toFixed(1);
+      document.getElementById('resenasEstrellasBig').textContent = estrellas;
+      document.getElementById('resenasTotal').textContent = resenas.length + (resenas.length === 1 ? ' reseña' : ' reseñas');
+      if (promDiv) promDiv.style.display = 'flex';
+    }
+
+    // Grid de reseñas
+    if (resenas.length === 0) {
+      grid.innerHTML = '<div style="color:var(--gris);font-size:13px;padding:20px 0;text-align:center">Todavía no hay reseñas para este producto.<br>¡Sé el primero en dejar la tuya!</div>';
+      return;
+    }
+
+    grid.innerHTML = resenas.map(r => {
+      const inicial = (r.nombre || 'A')[0].toUpperCase();
+      const fecha = new Date(r.created_at).toLocaleDateString('es-AR', { day: '2-digit', month: 'short', year: 'numeric' });
+      const esMia = sesiónActual && r.user_id === sesiónActual.user.id;
+      return `<div class="resena-card">
+        <div class="resena-card-header">
+          <div class="resena-avatar">${inicial}</div>
+          <div>
+            <div class="resena-autor">${esc(r.nombre || 'Usuario')}${esMia ? ' <span style="font-size:10px;color:var(--rojo);font-weight:400">(vos)</span>' : ''}</div>
+            <div class="resena-fecha">${fecha}</div>
+          </div>
+        </div>
+        <div class="resena-estrellas">${_renderEstrellas(r.puntuacion)}</div>
+        ${r.texto ? `<div class="resena-texto">${esc(r.texto)}</div>` : ''}
+        ${esMia ? `<button onclick="eliminarResena('${r.id}')" style="align-self:flex-end;background:rgba(229,115,115,.1);border:1px solid rgba(229,115,115,.2);color:#E57373;border-radius:6px;padding:4px 10px;font-size:11px;cursor:pointer;margin-top:4px">🗑️ Eliminar</button>` : ''}
+      </div>`;
+    }).join('');
+  }
+
+  function _renderEstrellas(puntuacion) {
+    const llenas = Math.round(puntuacion);
+    return '⭐'.repeat(llenas) + '☆'.repeat(5 - llenas);
+  }
+
+  function abrirModalResena() {
+    _resenasEstrellas = 0;
+    document.getElementById('resenaTexto').value = '';
+    document.getElementById('resenaCharCount').textContent = '0';
+    const msg = document.getElementById('resenaMsg');
+    if (msg) msg.style.display = 'none';
+    const btn = document.getElementById('btnGuardarResena');
+    if (btn) { btn.disabled = false; btn.textContent = 'Publicar reseña'; }
+    // Nombre del producto en el modal
+    const nombres = { 'DailyLossLimiter': 'Daily Loss Limiter', 'ManualBacktestAnalyzer': 'Manual Backtest Analyzer', 'TDA_RiskReward': 'TDA Risk/Reward' };
+    const el = document.getElementById('modalResenaProducto');
+    if (el) el.textContent = nombres[productoSeleccionado] || productoSeleccionado;
+    // Reset estrellas
+    seleccionarEstrellas(0);
+    // Contador de caracteres
+    const ta = document.getElementById('resenaTexto');
+    ta.oninput = () => document.getElementById('resenaCharCount').textContent = ta.value.length;
+    document.getElementById('modalResena').classList.add('active');
+  }
+
+  function seleccionarEstrellas(n) {
+    _resenasEstrellas = n;
+    const spans = document.querySelectorAll('#starSelector span');
+    spans.forEach((s, i) => s.classList.toggle('activa', i < n));
+  }
+
+  async function guardarResena() {
+    const msg = document.getElementById('resenaMsg');
+    const btn = document.getElementById('btnGuardarResena');
+    const texto = document.getElementById('resenaTexto').value.trim();
+
+    if (_resenasEstrellas === 0) {
+      msg.style.display='block'; msg.style.background='rgba(229,115,115,.1)'; msg.style.color='#E57373'; msg.style.border='1px solid rgba(229,115,115,.3)';
+      msg.textContent = 'Seleccioná una puntuación antes de publicar.'; return;
+    }
+
+    btn.disabled = true; btn.textContent = 'Publicando...';
+
+    const nombre = sesiónActual.user.user_metadata?.nombre || sesiónActual.user.email.split('@')[0];
+    const payload = {
+      user_id:    sesiónActual.user.id,
+      producto:   productoSeleccionado,
+      puntuacion: _resenasEstrellas,
+      nombre
+    };
+    if (texto) payload.texto = texto;
+
+    const r = await sbFetch('/rest/v1/resenas', {
+      method: 'POST',
+      body: JSON.stringify(payload),
+      headers: { 'Prefer': 'return=minimal' }
+    }, sesiónActual.access_token);
+
+    if (r.ok) {
+      cerrarModal('modalResena');
+      cargarResenas(productoSeleccionado);
+    } else {
+      btn.disabled = false; btn.textContent = 'Publicar reseña';
+      msg.style.display='block'; msg.style.background='rgba(229,115,115,.1)'; msg.style.color='#E57373'; msg.style.border='1px solid rgba(229,115,115,.3)';
+      msg.textContent = 'Error al publicar. Ya puede que hayas dejado una reseña para este producto.';
+    }
+  }
+
+  async function eliminarResena(id) {
+    if (!confirm('¿Eliminar tu reseña?')) return;
+    await sbFetch(`/rest/v1/resenas?id=eq.${id}&user_id=eq.${sesiónActual.user.id}`, { method: 'DELETE' }, sesiónActual.access_token);
+    cargarResenas(productoSeleccionado);
+  }
+
+
+  // ─── RESEÑAS PANEL + HOME ────────────────────────────────────────────────
+
+  async function abrirModalResenaDesdePanel(producto) {
+    // Verificar si ya dejó reseña
+    const rCheck = await sbFetch(
+      `/rest/v1/resenas?user_id=eq.${sesiónActual.user.id}&producto=eq.${encodeURIComponent(producto)}&select=id&limit=1`,
+      {}, sesiónActual.access_token
+    );
+    if (rCheck.ok && rCheck.data?.length > 0) {
+      alert('Ya dejaste una reseña para este producto. Podés eliminarla desde la sección de herramientas en la landing.');
+      return;
+    }
+    // Usar el modal existente
+    productoSeleccionado = producto;
+    abrirModalResena();
+  }
+
+  async function cargarResenasHome() {
+    const grid  = document.getElementById('resenasHomeGrid');
+    const prom  = document.getElementById('resenasHomeProm');
+    const stars = document.getElementById('resenasHomeStars');
+    const total = document.getElementById('resenasHomeTotal');
+    const barras= document.getElementById('resenasHomeBarras');
+    if (!grid) return;
+
+    const r = await sbFetch('/rest/v1/resenas?select=*&order=created_at.desc', {}, null);
+    const resenas = (r.ok && Array.isArray(r.data)) ? r.data : [];
+
+    if (resenas.length === 0) {
+      grid.innerHTML = '<div style="color:var(--gris);font-size:13px;grid-column:1/-1;text-align:center;padding:20px">Todavía no hay reseñas.</div>';
+      if (prom) prom.textContent = '—';
+      if (total) total.textContent = '0 reseñas';
+      return;
+    }
+
+    // Promedio
+    const promVal = resenas.reduce((a, r) => a + r.puntuacion, 0) / resenas.length;
+    if (prom) prom.textContent = promVal.toFixed(1);
+    if (stars) stars.textContent = _renderEstrellas(promVal);
+    if (total) total.textContent = resenas.length + (resenas.length === 1 ? ' reseña verificada' : ' reseñas verificadas');
+
+    // Barras por puntuación
+    if (barras) {
+      const counts = [0,0,0,0,0];
+      resenas.forEach(r => { if (r.puntuacion >= 1 && r.puntuacion <= 5) counts[r.puntuacion-1]++; });
+      barras.innerHTML = [5,4,3,2,1].map(n => {
+        const cnt = counts[n-1];
+        const pct = resenas.length > 0 ? Math.round((cnt / resenas.length) * 100) : 0;
+        return `<div style="display:flex;align-items:center;gap:10px;font-size:12px">
+          <span style="color:var(--gris);min-width:32px">${n} ⭐</span>
+          <div style="flex:1;background:#1A1A1A;border-radius:4px;height:8px;overflow:hidden">
+            <div style="width:${pct}%;height:100%;background:var(--rojo);border-radius:4px;transition:width .4s"></div>
+          </div>
+          <span style="color:var(--gris);min-width:32px;text-align:right">${pct}%</span>
+        </div>`;
+      }).join('');
+    }
+
+    // Grid de cards — nombres de productos legibles
+    const nombresP = { 'DailyLossLimiter': 'Daily Loss Limiter', 'ManualBacktestAnalyzer': 'Manual Backtest Analyzer', 'TDA_RiskReward': 'TDA Risk/Reward' };
+    grid.innerHTML = resenas.map(r => {
+      const inicial = (r.nombre || 'A')[0].toUpperCase();
+      const fecha = new Date(r.created_at).toLocaleDateString('es-AR', { day: '2-digit', month: 'short', year: 'numeric' });
+      const producto = nombresP[r.producto] || r.producto;
+      return `<div class="resena-card">
+        <div class="resena-card-header">
+          <div class="resena-avatar">${inicial}</div>
+          <div>
+            <div class="resena-autor">${esc(r.nombre || 'Usuario')}</div>
+            <div class="resena-fecha" style="display:flex;flex-direction:column;gap:2px">
+              <span>${fecha}</span>
+              <span style="color:var(--rojo);font-size:10px;font-weight:600">${esc(producto)}</span>
+            </div>
+          </div>
+          <div style="margin-left:auto;font-size:11px;color:var(--gris);display:flex;align-items:center;gap:4px">✅ Verificado</div>
+        </div>
+        <div class="resena-estrellas">${_renderEstrellas(r.puntuacion)}</div>
+        ${r.texto ? `<div class="resena-texto">${esc(r.texto)}</div>` : ''}
+      </div>`;
+    }).join('');
+  }
+
   (function init() {
     obtenerCotizacion();
+    cargarResenasHome(); // reseñas visibles en la home pública sin login
     if (document.getElementById('tickerBar')) {
       cargarPrecios();
       setInterval(cargarPrecios, 60000); // actualizar cada 60s

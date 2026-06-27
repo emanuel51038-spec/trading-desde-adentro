@@ -878,7 +878,6 @@
             <div class="resenas-total" id="resenasTotal">0 reseñas</div>
           </div>
         </div>
-        <button class="resenas-btn-dejar" id="btnDejarResena" onclick="abrirModalResena()" style="display:none">✍️ Dejar reseña</button>
       </div>
     </div>
     <div id="resenasGrid" class="resenas-grid">
@@ -7520,12 +7519,10 @@
   async function cargarResenas(producto) {
     const grid    = document.getElementById('resenasGrid');
     const promDiv = document.getElementById('resenasPromedio');
-    const btnDejar= document.getElementById('btnDejarResena');
     if (!grid) return;
 
     grid.innerHTML = '<div style="color:var(--gris);font-size:13px;padding:20px 0">Cargando reseñas...</div>';
     if (promDiv) promDiv.style.display = 'none';
-    if (btnDejar) btnDejar.style.display = 'none';
 
     const [rResenas, rLic] = await Promise.all([
       sbFetch(`/rest/v1/resenas?producto=eq.${encodeURIComponent(producto)}&select=*&order=created_at.desc`, {}, sesiónActual?.access_token || null),
@@ -7534,24 +7531,6 @@
 
     const resenas = (rResenas.ok && Array.isArray(rResenas.data)) ? rResenas.data : [];
     const tieneLic = rLic.ok && Array.isArray(rLic.data) && rLic.data.length > 0;
-
-    // Chequear si ya dejó reseña
-    const yaReseno = sesiónActual && resenas.some(r => r.user_id === sesiónActual.user.id);
-
-    // Botón dejar reseña
-    if (btnDejar) {
-      if (tieneLic && !yaReseno) {
-        btnDejar.style.display = 'flex';
-        btnDejar.textContent = '✍️ Dejar reseña';
-        btnDejar.disabled = false;
-      } else if (tieneLic && yaReseno) {
-        btnDejar.style.display = 'flex';
-        btnDejar.textContent = '✅ Ya dejaste tu reseña';
-        btnDejar.disabled = true;
-        btnDejar.style.opacity = '0.5';
-        btnDejar.style.cursor = 'default';
-      }
-    }
 
     // Promedio
     if (resenas.length > 0) {

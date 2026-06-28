@@ -3099,6 +3099,19 @@
           <div id="equityTooltip" style="display:none;position:absolute;background:#1A1A1A;border:1px solid #2A2A2A;border-radius:8px;padding:8px 12px;font-size:12px;pointer-events:none;white-space:nowrap;z-index:10"></div>
         </div>
       </div>
+      <!-- GRÁFICO DE TRADES (barras por operación) -->
+      <div style="background:var(--negro-card);border:1px solid var(--negro-border);border-radius:16px;padding:20px;margin-bottom:16px">
+        <div style="font-size:12px;font-weight:600;letter-spacing:1px;text-transform:uppercase;color:var(--gris);margin-bottom:12px">Retorno por operación</div>
+        <div style="position:relative">
+          <canvas id="tradesBarCanvas" style="width:100%;height:160px"></canvas>
+          <div id="tradesBarTooltip" style="display:none;position:absolute;background:#1A1A1A;border:1px solid #2A2A2A;border-radius:8px;padding:8px 12px;font-size:12px;pointer-events:none;white-space:nowrap;z-index:10"></div>
+        </div>
+      </div>
+      <!-- RENDIMIENTO POR DÍA DE LA SEMANA -->
+      <div style="background:var(--negro-card);border:1px solid var(--negro-border);border-radius:16px;padding:20px;margin-bottom:16px">
+        <div style="font-size:12px;font-weight:600;letter-spacing:1px;text-transform:uppercase;color:var(--gris);margin-bottom:12px">Rendimiento por día de la semana</div>
+        <canvas id="diasSemanaCanvas" style="width:100%;height:180px"></canvas>
+      </div>
       <!-- EVALUACIÓN DE FONDEOS -->
       <div style="background:var(--negro-card);border:1px solid var(--negro-border);border-radius:16px;padding:20px;margin-bottom:16px">
         <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
@@ -3632,6 +3645,8 @@
 
   function _drawEquityAfterRender(ops) {
     setTimeout(() => dibujarEquityCurve(ops), 50);
+    setTimeout(() => dibujarTradesBar(ops), 80);
+    setTimeout(() => dibujarDiasSemana(ops), 110);
   }
 
   function renderStatCard(label, valor, color) {
@@ -7723,6 +7738,180 @@
         ${r.texto ? `<div class="resena-texto">${esc(r.texto)}</div>` : ''}
       </div>`;
     }).join('');
+  }
+
+
+  // ─── GRÁFICO: BARRAS POR OPERACIÓN ────────────────────────────────────────
+  function dibujarTradesBar(ops) {
+    const canvas = document.getElementById('tradesBarCanvas');
+    if (!canvas) return;
+    const tooltip = document.getElementById('tradesBarTooltip');
+    const ctx = canvas.getContext('2d');
+    const W = canvas.offsetWidth || canvas.parentElement?.offsetWidth || 600;
+    const H = 160;
+    canvas.width = W * devicePixelRatio;
+    canvas.height = H * devicePixelRatio;
+    canvas.style.width = W + 'px';
+    canvas.style.height = H + 'px';
+    ctx.scale(devicePixelRatio, devicePixelRatio);
+
+    const opsRev = [...ops].reverse(); // cronológico
+    const pnls = opsRev.map(o => parseFloat(o.pnl || 0));
+    if (pnls.length === 0) return;
+
+    const maxAbs = Math.max(...pnls.map(Math.abs), 1);
+    const pad = { top: 10, bot: 10, left: 2, right: 2 };
+    const midY = H / 2;
+    const barW = Math.max(2, Math.min(12, (W - pad.left - pad.right) / pnls.length - 1));
+    const gap  = (W - pad.left - pad.right - barW * pnls.length) / Math.max(pnls.length - 1, 1);
+
+    // Línea 0
+    ctx.strokeStyle = '#2A2A2A';
+    ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(pad.left, midY); ctx.lineTo(W - pad.right, midY); ctx.stroke();
+
+    canvas._tradesData = opsRev;
+    canvas._barW = barW;
+    canvas._gap = gap;
+    canvas._padLeft = pad.left;
+    canvas._midY = midY;
+    canvas._maxAbs = maxAbs;
+    canvas._halfH = midY - pad.top;
+
+    pnls.forEach((pnl, i) => {
+      const x = pad.left + i * (barW + gap);
+      const h = Math.max(2, (Math.abs(pnl) / maxAbs) * (midY - pad.top));
+      const y = pnl >= 0 ? midY - h : midY;
+      ctx.fillStyle = pnl >= 0 ? '#4CAF50' : '#E57373';
+      ctx.fillRect(x, y, barW, h);
+    });
+
+    // Tooltip
+    canvas.onmousemove = function(e) {
+      if (!tooltip) return;
+      const rect = canvas.getBoundingClientRect();
+      const mx = e.clientX - rect.left;
+      const data = canvas._tradesData;
+      const bw = canvas._barW, gp = canvas._gap, pl = canvas._padLeft;
+      for (let i = 0; i < data.length; i++) {
+        const x = pl + i * (bw + gp);
+        if (mx >= x && mx <= x + bw) {
+          const o = data[i];
+          const pnl = parseFloat(o.pnl || 0);
+          const fecha = o.fecha ? new Date(o.fecha).toLocaleDateString('es-AR', {day:'2-digit',month:'short'}) : '';
+          tooltip.style.display = 'block';
+          tooltip.style.left = Math.min(e.clientX - rect.left + 10, W - 160) + 'px';
+          tooltip.style.top = (e.clientY - rect.top - 40) + 'px';
+          tooltip.style.color = pnl >= 0 ? '#4CAF50' : '#E57373';
+          tooltip.innerHTML = `${fecha} · ${o.instrumento || ''}<br><strong>${pnl >= 0 ? '+' : ''}$${Math.abs(pnl).toFixed(2)}</strong>`;
+          return;
+        }
+      }
+      tooltip.style.display = 'none';
+    };
+    canvas.onmouseleave = () => { if (tooltip) tooltip.style.display = 'none'; };
+  }
+
+  // ─── GRÁFICO: RENDIMIENTO POR DÍA DE LA SEMANA ───────────────────────────
+  function dibujarDiasSemana(ops) {
+    const canvas = document.getElementById('diasSemanaCanvas');
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    const W = canvas.offsetWidth || canvas.parentElement?.offsetWidth || 600;
+    const H = 180;
+    canvas.width = W * devicePixelRatio;
+    canvas.height = H * devicePixelRatio;
+    canvas.style.width = W + 'px';
+    canvas.style.height = H + 'px';
+    ctx.scale(devicePixelRatio, devicePixelRatio);
+
+    const dias = ['Lunes','Martes','Miércoles','Jueves','Viernes'];
+    const stats = dias.map(() => ({ pos: 0, neg: 0, total: 0, pnl: 0 }));
+
+    // Agrupar por día de la semana por FECHA (no por operación)
+    const porFecha = {};
+    ops.forEach(o => {
+      if (!o.fecha) return;
+      const d = o.fecha.substring(0, 10);
+      porFecha[d] = (porFecha[d] || 0) + parseFloat(o.pnl || 0);
+    });
+    Object.entries(porFecha).forEach(([fecha, pnl]) => {
+      const dow = new Date(fecha).getDay(); // 0=Dom, 1=Lun...5=Vie
+      if (dow < 1 || dow > 5) return;
+      const idx = dow - 1;
+      stats[idx].total++;
+      stats[idx].pnl += pnl;
+      if (pnl >= 0) stats[idx].pos++; else stats[idx].neg++;
+    });
+
+    const pad = { top: 24, bot: 36, left: 16, right: 16 };
+    const groupW = (W - pad.left - pad.right) / 5;
+    const barW = groupW * 0.35;
+    const maxTotal = Math.max(...stats.map(s => s.total), 1);
+
+    // Fondo líneas horizontales
+    ctx.strokeStyle = '#1A1A1A';
+    ctx.lineWidth = 1;
+    for (let i = 1; i <= 4; i++) {
+      const y = pad.top + ((H - pad.top - pad.bot) / 4) * i;
+      ctx.beginPath(); ctx.moveTo(pad.left, y); ctx.lineTo(W - pad.right, y); ctx.stroke();
+    }
+
+    stats.forEach((s, i) => {
+      const cx = pad.left + groupW * i + groupW / 2;
+      const availH = H - pad.top - pad.bot;
+
+      // Barra positivos (verde)
+      if (s.pos > 0) {
+        const h = (s.pos / maxTotal) * availH;
+        ctx.fillStyle = '#4CAF50';
+        ctx.beginPath();
+        ctx.roundRect(cx - barW - 2, pad.top + availH - h, barW, h, 4);
+        ctx.fill();
+        // Número encima
+        ctx.fillStyle = '#4CAF50';
+        ctx.font = `bold ${Math.min(11, barW * 0.8)}px DM Sans, sans-serif`;
+        ctx.textAlign = 'center';
+        ctx.fillText(s.pos, cx - barW / 2 - 2, pad.top + availH - h - 5);
+      }
+
+      // Barra negativos (rojo)
+      if (s.neg > 0) {
+        const h = (s.neg / maxTotal) * availH;
+        ctx.fillStyle = '#E57373';
+        ctx.beginPath();
+        ctx.roundRect(cx + 2, pad.top + availH - h, barW, h, 4);
+        ctx.fill();
+        ctx.fillStyle = '#E57373';
+        ctx.font = `bold ${Math.min(11, barW * 0.8)}px DM Sans, sans-serif`;
+        ctx.textAlign = 'center';
+        ctx.fillText(s.neg, cx + barW / 2 + 2, pad.top + availH - h - 5);
+      }
+
+      // Etiqueta del día
+      ctx.fillStyle = '#666';
+      ctx.font = '11px DM Sans, sans-serif';
+      ctx.textAlign = 'center';
+      ctx.fillText(dias[i].substring(0, 3), cx, H - pad.bot + 16);
+
+      // PnL total debajo
+      const pnlStr = (s.pnl >= 0 ? '+' : '') + '$' + Math.abs(s.pnl).toFixed(0);
+      ctx.fillStyle = s.pnl >= 0 ? '#4CAF50' : '#E57373';
+      ctx.font = 'bold 10px DM Sans, sans-serif';
+      ctx.fillText(pnlStr, cx, H - pad.bot + 28);
+    });
+
+    // Leyenda
+    ctx.fillStyle = '#4CAF50';
+    ctx.fillRect(pad.left, 6, 10, 10);
+    ctx.fillStyle = '#888';
+    ctx.font = '10px DM Sans, sans-serif';
+    ctx.textAlign = 'left';
+    ctx.fillText('Días positivos', pad.left + 14, 15);
+    ctx.fillStyle = '#E57373';
+    ctx.fillRect(pad.left + 110, 6, 10, 10);
+    ctx.fillStyle = '#888';
+    ctx.fillText('Días negativos', pad.left + 124, 15);
   }
 
   (function init() {

@@ -3112,6 +3112,30 @@
         <div style="font-size:12px;font-weight:600;letter-spacing:1px;text-transform:uppercase;color:var(--gris);margin-bottom:12px">Rendimiento por día de la semana</div>
         <canvas id="diasSemanaCanvas" style="width:100%;height:180px"></canvas>
       </div>
+      <!-- PNL POR HORA DEL DÍA -->
+      <div style="background:var(--negro-card);border:1px solid var(--negro-border);border-radius:16px;padding:20px;margin-bottom:16px">
+        <div style="font-size:12px;font-weight:600;letter-spacing:1px;text-transform:uppercase;color:var(--gris);margin-bottom:12px">PnL por hora del día</div>
+        <canvas id="horaDelDiaCanvas" style="width:100%;height:160px"></canvas>
+      </div>
+      <!-- PNL POR ESTRATEGIA -->
+      <div style="background:var(--negro-card);border:1px solid var(--negro-border);border-radius:16px;padding:20px;margin-bottom:16px">
+        <div style="font-size:12px;font-weight:600;letter-spacing:1px;text-transform:uppercase;color:var(--gris);margin-bottom:12px">PnL por estrategia</div>
+        <canvas id="estrategiaCanvas" style="width:100%;height:180px"></canvas>
+      </div>
+      <!-- RACHA DE WINS/LOSSES -->
+      <div style="background:var(--negro-card);border:1px solid var(--negro-border);border-radius:16px;padding:20px;margin-bottom:16px">
+        <div style="font-size:12px;font-weight:600;letter-spacing:1px;text-transform:uppercase;color:var(--gris);margin-bottom:12px">Racha de resultados</div>
+        <div style="position:relative">
+          <canvas id="rachaCanvas" style="width:100%;height:100px"></canvas>
+          <div id="rachaTooltip" style="display:none;position:absolute;background:#1A1A1A;border:1px solid #2A2A2A;border-radius:8px;padding:8px 12px;font-size:12px;pointer-events:none;white-space:nowrap;z-index:10"></div>
+        </div>
+        <div id="rachaLeyenda" style="display:flex;gap:16px;margin-top:10px;flex-wrap:wrap;font-size:11px;color:var(--gris)"></div>
+      </div>
+      <!-- MAPA DE CALOR MENSUAL -->
+      <div style="background:var(--negro-card);border:1px solid var(--negro-border);border-radius:16px;padding:20px;margin-bottom:16px">
+        <div style="font-size:12px;font-weight:600;letter-spacing:1px;text-transform:uppercase;color:var(--gris);margin-bottom:12px">Mapa de calor mensual</div>
+        <div id="mapaCalorContainer" style="overflow-x:auto"></div>
+      </div>
       <!-- EVALUACIÓN DE FONDEOS -->
       <div style="background:var(--negro-card);border:1px solid var(--negro-border);border-radius:16px;padding:20px;margin-bottom:16px">
         <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
@@ -3139,9 +3163,9 @@
         <div id="journalTableScrollTop" style="overflow-x:auto;overflow-y:hidden;height:12px;border-bottom:1px solid #1A1A1A" onscroll="document.getElementById('journalTableScroller').scrollLeft=this.scrollLeft">
           <div id="journalTableScrollTopInner" style="height:1px"></div>
         </div>
-        <div style="overflow-x:auto" id="journalTableInner" onscroll="document.getElementById('journalTableScrollTop').scrollLeft=this.scrollLeft">
+        <div style="overflow-x:auto;overflow-y:auto;max-height:520px" id="journalTableInner" onscroll="document.getElementById('journalTableScrollTop').scrollLeft=this.scrollLeft">
         <table style="width:100%;border-collapse:collapse;font-size:13px">
-          <thead>
+          <thead style="position:sticky;top:0;z-index:2;background:var(--negro-card)">
             <tr style="border-bottom:1px solid #1E1E1E;color:var(--gris)">
               <th style="padding:12px 16px;font-weight:600;text-align:left;font-size:11px;text-transform:uppercase;letter-spacing:1px">Fecha</th>
               <th style="padding:12px 16px;font-weight:600;text-align:left;font-size:11px;text-transform:uppercase;letter-spacing:1px">Instrumento</th>
@@ -3647,6 +3671,14 @@
     setTimeout(() => dibujarEquityCurve(ops), 50);
     setTimeout(() => dibujarTradesBar(ops), 80);
     setTimeout(() => dibujarDiasSemana(ops), 110);
+    setTimeout(() => {
+      requestAnimationFrame(() => {
+        dibujarHoraDelDia(ops);
+        dibujarEstrategia(ops);
+        dibujarRacha(ops);
+        dibujarMapaCalor(ops);
+      });
+    }, 300);
   }
 
   function renderStatCard(label, valor, color) {
@@ -7747,7 +7779,8 @@
     if (!canvas) return;
     const tooltip = document.getElementById('tradesBarTooltip');
     const ctx = canvas.getContext('2d');
-    const W = canvas.offsetWidth || canvas.parentElement?.offsetWidth || 600;
+    canvas.style.width = '100%';
+    const W = canvas.getBoundingClientRect().width || canvas.parentElement?.getBoundingClientRect().width || 600;
     const H = 160;
     canvas.width = W * devicePixelRatio;
     canvas.height = H * devicePixelRatio;
@@ -7817,7 +7850,8 @@
     const canvas = document.getElementById('diasSemanaCanvas');
     if (!canvas) return;
     const ctx = canvas.getContext('2d');
-    const W = canvas.offsetWidth || canvas.parentElement?.offsetWidth || 600;
+    canvas.style.width = '100%';
+    const W = canvas.getBoundingClientRect().width || canvas.parentElement?.getBoundingClientRect().width || 600;
     const H = 180;
     canvas.width = W * devicePixelRatio;
     canvas.height = H * devicePixelRatio;
@@ -7912,6 +7946,306 @@
     ctx.fillRect(pad.left + 110, 6, 10, 10);
     ctx.fillStyle = '#888';
     ctx.fillText('Días negativos', pad.left + 124, 15);
+  }
+
+
+  // ─── GRÁFICO: PNL POR HORA DEL DÍA ──────────────────────────────────────
+  function dibujarHoraDelDia(ops) {
+    const canvas = document.getElementById('horaDelDiaCanvas');
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    canvas.style.width = '100%';
+    const W = canvas.getBoundingClientRect().width || canvas.parentElement?.getBoundingClientRect().width || 600;
+    const H = 160;
+    canvas.width = W * devicePixelRatio;
+    canvas.height = H * devicePixelRatio;
+    canvas.style.width = W + 'px';
+    canvas.style.height = H + 'px';
+    ctx.scale(devicePixelRatio, devicePixelRatio);
+
+    // Agrupar PnL por hora (0-23)
+    const horas = Array(24).fill(0);
+    const counts = Array(24).fill(0);
+    ops.forEach(o => {
+      if (!o.fecha) return;
+      const h = new Date(o.fecha).getHours();
+      horas[h] += parseFloat(o.pnl || 0);
+      counts[h]++;
+    });
+
+    const horasConDatos = horas.filter((v, i) => counts[i] > 0);
+    if (horasConDatos.length === 0) {
+      ctx.fillStyle = '#555'; ctx.font = '13px DM Sans'; ctx.textAlign = 'center';
+      ctx.fillText('Sin datos suficientes', W/2, H/2); return;
+    }
+
+    const pad = { top: 20, bot: 28, left: 8, right: 8 };
+    const maxAbs = Math.max(...horas.map(Math.abs), 1);
+    const barW = (W - pad.left - pad.right) / 24 - 2;
+    const midY = pad.top + (H - pad.top - pad.bot) / 2;
+    const halfH = (H - pad.top - pad.bot) / 2;
+
+    ctx.strokeStyle = '#2A2A2A'; ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(pad.left, midY); ctx.lineTo(W - pad.right, midY); ctx.stroke();
+
+    horas.forEach((pnl, h) => {
+      if (counts[h] === 0) return;
+      const x = pad.left + h * ((W - pad.left - pad.right) / 24);
+      const barH = Math.max(2, (Math.abs(pnl) / maxAbs) * halfH);
+      const y = pnl >= 0 ? midY - barH : midY;
+      ctx.fillStyle = pnl >= 0 ? '#4CAF50' : '#E57373';
+      ctx.fillRect(x + 1, y, Math.max(barW, 2), barH);
+    });
+
+    // Etiquetas cada 3 horas
+    ctx.fillStyle = '#555'; ctx.font = '9px DM Sans'; ctx.textAlign = 'center';
+    [0, 3, 6, 9, 12, 15, 18, 21].forEach(h => {
+      const x = pad.left + h * ((W - pad.left - pad.right) / 24) + barW / 2;
+      ctx.fillText(h + 'h', x, H - 4);
+    });
+
+    // Tooltip
+    canvas.onmousemove = function(e) {
+      const rect = canvas.getBoundingClientRect();
+      const mx = e.clientX - rect.left;
+      const h = Math.floor((mx - pad.left) / ((W - pad.left - pad.right) / 24));
+      if (h >= 0 && h < 24 && counts[h] > 0) {
+        canvas.title = `${h}:00 — ${counts[h]} ops — PnL: ${horas[h] >= 0 ? '+' : ''}$${horas[h].toFixed(2)}`;
+      } else { canvas.title = ''; }
+    };
+  }
+
+  // ─── GRÁFICO: PNL POR ESTRATEGIA ─────────────────────────────────────────
+  function dibujarEstrategia(ops) {
+    const canvas = document.getElementById('estrategiaCanvas');
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    canvas.style.width = '100%';
+    const W = canvas.getBoundingClientRect().width || canvas.parentElement?.getBoundingClientRect().width || 600;
+
+    // Calcular por estrategia
+    const map = {};
+    ops.forEach(o => {
+      const est = o.estrategia || '—';
+      if (!map[est]) map[est] = { pnl: 0, count: 0, wins: 0 };
+      map[est].pnl += parseFloat(o.pnl || 0);
+      map[est].count++;
+      if (parseFloat(o.pnl || 0) > 0) map[est].wins++;
+    });
+
+    const estrategias = Object.entries(map).sort((a, b) => b[1].pnl - a[1].pnl);
+    const H = Math.max(120, estrategias.length * 42 + 20);
+    canvas.width = W * devicePixelRatio;
+    canvas.height = H * devicePixelRatio;
+    canvas.style.width = W + 'px';
+    canvas.style.height = H + 'px';
+    ctx.scale(devicePixelRatio, devicePixelRatio);
+
+    if (estrategias.length === 0) {
+      ctx.fillStyle = '#555'; ctx.font = '13px DM Sans'; ctx.textAlign = 'center';
+      ctx.fillText('Sin estrategias registradas', W/2, H/2); return;
+    }
+
+    const maxAbs = Math.max(...estrategias.map(([,v]) => Math.abs(v.pnl)), 1);
+    const labelW = 120;
+    const barMaxW = W - labelW - 80;
+    const rowH = 38;
+    const pad = { top: 10, left: 8 };
+
+    estrategias.forEach(([est, data], i) => {
+      const y = pad.top + i * rowH;
+      const barW = Math.max(3, (Math.abs(data.pnl) / maxAbs) * barMaxW);
+      const color = data.pnl >= 0 ? '#4CAF50' : '#E57373';
+      const winRate = data.count > 0 ? Math.round((data.wins / data.count) * 100) : 0;
+
+      // Nombre estrategia
+      ctx.fillStyle = '#AAA'; ctx.font = '12px DM Sans'; ctx.textAlign = 'left';
+      ctx.fillText(est.length > 14 ? est.substring(0, 13) + '…' : est, pad.left, y + 20);
+
+      // Barra
+      ctx.fillStyle = color + '33';
+      ctx.fillRect(labelW, y + 10, barMaxW, 20);
+      ctx.fillStyle = color;
+      ctx.fillRect(labelW, y + 10, barW, 20);
+
+      // PnL + winrate
+      ctx.fillStyle = color; ctx.font = 'bold 12px DM Sans'; ctx.textAlign = 'left';
+      ctx.fillText(`${data.pnl >= 0 ? '+' : ''}$${Math.abs(data.pnl).toFixed(0)}`, labelW + barW + 6, y + 24);
+      ctx.fillStyle = '#555'; ctx.font = '10px DM Sans';
+      ctx.fillText(`${winRate}% · ${data.count}ops`, labelW + barW + 6, y + 36);
+    });
+  }
+
+  // ─── GRÁFICO: RACHA DE RESULTADOS ────────────────────────────────────────
+  function dibujarRacha(ops) {
+    const canvas = document.getElementById('rachaCanvas');
+    const leyenda = document.getElementById('rachaLeyenda');
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    canvas.style.width = '100%';
+    const W = canvas.getBoundingClientRect().width || canvas.parentElement?.getBoundingClientRect().width || 600;
+    const H = 100;
+    canvas.width = W * devicePixelRatio;
+    canvas.height = H * devicePixelRatio;
+    canvas.style.width = W + 'px';
+    canvas.style.height = H + 'px';
+    ctx.scale(devicePixelRatio, devicePixelRatio);
+
+    const opsRev = [...ops].reverse();
+    if (opsRev.length === 0) return;
+
+    // Calcular rachas
+    const rachas = [];
+    let curr = null;
+    opsRev.forEach((o, i) => {
+      const win = parseFloat(o.pnl || 0) >= 0;
+      if (!curr || curr.win !== win) {
+        curr = { win, count: 1, start: i };
+        rachas.push(curr);
+      } else { curr.count++; }
+    });
+
+    const maxRacha = Math.max(...rachas.map(r => r.count), 1);
+    const totalOps = opsRev.length;
+    const midY = H / 2;
+    let x = 0;
+
+    rachas.forEach(r => {
+      const segW = (r.count / totalOps) * W;
+      const barH = Math.max(4, (r.count / maxRacha) * (midY - 8));
+      ctx.fillStyle = r.win ? '#4CAF50' : '#E57373';
+      if (r.win) {
+        ctx.fillRect(x, midY - barH, segW - 1, barH);
+      } else {
+        ctx.fillRect(x, midY, segW - 1, barH);
+      }
+      // Número de racha si tiene espacio
+      if (segW > 20 && r.count > 1) {
+        ctx.fillStyle = 'white';
+        ctx.font = `bold ${Math.min(11, segW * 0.4)}px DM Sans`;
+        ctx.textAlign = 'center';
+        ctx.fillText(r.count, x + segW / 2, r.win ? midY - barH / 2 + 4 : midY + barH / 2 + 4);
+      }
+      x += segW;
+    });
+
+    // Línea central
+    ctx.strokeStyle = '#333'; ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(0, midY); ctx.lineTo(W, midY); ctx.stroke();
+
+    // Calcular stats de racha
+    const maxWin = Math.max(...rachas.filter(r => r.win).map(r => r.count), 0);
+    const maxLoss = Math.max(...rachas.filter(r => !r.win).map(r => r.count), 0);
+    const currRacha = rachas[rachas.length - 1];
+
+    if (leyenda) {
+      leyenda.innerHTML = `
+        <span>🟢 Racha ganadora máx: <strong style="color:#4CAF50">${maxWin}</strong></span>
+        <span>🔴 Racha perdedora máx: <strong style="color:#E57373">${maxLoss}</strong></span>
+        <span>⚡ Racha actual: <strong style="color:${currRacha.win?'#4CAF50':'#E57373'}">${currRacha.count} ${currRacha.win?'wins':'losses'}</strong></span>
+      `;
+    }
+  }
+
+  // ─── GRÁFICO: MAPA DE CALOR MENSUAL ──────────────────────────────────────
+  function dibujarMapaCalor(ops) {
+    const cont = document.getElementById('mapaCalorContainer');
+    if (!cont) return;
+
+    // Agrupar PnL por fecha
+    const porFecha = {};
+    ops.forEach(o => {
+      if (!o.fecha) return;
+      const d = o.fecha.substring(0, 10);
+      porFecha[d] = (porFecha[d] || 0) + parseFloat(o.pnl || 0);
+    });
+
+    if (Object.keys(porFecha).length === 0) {
+      cont.innerHTML = '<div style="color:var(--gris);font-size:13px;text-align:center;padding:20px">Sin datos</div>';
+      return;
+    }
+
+    // Obtener rango de meses
+    const fechas = Object.keys(porFecha).sort();
+    const inicio = new Date(fechas[0]);
+    const fin = new Date(fechas[fechas.length - 1]);
+    const maxAbsVal = Math.max(...Object.values(porFecha).map(Math.abs), 1);
+
+    const meses = [];
+    let cur = new Date(inicio.getFullYear(), inicio.getMonth(), 1);
+    while (cur <= fin) {
+      meses.push(new Date(cur));
+      cur.setMonth(cur.getMonth() + 1);
+    }
+
+    const diasSemana = ['D','L','M','X','J','V','S'];
+    const mesesNombres = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
+    const cellSize = 18;
+    const gap = 2;
+
+    let html = '<div style="display:flex;flex-wrap:wrap;gap:20px">';
+
+    meses.forEach(mes => {
+      const anio = mes.getFullYear();
+      const m = mes.getMonth();
+      const diasEnMes = new Date(anio, m + 1, 0).getDate();
+      const primerDia = new Date(anio, m, 1).getDay(); // 0=Dom
+
+      html += `<div style="min-width:${7*cellSize + 6*gap + 4}px">
+        <div style="font-size:11px;font-weight:600;color:var(--gris);text-align:center;margin-bottom:6px;text-transform:uppercase;letter-spacing:.5px">${mesesNombres[m]} ${anio}</div>
+        <div style="display:grid;grid-template-columns:repeat(7,${cellSize}px);gap:${gap}px">`;
+
+      // Cabecera días
+      diasSemana.forEach(d => {
+        html += `<div style="font-size:9px;color:#444;text-align:center;font-weight:600">${d}</div>`;
+      });
+
+      // Celdas vacías hasta el primer día
+      for (let i = 0; i < primerDia; i++) {
+        html += `<div></div>`;
+      }
+
+      // Días del mes
+      for (let dia = 1; dia <= diasEnMes; dia++) {
+        const fecha = `${anio}-${String(m+1).padStart(2,'0')}-${String(dia).padStart(2,'0')}`;
+        const pnl = porFecha[fecha];
+        let bg = '#1A1A1A';
+        let color = '#444';
+        let title = '';
+        if (pnl !== undefined) {
+          const intensity = Math.min(1, Math.abs(pnl) / maxAbsVal);
+          if (pnl > 0) {
+            const g = Math.round(80 + intensity * 127);
+            bg = `rgba(76,${g},80,${0.3 + intensity * 0.7})`;
+            color = '#fff';
+          } else {
+            const r = Math.round(180 + intensity * 55);
+            bg = `rgba(${r},80,80,${0.3 + intensity * 0.7})`;
+            color = '#fff';
+          }
+          title = `${fecha}: ${pnl >= 0 ? '+' : ''}$${pnl.toFixed(2)}`;
+        }
+        html += `<div title="${title}" style="width:${cellSize}px;height:${cellSize}px;background:${bg};border-radius:3px;display:flex;align-items:center;justify-content:center;font-size:8px;color:${color};cursor:${pnl!==undefined?'pointer':'default'}">${dia}</div>`;
+      }
+
+      html += `</div></div>`;
+    });
+
+    html += '</div>';
+    html += `<div style="display:flex;align-items:center;gap:8px;margin-top:12px;font-size:11px;color:var(--gris)">
+      <span>Negativo</span>
+      <div style="display:flex;gap:2px">
+        ${[0.2,0.4,0.6,0.8,1].map(i => `<div style="width:16px;height:16px;border-radius:3px;background:rgba(220,80,80,${i})"></div>`).join('')}
+      </div>
+      <div style="width:16px;height:16px;border-radius:3px;background:#1A1A1A;border:1px solid #2A2A2A"></div>
+      <span>Sin ops</span>
+      <div style="display:flex;gap:2px">
+        ${[0.2,0.4,0.6,0.8,1].map(i => `<div style="width:16px;height:16px;border-radius:3px;background:rgba(76,175,80,${i})"></div>`).join('')}
+      </div>
+      <span>Positivo</span>
+    </div>`;
+
+    cont.innerHTML = html;
   }
 
   (function init() {

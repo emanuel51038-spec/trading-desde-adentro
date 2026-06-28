@@ -3031,7 +3031,7 @@
         ${renderStatCard('Expected Value', stats.evR + 'R', parseFloat(stats.evR) >= 0 ? 'var(--verde)' : '#E57373')}
         ${renderStatCard('Sharpe Ratio', stats.sharpe, parseFloat(stats.sharpe) >= 1 ? 'var(--verde)' : parseFloat(stats.sharpe) >= 0 ? '#FFD700' : '#E57373')}
         ${renderStatCard('Max Drawdown', '-$' + stats.maxDD, '#E57373')}
-        ${renderStatCard('Racha negativa', stats.rachaMax + ' ops', '#E57373')}
+        ${renderStatCard('Máx. racha negativa', stats.rachaMax + ' ops', '#E57373')}
         ${renderStatCard('Estrategia top', stats.estMasUsada, 'var(--blanco)')}
         ${renderStatCard('Emoción top', stats.emocionTop, 'var(--blanco)')}
       </div>
@@ -4334,7 +4334,7 @@
       'Profit Factor':   s.pf,
       'Expected Value':  s.evR + 'R',
       'Max Drawdown':    '-$' + s.maxDD,
-      'Racha negativa':  s.rachaMax + ' ops',
+      'Máx. racha negativa':  s.rachaMax + ' ops',
       'Estrategia top':  s.estMasUsada,
       'Emoción top':     s.emocionTop,
     };
@@ -7866,11 +7866,14 @@
     const porFecha = {};
     ops.forEach(o => {
       if (!o.fecha) return;
-      const d = o.fecha.substring(0, 10);
+      // Usar fecha local del browser para no tener desfase por UTC-3
+      const dt = new Date(o.fecha);
+      const d = `${dt.getFullYear()}-${String(dt.getMonth()+1).padStart(2,'0')}-${String(dt.getDate()).padStart(2,'0')}`;
       porFecha[d] = (porFecha[d] || 0) + parseFloat(o.pnl || 0);
     });
     Object.entries(porFecha).forEach(([fecha, pnl]) => {
-      const dow = new Date(fecha).getDay(); // 0=Dom, 1=Lun...5=Vie
+      // Parsear como fecha local agregando T12:00 para evitar problemas de TZ
+      const dow = new Date(fecha + 'T12:00:00').getDay(); // 0=Dom, 1=Lun...5=Vie
       if (dow < 1 || dow > 5) return;
       const idx = dow - 1;
       stats[idx].total++;
@@ -7968,7 +7971,9 @@
     const counts = Array(24).fill(0);
     ops.forEach(o => {
       if (!o.fecha) return;
-      const h = new Date(o.fecha).getHours();
+      // Parsear fecha respetando la zona horaria local del browser
+      const dt = new Date(o.fecha);
+      const h = dt.getHours(); // getHours() devuelve hora LOCAL del browser
       horas[h] += parseFloat(o.pnl || 0);
       counts[h]++;
     });
@@ -8156,7 +8161,9 @@
     const porFecha = {};
     ops.forEach(o => {
       if (!o.fecha) return;
-      const d = o.fecha.substring(0, 10);
+      // Usar fecha local del browser para no tener desfase por UTC-3
+      const dt = new Date(o.fecha);
+      const d = `${dt.getFullYear()}-${String(dt.getMonth()+1).padStart(2,'0')}-${String(dt.getDate()).padStart(2,'0')}`;
       porFecha[d] = (porFecha[d] || 0) + parseFloat(o.pnl || 0);
     });
 

@@ -3032,6 +3032,7 @@
         ${renderStatCard('Sharpe Ratio', stats.sharpe, parseFloat(stats.sharpe) >= 1 ? 'var(--verde)' : parseFloat(stats.sharpe) >= 0 ? '#FFD700' : '#E57373')}
         ${renderStatCard('Max Drawdown', '-$' + stats.maxDD, '#E57373')}
         ${renderStatCard('Máx. racha negativa', stats.rachaMax + ' ops', '#E57373')}
+        ${renderStatCard('Racha actual', stats.rachaActualCount + (stats.rachaActualTipo==='win' ? ' ✅' : ' ❌'), stats.rachaActualTipo==='win' ? 'var(--verde)' : '#E57373')}
         ${renderStatCard('Estrategia top', stats.estMasUsada, 'var(--blanco)')}
         ${renderStatCard('Emoción top', stats.emocionTop, 'var(--blanco)')}
       </div>
@@ -3706,8 +3707,21 @@
     const acumulado = ops.reduce((a, o) => a + pnlNeto(o), 0);
     let equity = 0, peak = 0, maxDD = 0;
     [...ops].reverse().forEach(o => { equity += pnlNeto(o); if (equity > peak) peak = equity; const dd = peak - equity; if (dd > maxDD) maxDD = dd; });
-    let rachaMax = 0, rachaActual = 0;
-    [...ops].reverse().forEach(o => { if (pnlNeto(o) < 0) { rachaActual++; if (rachaActual > rachaMax) rachaMax = rachaActual; } else rachaActual = 0; });
+    // Racha máx negativa
+    let rachaMax = 0, _rAct = 0;
+    [...ops].reverse().forEach(o => { if (pnlNeto(o) < 0) { _rAct++; if (_rAct > rachaMax) rachaMax = _rAct; } else _rAct = 0; });
+    // Racha actual (puede ser positiva o negativa)
+    let rachaActualCount = 0, rachaActualTipo = '';
+    const _opsAsc = [...ops]; // ops ya viene desc, reverse = asc cronológico
+    // Leer desde el más reciente (ops[0]) hacia atrás
+    if (ops.length > 0) {
+      rachaActualTipo = pnlNeto(ops[0]) >= 0 ? 'win' : 'loss';
+      for (const o of ops) {
+        const esWin = pnlNeto(o) >= 0;
+        if ((esWin && rachaActualTipo === 'win') || (!esWin && rachaActualTipo === 'loss')) rachaActualCount++;
+        else break;
+      }
+    }
     // Estrategia más usada
     const estConteo = {};
     ops.forEach(o => { if (o.estrategia) estConteo[o.estrategia] = (estConteo[o.estrategia] || 0) + 1; });
@@ -3721,7 +3735,7 @@
     const avgPnl = pnls.reduce((a,b) => a+b, 0) / (pnls.length || 1);
     const stdPnl = Math.sqrt(pnls.reduce((a,b) => a + Math.pow(b - avgPnl, 2), 0) / (pnls.length || 1));
     const sharpe = stdPnl > 0 ? (avgPnl / stdPnl).toFixed(2) : '—';
-    return { winRate, ratio, pf, evR, acumulado, maxDD: maxDD.toFixed(2), rachaMax, estMasUsada, emocionTop, sharpe };
+    return { winRate, ratio, pf, evR, acumulado, maxDD: maxDD.toFixed(2), rachaMax, rachaActualCount, rachaActualTipo, estMasUsada, emocionTop, sharpe };
   }
 
   function renderOpFila(o) {
@@ -4335,6 +4349,7 @@
       'Expected Value':  s.evR + 'R',
       'Max Drawdown':    '-$' + s.maxDD,
       'Máx. racha negativa':  s.rachaMax + ' ops',
+      'Racha actual':           s.rachaActualCount + (s.rachaActualTipo==='win'?' ✅':' ❌'),
       'Estrategia top':  s.estMasUsada,
       'Emoción top':     s.emocionTop,
     };
@@ -8147,7 +8162,6 @@
       leyenda.innerHTML = `
         <span>🟢 Racha ganadora máx: <strong style="color:#4CAF50">${maxWin}</strong></span>
         <span>🔴 Racha perdedora máx: <strong style="color:#E57373">${maxLoss}</strong></span>
-        <span>⚡ Racha actual: <strong style="color:${currRacha.win?'#4CAF50':'#E57373'}">${currRacha.count} ${currRacha.win?'wins':'losses'}</strong></span>
       `;
     }
   }

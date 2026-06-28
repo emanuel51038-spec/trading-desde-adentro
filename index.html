@@ -3103,9 +3103,11 @@
       <!-- GRÁFICO DE TRADES (barras por operación) -->
       <div style="background:var(--negro-card);border:1px solid var(--negro-border);border-radius:16px;padding:20px;margin-bottom:16px">
         <div style="font-size:12px;font-weight:600;letter-spacing:1px;text-transform:uppercase;color:var(--gris);margin-bottom:12px">Retorno por operación</div>
-        <div style="position:relative">
-          <canvas id="tradesBarCanvas" style="width:100%;height:160px"></canvas>
-          <div id="tradesBarTooltip" style="display:none;position:absolute;background:#1A1A1A;border:1px solid #2A2A2A;border-radius:8px;padding:8px 12px;font-size:12px;pointer-events:none;white-space:nowrap;z-index:10"></div>
+        <div style="overflow-x:auto;overflow-y:hidden;position:relative" id="tradesBarScroll">
+          <div style="position:relative" id="tradesBarInner">
+            <canvas id="tradesBarCanvas" style="height:160px;display:block"></canvas>
+            <div id="tradesBarTooltip" style="display:none;position:absolute;background:#1A1A1A;border:1px solid #2A2A2A;border-radius:8px;padding:8px 12px;font-size:12px;pointer-events:none;white-space:nowrap;z-index:10"></div>
+          </div>
         </div>
       </div>
       <!-- RENDIMIENTO POR DÍA DE LA SEMANA -->
@@ -3123,15 +3125,7 @@
         <div style="font-size:12px;font-weight:600;letter-spacing:1px;text-transform:uppercase;color:var(--gris);margin-bottom:12px">PnL por estrategia</div>
         <canvas id="estrategiaCanvas" style="width:100%;height:180px"></canvas>
       </div>
-      <!-- RACHA DE WINS/LOSSES -->
-      <div style="background:var(--negro-card);border:1px solid var(--negro-border);border-radius:16px;padding:20px;margin-bottom:16px">
-        <div style="font-size:12px;font-weight:600;letter-spacing:1px;text-transform:uppercase;color:var(--gris);margin-bottom:12px">Racha de resultados</div>
-        <div style="position:relative">
-          <canvas id="rachaCanvas" style="width:100%;height:100px"></canvas>
-          <div id="rachaTooltip" style="display:none;position:absolute;background:#1A1A1A;border:1px solid #2A2A2A;border-radius:8px;padding:8px 12px;font-size:12px;pointer-events:none;white-space:nowrap;z-index:10"></div>
-        </div>
-        <div id="rachaLeyenda" style="display:flex;gap:16px;margin-top:10px;flex-wrap:wrap;font-size:11px;color:var(--gris)"></div>
-      </div>
+
       <!-- MAPA DE CALOR MENSUAL -->
       <div style="background:var(--negro-card);border:1px solid var(--negro-border);border-radius:16px;padding:20px;margin-bottom:16px">
         <div style="font-size:12px;font-weight:600;letter-spacing:1px;text-transform:uppercase;color:var(--gris);margin-bottom:12px">Mapa de calor mensual</div>
@@ -3676,7 +3670,6 @@
       requestAnimationFrame(() => {
         dibujarHoraDelDia(ops);
         dibujarEstrategia(ops);
-        dibujarRacha(ops);
         dibujarMapaCalor(ops);
       });
     }, 300);
@@ -7794,24 +7787,35 @@
     if (!canvas) return;
     const tooltip = document.getElementById('tradesBarTooltip');
     const ctx = canvas.getContext('2d');
-    canvas.style.width = '100%';
-    const W = canvas.getBoundingClientRect().width || canvas.parentElement?.getBoundingClientRect().width || 600;
+    const scroll = document.getElementById('tradesBarScroll');
+
+    const opsRev = [...ops].reverse(); // cronológico
+    const pnls = opsRev.map(o => parseFloat(o.pnl || 0));
+    if (pnls.length === 0) return;
+
     const H = 160;
+    const pad = { top: 10, bot: 10, left: 2, right: 2 };
+    const BAR_W = 8;   // ancho fijo por barra
+    const GAP   = 3;   // gap entre barras
+    const containerW = scroll?.getBoundingClientRect().width || canvas.parentElement?.getBoundingClientRect().width || 600;
+    // Ancho mínimo: el del contenedor. Si hay muchas ops, se expande
+    const minW = containerW;
+    const neededW = pad.left + pad.right + pnls.length * (BAR_W + GAP);
+    const W = Math.max(minW, neededW);
+
     canvas.width = W * devicePixelRatio;
     canvas.height = H * devicePixelRatio;
     canvas.style.width = W + 'px';
     canvas.style.height = H + 'px';
     ctx.scale(devicePixelRatio, devicePixelRatio);
 
-    const opsRev = [...ops].reverse(); // cronológico
-    const pnls = opsRev.map(o => parseFloat(o.pnl || 0));
-    if (pnls.length === 0) return;
-
     const maxAbs = Math.max(...pnls.map(Math.abs), 1);
-    const pad = { top: 10, bot: 10, left: 2, right: 2 };
     const midY = H / 2;
-    const barW = Math.max(2, Math.min(12, (W - pad.left - pad.right) / pnls.length - 1));
-    const gap  = (W - pad.left - pad.right - barW * pnls.length) / Math.max(pnls.length - 1, 1);
+    const barW = BAR_W;
+    const gap  = GAP;
+
+    // Scroll al final (operación más reciente a la derecha)
+    if (scroll) setTimeout(() => { scroll.scrollLeft = scroll.scrollWidth; }, 50);
 
     // Línea 0
     ctx.strokeStyle = '#2A2A2A';

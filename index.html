@@ -467,8 +467,16 @@
     ══════════════════════════════ */
     .panel-layout {
       min-height: 100vh; display: flex; flex-direction: column;
-      background: radial-gradient(ellipse 70% 40% at 50% 0%, rgba(139,26,26,0.10) 0%, transparent 65%), var(--negro);
+      background: var(--negro); position: relative;
     }
+    .panel-layout::before {
+      content: ''; position: absolute; top: 0; left: 0; right: 0;
+      height: 420px;
+      background: radial-gradient(ellipse 70% 60% at 50% 0%, rgba(139,26,26,0.16) 0%, transparent 70%);
+      animation: heroGlowPulse 6s ease-in-out infinite;
+      pointer-events: none; z-index: 0;
+    }
+    .panel-header, .panel-nav, .panel-content { position: relative; z-index: 1; }
 
     /* Header */
     .panel-header {
@@ -1658,6 +1666,26 @@
   function escAttr(str) {
     if (!str) return '';
     return String(str).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/'/g,'&#39;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  }
+
+  function animateStatCounters(scope) {
+    const els = (scope || document).querySelectorAll('[data-count]');
+    els.forEach(el => {
+      const target = parseFloat(el.getAttribute('data-count')) || 0;
+      const decimals = parseInt(el.getAttribute('data-decimals') || '0', 10);
+      const prefix = el.getAttribute('data-prefix') || '';
+      const duration = 900;
+      const start = performance.now();
+      function tick(now) {
+        const progress = Math.min((now - start) / duration, 1);
+        const eased = 1 - Math.pow(1 - progress, 3);
+        const value = target * eased;
+        el.textContent = prefix + value.toFixed(decimals);
+        if (progress < 1) requestAnimationFrame(tick);
+        else el.textContent = prefix + target.toFixed(decimals);
+      }
+      requestAnimationFrame(tick);
+    });
   }
 
   /* ══════════════════════
@@ -5654,22 +5682,22 @@
       <div class="afil-stats-grid">
         <div class="afil-stat-card">
           <div class="afil-stat-label">Ventas totales</div>
-          <div class="afil-stat-value">${totalVentas}</div>
+          <div class="afil-stat-value" data-count="${totalVentas}" data-decimals="0">0</div>
           <div class="afil-stat-sub">operaciones registradas</div>
         </div>
         <div class="afil-stat-card">
           <div class="afil-stat-label">Comisión total</div>
-          <div class="afil-stat-value" style="color:#4CAF50">$${totalComision.toFixed(2)}</div>
+          <div class="afil-stat-value" style="color:#4CAF50" data-count="${totalComision}" data-decimals="2" data-prefix="$">$0.00</div>
           <div class="afil-stat-sub">USD acumulado</div>
         </div>
         <div class="afil-stat-card">
           <div class="afil-stat-label">Pendiente de pago</div>
-          <div class="afil-stat-value" style="color:#FFC107">$${comisionPendiente.toFixed(2)}</div>
+          <div class="afil-stat-value" style="color:#FFC107" data-count="${comisionPendiente}" data-decimals="2" data-prefix="$">$0.00</div>
           <div class="afil-stat-sub">USD por cobrar</div>
         </div>
         <div class="afil-stat-card">
           <div class="afil-stat-label">Ya cobrado</div>
-          <div class="afil-stat-value" style="color:var(--gris)">$${comisionPagada.toFixed(2)}</div>
+          <div class="afil-stat-value" style="color:var(--gris)" data-count="${comisionPagada}" data-decimals="2" data-prefix="$">$0.00</div>
           <div class="afil-stat-sub">USD pagados</div>
         </div>
       </div>
@@ -5765,6 +5793,8 @@
       <div style="background:rgba(139,26,26,0.08);border:1px solid rgba(139,26,26,0.2);border-radius:12px;padding:16px 20px">
         <p style="font-size:13px;color:var(--gris)">💬 Consultas por Instagram <a href="https://instagram.com/tradingdesdeadentro" target="_blank" style="color:#E57373">@tradingdesdeadentro</a> o a <strong style="color:#ccc">tradingdesdeadentro@gmail.com</strong>.</p>
       </div>`;
+
+    animateStatCounters(cont);
 
     // Cargar flyers asincrónicamente
     cargarFlyersAfiliado();
@@ -7099,7 +7129,7 @@
       const loadMore = document.getElementById('comLoadMore');
       if (loadMore) loadMore.remove();
       if (posts.length === _comLimit) {
-        cont.insertAdjacentHTML('beforeend', '<div class="com-load-more" id="comLoadMore"><button onclick="cargarMasPosts()">Cargar más</button></div>');
+        cont.insertAdjacentHTML('beforeend', '<div class="com-load-more" id="comLoadMore"><button onclick="cargarMasPosts()">Ver publicaciones más antiguas</button></div>');
       }
     }
     _comOffset += posts.length;
@@ -7155,7 +7185,7 @@
     <div class="com-feed" id="comFeed">
       ${posts.length > 0 ? _renderPostsHTML(posts, misReacMap) : '<div class="com-empty"><div class="com-empty-icon">📭</div><p>No hay posts aún. ¡Sé el primero en compartir un trade!</p></div>'}
     </div>
-    ${posts.length === _comLimit ? '<div class="com-load-more" id="comLoadMore"><button onclick="cargarMasPosts()">Cargar más</button></div>' : ''}`;
+    ${posts.length === _comLimit ? '<div class="com-load-more" id="comLoadMore"><button onclick="cargarMasPosts()">Ver publicaciones más antiguas</button></div>' : ''}`;
   }
 
   function _renderPostsHTML(posts, misReacMap) {

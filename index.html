@@ -304,6 +304,10 @@
     .reveal-up { opacity: 0; transform: translateY(30px); transition: opacity 0.7s ease, transform 0.7s ease; }
     .reveal-up.in-view { opacity: 1; transform: translateY(0); }
 
+    /* Gráficos del journal: crecen hacia su valor al dibujarse */
+    @keyframes chartGrowIn { from { transform: scaleY(0.05); opacity: 0; } to { transform: scaleY(1); opacity: 1; } }
+    .chart-grow { animation: chartGrowIn 0.6s cubic-bezier(0.22, 1, 0.36, 1) both; transform-origin: bottom; }
+
     /* Ticker precios */
     .ticker-bar {
       background: #0D0D0D; border-top: 1px solid var(--negro-border);
@@ -469,10 +473,10 @@
       min-height: 100vh; display: flex; flex-direction: column;
       background: var(--negro); position: relative;
     }
-    .panel-layout::before {
-      content: ''; position: absolute; top: 0; left: 0; right: 0;
+    .panel-glow-fx {
+      content: ''; position: fixed; top: 0; left: 0; right: 0;
       height: 420px;
-      background: radial-gradient(ellipse 70% 60% at 50% 0%, rgba(139,26,26,0.16) 0%, transparent 70%);
+      background: radial-gradient(ellipse 70% 60% at 50% 0%, rgba(192,57,43,0.18) 0%, transparent 70%);
       animation: heroGlowPulse 6s ease-in-out infinite;
       pointer-events: none; z-index: 0;
     }
@@ -1317,6 +1321,7 @@
 ══════════════════════════════ -->
 <div id="vista-panel" class="vista">
   <div class="panel-layout">
+    <div class="panel-glow-fx"></div>
 
     <!-- Header -->
     <header class="panel-header">
@@ -1686,6 +1691,13 @@
       }
       requestAnimationFrame(tick);
     });
+  }
+
+  function growChart(canvas) {
+    if (!canvas) return;
+    canvas.classList.remove('chart-grow');
+    void canvas.offsetWidth;
+    canvas.classList.add('chart-grow');
   }
 
   /* ══════════════════════
@@ -3863,6 +3875,7 @@
   function dibujarEquityCurve(ops) {
     const canvas = document.getElementById('equityCanvas');
     if (!canvas) return;
+    growChart(canvas);
     const dpr = window.devicePixelRatio || 1;
     const W = canvas.offsetWidth || canvas.parentElement.offsetWidth || 600;
     const H = 200;
@@ -7851,6 +7864,7 @@
   function dibujarTradesBar(ops) {
     const canvas = document.getElementById('tradesBarCanvas');
     if (!canvas) return;
+    growChart(canvas);
     const tooltip = document.getElementById('tradesBarTooltip');
     const ctx = canvas.getContext('2d');
     const scroll = document.getElementById('tradesBarScroll');
@@ -7934,6 +7948,7 @@
   function dibujarDiasSemana(ops) {
     const canvas = document.getElementById('diasSemanaCanvas');
     if (!canvas) return;
+    growChart(canvas);
     const ctx = canvas.getContext('2d');
     canvas.style.width = '100%';
     const W = canvas.getBoundingClientRect().width || canvas.parentElement?.getBoundingClientRect().width || 600;
@@ -8041,6 +8056,7 @@
   function dibujarHoraDelDia(ops) {
     const canvas = document.getElementById('horaDelDiaCanvas');
     if (!canvas) return;
+    growChart(canvas);
     const ctx = canvas.getContext('2d');
     canvas.style.width = '100%';
     const W = canvas.getBoundingClientRect().width || canvas.parentElement?.getBoundingClientRect().width || 600;
@@ -8109,6 +8125,7 @@
   function dibujarEstrategia(ops) {
     const canvas = document.getElementById('estrategiaCanvas');
     if (!canvas) return;
+    growChart(canvas);
     const ctx = canvas.getContext('2d');
     canvas.style.width = '100%';
     const W = canvas.getBoundingClientRect().width || canvas.parentElement?.getBoundingClientRect().width || 600;
@@ -8171,6 +8188,7 @@
     const canvas = document.getElementById('rachaCanvas');
     const leyenda = document.getElementById('rachaLeyenda');
     if (!canvas) return;
+    growChart(canvas);
     const ctx = canvas.getContext('2d');
     canvas.style.width = '100%';
     const W = canvas.getBoundingClientRect().width || canvas.parentElement?.getBoundingClientRect().width || 600;

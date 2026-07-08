@@ -278,6 +278,32 @@
     }
     .home-btn-secondary:hover { border-color: var(--rojo); color: white; }
 
+    /* Hero dinamico: canvas velas + glow pulsante */
+    .home-hero { overflow: hidden; }
+    #heroCanvas { position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0.15; pointer-events: none; }
+    .home-hero-glow {
+      position: absolute; top: 50%; left: 50%; width: 900px; height: 900px;
+      transform: translate(-50%,-50%);
+      background: radial-gradient(circle, rgba(192,57,43,0.25) 0%, rgba(192,57,43,0) 70%);
+      animation: heroGlowPulse 6s ease-in-out infinite;
+      pointer-events: none;
+    }
+    @keyframes heroGlowPulse {
+      0%, 100% { opacity: 0.6; transform: translate(-50%,-50%) scale(1); }
+      50% { opacity: 1; transform: translate(-50%,-50%) scale(1.08); }
+    }
+    .home-btn-primary { position: relative; overflow: hidden; }
+    .home-btn-primary::after {
+      content: ''; position: absolute; top: 0; left: -75%; width: 50%; height: 100%;
+      background: linear-gradient(120deg, transparent, rgba(255,255,255,0.35), transparent);
+      transform: skewX(-20deg); transition: left 0.6s ease;
+    }
+    .home-btn-primary:hover::after { left: 130%; }
+
+    /* Scroll reveal secciones */
+    .reveal-up { opacity: 0; transform: translateY(30px); transition: opacity 0.7s ease, transform 0.7s ease; }
+    .reveal-up.in-view { opacity: 1; transform: translateY(0); }
+
     /* Ticker precios */
     .ticker-bar {
       background: #0D0D0D; border-top: 1px solid var(--negro-border);
@@ -1023,6 +1049,8 @@
 
   <!-- HERO -->
   <section class="home-hero">
+    <canvas id="heroCanvas"></canvas>
+    <div class="home-hero-glow"></div>
     <div class="home-hero-inner">
       <img src="logo.png" alt="Trading desde Adentro" class="home-hero-logo">
       <h1>EL TRADING SE CONSTRUYE<br><span>DESDE ADENTRO</span></h1>
@@ -1058,7 +1086,7 @@
   </div>
 
   <!-- BIO -->
-  <div class="home-section">
+  <div class="home-section reveal-up">
     <h2 class="home-section-title">QUIEN SOY</h2>
     <div class="bio-card">
       <div class="bio-avatar">
@@ -1077,7 +1105,7 @@
   </div>
 
   <!-- HERRAMIENTAS / SCREENSHOTS -->
-  <div class="home-section" style="padding-top:0">
+  <div class="home-section reveal-up" style="padding-top:0">
     <h2 class="home-section-title">HERRAMIENTAS</h2>
     <p class="home-section-sub">Construidas desde la experiencia real del trading. Sin humo, sin promesas — solo herramientas que funcionan.</p>
     <div class="screenshots-grid">
@@ -1141,7 +1169,7 @@
   </script>
 
   <!-- RESEÑAS PÚBLICAS -->
-  <div class="home-section" style="padding-top:0" id="resenasHomeSection">
+  <div class="home-section reveal-up" style="padding-top:0" id="resenasHomeSection">
     <h2 class="home-section-title">LO QUE DICEN LOS TRADERS</h2>
     <p class="home-section-sub">Reseñas verificadas de compradores con licencia activa.</p>
     <div id="resenasHomePromedio" style="display:flex;align-items:center;gap:16px;margin-bottom:32px;flex-wrap:wrap">
@@ -1158,7 +1186,7 @@
   </div>
 
   <!-- CALENDARIO ECONOMICO -->
-  <div class="home-section" style="padding-top:0">
+  <div class="home-section reveal-up" style="padding-top:0">
     <h2 class="home-section-title">CALENDARIO ECONOMICO</h2>
     <p class="home-section-sub">Eventos macroeconomicos del mercado en tiempo real.</p>
     <div style="border-radius:12px;overflow:hidden;border:1px solid var(--negro-border)">
@@ -8344,6 +8372,89 @@
       irA('auth');
     }
   })();
+</script>
+
+<!-- Hero dinamico: canvas de velas + scroll reveal -->
+<script>
+(function() {
+  var canvas = document.getElementById('heroCanvas');
+  if (canvas) {
+    var ctx = canvas.getContext('2d');
+    function resizeHeroCanvas() {
+      var rect = canvas.parentElement.getBoundingClientRect();
+      canvas.width = rect.width;
+      canvas.height = rect.height;
+    }
+    resizeHeroCanvas();
+    window.addEventListener('resize', resizeHeroCanvas);
+
+    var candles = [];
+    function initCandles() {
+      candles = [];
+      var count = Math.floor(canvas.width / 14) + 2;
+      var price = canvas.height * 0.5;
+      for (var i = 0; i < count; i++) {
+        var open = price;
+        price += (Math.random() - 0.5) * 60;
+        var close = price;
+        var high = Math.max(open, close) + Math.random() * 20;
+        var low = Math.min(open, close) - Math.random() * 20;
+        candles.push({ open: open, close: close, high: high, low: low });
+      }
+    }
+    initCandles();
+
+    var offset = 0;
+    function drawCandles() {
+      if (!canvas.isConnected) return;
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      offset -= 0.3;
+      if (offset < -14) {
+        offset = 0;
+        candles.shift();
+        var last = candles[candles.length - 1];
+        var price = last.close;
+        var open = price;
+        price += (Math.random() - 0.5) * 60;
+        var close = price;
+        var high = Math.max(open, close) + Math.random() * 20;
+        var low = Math.min(open, close) - Math.random() * 20;
+        candles.push({ open: open, close: close, high: high, low: low });
+      }
+      var mid = canvas.height * 0.5;
+      candles.forEach(function(c, i) {
+        var x = i * 14 + offset;
+        var up = c.close < c.open;
+        ctx.strokeStyle = up ? '#4CAF50' : '#C0392B';
+        ctx.fillStyle = up ? '#4CAF50' : '#C0392B';
+        ctx.beginPath();
+        ctx.moveTo(x + 5, mid - (c.high - mid));
+        ctx.lineTo(x + 5, mid - (c.low - mid));
+        ctx.stroke();
+        var yOpen = mid - (c.open - mid);
+        var yClose = mid - (c.close - mid);
+        ctx.fillRect(x, Math.min(yOpen, yClose), 9, Math.max(Math.abs(yClose - yOpen), 2));
+      });
+      requestAnimationFrame(drawCandles);
+    }
+    requestAnimationFrame(drawCandles);
+  }
+
+  var revealEls = document.querySelectorAll('.reveal-up');
+  if (revealEls.length && 'IntersectionObserver' in window) {
+    var io = new IntersectionObserver(function(entries) {
+      entries.forEach(function(entry) {
+        if (entry.isIntersecting) {
+          entry.target.classList.add('in-view');
+          io.unobserve(entry.target);
+        }
+      });
+    }, { threshold: 0.12 });
+    revealEls.forEach(function(el) { io.observe(el); });
+  } else {
+    revealEls.forEach(function(el) { el.classList.add('in-view'); });
+  }
+})();
 </script>
 </body>
 </html>

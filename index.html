@@ -465,7 +465,10 @@
     /* ══════════════════════════════
        MI PANEL
     ══════════════════════════════ */
-    .panel-layout { min-height: 100vh; display: flex; flex-direction: column; }
+    .panel-layout {
+      min-height: 100vh; display: flex; flex-direction: column;
+      background: radial-gradient(ellipse 70% 40% at 50% 0%, rgba(139,26,26,0.10) 0%, transparent 65%), var(--negro);
+    }
 
     /* Header */
     .panel-header {
@@ -506,7 +509,8 @@
     /* Content */
     .panel-content { padding: 32px 24px; max-width: 900px; margin: 0 auto; width: 100%; flex: 1; }
     .panel-section { display: none; }
-    .panel-section.activa { display: block; }
+    .panel-section.activa { display: block; animation: panelFadeIn 0.45s ease both; }
+    @keyframes panelFadeIn { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
 
     /* Greeting */
     .panel-greeting {
@@ -530,7 +534,9 @@
     .licencia-card {
       background: var(--negro-card); border: 1px solid var(--negro-border);
       border-radius: 16px; overflow: hidden; margin-bottom: 20px;
+      transition: border-color 0.25s ease, transform 0.25s ease, box-shadow 0.25s ease;
     }
+    .licencia-card:hover { border-color: rgba(192,57,43,0.5); transform: translateY(-2px); box-shadow: 0 8px 24px rgba(0,0,0,0.35); }
     .licencia-card-header {
       padding: 20px 24px; display: flex; align-items: center; justify-content: space-between;
       border-bottom: 1px solid var(--negro-border);
@@ -590,7 +596,7 @@
       border-radius: 12px; padding: 16px 20px; display: flex; align-items: center;
       gap: 14px; cursor: pointer; transition: all 0.2s; text-decoration: none; color: var(--blanco);
     }
-    .empty-product-card:hover { border-color: var(--rojo); }
+    .empty-product-card:hover { border-color: var(--rojo); transform: translateY(-2px); box-shadow: 0 8px 20px rgba(0,0,0,0.3); }
     .empty-product-icon {
       width: 40px; height: 40px; border-radius: 10px; background: rgba(139,26,26,0.2);
       border: 1px solid rgba(139,26,26,0.3); display: flex; align-items: center;
@@ -779,13 +785,15 @@
     /* ── COMUNIDAD ─────────────────────────────────── */
     .com-header { display:flex; justify-content:space-between; align-items:center; margin-bottom:24px; flex-wrap:wrap; gap:12px; }
     .com-header h2 { font-size:22px; font-weight:700; color:var(--blanco); margin:0; }
-    .com-btn-nuevo { background:var(--rojo); border:none; color:white; padding:10px 20px; border-radius:8px; cursor:pointer; font-size:13px; font-weight:600; display:flex; align-items:center; gap:6px; }
-    .com-btn-nuevo:hover { opacity:.85; }
+    .com-btn-nuevo { background:var(--rojo); border:none; color:white; padding:10px 20px; border-radius:8px; cursor:pointer; font-size:13px; font-weight:600; display:flex; align-items:center; gap:6px; transition: all 0.2s ease; }
+    .com-btn-nuevo:hover { opacity:.85; transform: translateY(-1px); }
     .com-filtros { display:flex; gap:8px; margin-bottom:20px; flex-wrap:wrap; }
     .com-filtro-btn { background:#1A1A1A; border:1px solid #2A2A2A; color:var(--gris); padding:6px 14px; border-radius:20px; cursor:pointer; font-size:12px; font-weight:600; transition:all .2s; }
     .com-filtro-btn.active, .com-filtro-btn:hover { background:var(--rojo); border-color:var(--rojo); color:white; }
     .com-feed { display:flex; flex-direction:column; gap:16px; }
-    .com-post { background:var(--negro-card); border:1px solid var(--negro-border); border-radius:16px; padding:20px; }
+    .com-post { background:var(--negro-card); border:1px solid var(--negro-border); border-radius:16px; padding:20px; transition: border-color 0.25s ease, transform 0.25s ease; animation: comPostIn 0.5s ease both; }
+    .com-post:hover { border-color: rgba(192,57,43,0.4); transform: translateY(-2px); }
+    @keyframes comPostIn { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: translateY(0); } }
     .com-post-header { display:flex; align-items:center; gap:12px; margin-bottom:14px; }
     .com-avatar { width:40px; height:40px; border-radius:50%; background:var(--rojo); display:flex; align-items:center; justify-content:center; font-weight:700; font-size:16px; color:white; flex-shrink:0; }
     .com-post-meta { flex:1; min-width:0; }

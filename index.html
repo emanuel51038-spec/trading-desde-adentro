@@ -22,7 +22,10 @@
       --verde: #4CAF50;
     }
     * { margin: 0; padding: 0; box-sizing: border-box; }
-    body { background: var(--negro); color: var(--blanco); font-family: 'DM Sans', sans-serif; overflow-x: hidden; }
+    body {
+      background: radial-gradient(ellipse 70% 45% at 50% 0%, rgba(192,57,43,0.22) 0%, transparent 70%) fixed, var(--negro);
+      color: var(--blanco); font-family: 'DM Sans', sans-serif; overflow-x: hidden;
+    }
 
     /* ── VISTAS ── */
     .vista { display: none; }
@@ -471,7 +474,7 @@
     ══════════════════════════════ */
     .panel-layout {
       min-height: 100vh; display: flex; flex-direction: column;
-      background: var(--negro); position: relative;
+      position: relative;
     }
     .panel-glow-fx {
       display: none;
@@ -3876,10 +3879,10 @@
     if (ind) ind.textContent = visible ? '▼ ver' : '▲ cerrar';
   }
 
-  function dibujarEquityCurve(ops) {
+  function dibujarEquityCurve(ops, skipAnim) {
     const canvas = document.getElementById('equityCanvas');
     if (!canvas) return;
-    growChart(canvas);
+    if (!skipAnim) growChart(canvas);
     const dpr = window.devicePixelRatio || 1;
     const W = canvas.offsetWidth || canvas.parentElement.offsetWidth || 600;
     const H = 200;
@@ -4035,7 +4038,7 @@
       const py = (v) => pad.top + (1 - (v - minV) / rango) * H;
 
       // Redibujar — llamar a la función completa evita acumulación de líneas
-      dibujarEquityCurve(canvas._equityOps);
+      dibujarEquityCurve(canvas._equityOps, true);
 
       const cx = pad.left + (closest / n) * w;
       const minV2 = Math.min(...puntos);

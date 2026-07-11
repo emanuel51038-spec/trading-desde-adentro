@@ -1702,7 +1702,22 @@
     if (!canvas) return;
     canvas.classList.remove('chart-grow');
     void canvas.offsetWidth;
-    canvas.classList.add('chart-grow');
+    const rect = canvas.getBoundingClientRect();
+    const inView = rect.top < window.innerHeight && rect.bottom > 0;
+    if (inView || !('IntersectionObserver' in window)) {
+      canvas.classList.add('chart-grow');
+      return;
+    }
+    if (!canvas._growObserver) {
+      canvas._growObserver = new IntersectionObserver(function(entries) {
+        entries.forEach(function(entry) {
+          if (entry.isIntersecting) {
+            entry.target.classList.add('chart-grow');
+          }
+        });
+      }, { threshold: 0.2 });
+    }
+    canvas._growObserver.observe(canvas);
   }
 
   /* ══════════════════════
@@ -4399,6 +4414,13 @@
     _opsFiltradas = opsFiltradas;
     if (typeof iniciarCalendario === 'function') iniciarCalendario(opsFiltradas);
     if (typeof dibujarEquityCurve === 'function') dibujarEquityCurve(opsFiltradas);
+    if (typeof dibujarTradesBar === 'function') dibujarTradesBar(opsFiltradas);
+    if (typeof dibujarDiasSemana === 'function') dibujarDiasSemana(opsFiltradas);
+    if (typeof dibujarHoraDelDia === 'function') dibujarHoraDelDia(opsFiltradas);
+    if (typeof dibujarEstrategia === 'function') dibujarEstrategia(opsFiltradas);
+    if (typeof dibujarRacha === 'function') dibujarRacha(opsFiltradas);
+    if (typeof dibujarRadar === 'function') dibujarRadar(opsFiltradas);
+    if (typeof dibujarRadarPerf === 'function') dibujarRadarPerf(opsFiltradas);
     // Resetear monte carlo al cambiar filtro
     const mcEl = document.getElementById('monteCarloContent');
     if (mcEl && mcEl.querySelector('canvas')) {

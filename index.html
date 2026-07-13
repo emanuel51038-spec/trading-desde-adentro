@@ -8431,19 +8431,35 @@
     cont.innerHTML = '<div style="text-align:center;padding:40px;color:var(--gris)"><span class="spinner"></span></div>';
 
     // Fetch en paralelo: usuarios auth, licencias, posts
-    const [rLics, rPosts, rUsuarios, rTotalUsers] = await Promise.all([
+    const [rLics, rPosts, rUsuarios, rTotalUsers, rAllUsers] = await Promise.all([
       sbFetch('/rest/v1/licencias?select=estado,producto', {}, sesiónActual.access_token),
       sbFetch('/rest/v1/posts_comunidad?select=id', {}, sesiónActual.access_token),
       sbFetch('/rest/v1/licencias?select=nombre,email,producto,estado,created_at&order=created_at.desc', {}, sesiónActual.access_token),
-      sbFetch('/rest/v1/rpc/get_total_users', { method: 'POST', body: '{}' }, sesiónActual.access_token).catch(() => ({ ok: false }))
+      sbFetch('/rest/v1/rpc/get_total_users', { method: 'POST', body: '{}' }, sesiónActual.access_token).catch(() => ({ ok: false })),
+      sbFetch('/rest/v1/rpc/get_all_user_emails', { method: 'POST', body: '{}' }, sesiónActual.access_token).catch(() => ({ ok: false }))
     ]);
 
     const lics = (rLics.ok && Array.isArray(rLics.data)) ? rLics.data : [];
     const licsActivas = lics.filter(l => l.estado === 'activa').length;
     const posts = (rPosts.ok && Array.isArray(rPosts.data)) ? rPosts.data.length : 0;
     const usuarios = (rUsuarios.ok && Array.isArray(rUsuarios.data)) ? rUsuarios.data : [];
+
+    // Usuarios únicos por email (para filtros de licencia)
     const emailsUnicos = [...new Map(usuarios.map(u => [u.email, u])).values()];
-    // Usar función SQL SECURITY DEFINER para el conteo real de auth.users
+    // Únicos con licencia activa
+    const emailsActivos = [...new Map(
+      usuarios.filter(u => u.estado === 'activa').map(u => [u.email, u])
+    ).values()];
+    // Únicos por producto
+    const emailsPorProducto = (prod) => [...new Map(
+      usuarios.filter(u => u.producto === prod).map(u => [u.email, u])
+    ).values()];
+
+    // Todos los usuarios registrados (incluyendo sin licencia) — desde get_all_user_emails
+    const todosLosUsuarios = (rAllUsers.ok && Array.isArray(rAllUsers.data))
+      ? rAllUsers.data  // [{email, nombre}]
+      : emailsUnicos;   // fallback
+
     const totalUsers = (rTotalUsers.ok && typeof rTotalUsers.data === 'number') ? rTotalUsers.data : emailsUnicos.length;
 
     cont.innerHTML = `
@@ -8484,11 +8500,12 @@
 
           <label class="padmin-label">Destinatarios</label>
           <select id="adminEmailDest" class="padmin-select" onchange="_actualizarContAdmin()">
-            <option value="todos">Todos los usuarios con licencia (${emailsUnicos.length})</option>
-            <option value="activos">Solo licencias activas (${licsActivas})</option>
-            <option value="DailyLossLimiter">Daily Loss Limiter</option>
-            <option value="ManualBacktestAnalyzer">Manual Backtest Analyzer</option>
-            <option value="TDA_RiskReward">TDA Risk/Reward</option>
+            <option value="todos_registrados">Todos los usuarios registrados (${totalUsers})</option>
+            <option value="con_licencia">Usuarios con licencia (${emailsUnicos.length})</option>
+            <option value="activos">Solo licencias activas (${emailsActivos.length})</option>
+            <option value="DailyLossLimiter">Daily Loss Limiter (${emailsPorProducto('DailyLossLimiter').length})</option>
+            <option value="ManualBacktestAnalyzer">Manual Backtest Analyzer (${emailsPorProducto('ManualBacktestAnalyzer').length})</option>
+            <option value="TDA_RiskReward">TDA Risk/Reward (${emailsPorProducto('TDA_RiskReward').length})</option>
           </select>
           <div id="adminEmailCnt" style="font-size:11px;color:var(--gris);margin:-8px 0 12px"></div>
 
@@ -8517,7 +8534,7 @@
 
           <div style="display:flex;gap:8px">
             <button onclick="_previsualizarAdmin()" class="padmin-btn-sec" style="flex:1">👁️ Previsualizar</button>
-            <button onclick="_enviarEmailAdmin(${JSON.stringify(emailsUnicos)})" id="btnAdminEnviar" class="padmin-btn" style="flex:2">📧 Enviar</button>
+            <button onclick="_enviarEmailAdmin()" id="btnAdminEnviar" class="padmin-btn" style="flex:2">📧 Enviar</button>
           </div>
           <div id="adminEnvioMsg" style="display:none;margin-top:12px;font-size:12px;padding:10px 14px;border-radius:8px"></div>
         </div>
@@ -8590,8 +8607,11 @@
       </div>
     `;
 
-    // Guardar emailsUnicos en window para usarlos en las funciones
-    window._adminEmailsUnicos = emailsUnicos;
+    // Guardar todos los conjuntos en window
+    window._adminEmailsUnicos    = emailsUnicos;
+    window._adminEmailsActivos   = emailsActivos;
+    window._adminTodosUsuarios   = todosLosUsuarios;
+    window._adminEmailsPorProd   = emailsPorProducto;
     _actualizarContAdmin();
     _cargarCuponesAdmin();
 
@@ -8610,13 +8630,18 @@
   function _actualizarContAdmin() {
     const sel = document.getElementById('adminEmailDest');
     const cnt = document.getElementById('adminEmailCnt');
-    if (!sel || !cnt || !window._adminEmailsUnicos) return;
+    if (!sel || !cnt) return;
     const val = sel.value;
-    const eu = window._adminEmailsUnicos;
-    let total = val === 'todos' ? eu.length
-              : val === 'activos' ? eu.filter(u => u.estado === 'activa').length
-              : eu.filter(u => u.producto === val).length;
-    cnt.textContent = `${total} destinatario${total !== 1 ? 's' : ''}`;
+    const dests = _getDestinatariosAdmin(val);
+    cnt.textContent = `${dests.length} destinatario${dests.length !== 1 ? 's' : ''}`;
+  }
+
+  function _getDestinatariosAdmin(val) {
+    if (val === 'todos_registrados') return window._adminTodosUsuarios || [];
+    if (val === 'con_licencia')      return window._adminEmailsUnicos  || [];
+    if (val === 'activos')           return window._adminEmailsActivos || [];
+    if (window._adminEmailsPorProd)  return window._adminEmailsPorProd(val);
+    return (window._adminEmailsUnicos || []).filter(u => u.producto === val);
   }
 
   async function _subirImgAdmin(input) {
@@ -8665,7 +8690,7 @@
     prev.style.display = 'block';
   }
 
-  async function _enviarEmailAdmin(emailsUnicos) {
+  async function _enviarEmailAdmin() {
     const asunto  = document.getElementById('adminEmailAsunto')?.value.trim();
     const mensaje = document.getElementById('adminEmailMsg')?.value.trim();
     const dest    = document.getElementById('adminEmailDest')?.value;
@@ -8682,10 +8707,7 @@
 
     if (!asunto || !mensaje) { showMsg('Completá el asunto y el mensaje.', false); return; }
 
-    const eu = emailsUnicos || window._adminEmailsUnicos || [];
-    let dests = eu;
-    if (dest === 'activos') dests = eu.filter(u => u.estado === 'activa');
-    else if (dest !== 'todos') dests = eu.filter(u => u.producto === dest);
+    const dests = _getDestinatariosAdmin(dest);
 
     if (!dests.length) { showMsg('No hay destinatarios para el filtro seleccionado.', false); return; }
     if (!confirm(`¿Enviar email a ${dests.length} usuario${dests.length!==1?'s':''}?\n\nAsunto: ${asunto}`)) return;

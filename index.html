@@ -8431,11 +8431,11 @@
     cont.innerHTML = '<div style="text-align:center;padding:40px;color:var(--gris)"><span class="spinner"></span></div>';
 
     // Fetch en paralelo: usuarios auth, licencias, posts
-    const [rAuth, rLics, rPosts, rUsuarios] = await Promise.all([
-      sbFetch('/auth/v1/admin/users?per_page=1000', {}, sesiónActual.access_token).catch(() => ({ ok: false })),
+    const [rLics, rPosts, rUsuarios, rTotalUsers] = await Promise.all([
       sbFetch('/rest/v1/licencias?select=estado,producto', {}, sesiónActual.access_token),
       sbFetch('/rest/v1/posts_comunidad?select=id', {}, sesiónActual.access_token),
-      sbFetch('/rest/v1/licencias?select=nombre,email,producto,estado,created_at&order=created_at.desc', {}, sesiónActual.access_token)
+      sbFetch('/rest/v1/licencias?select=nombre,email,producto,estado,created_at&order=created_at.desc', {}, sesiónActual.access_token),
+      sbFetch('/rest/v1/rpc/get_total_users', { method: 'POST', body: '{}' }, sesiónActual.access_token).catch(() => ({ ok: false }))
     ]);
 
     const lics = (rLics.ok && Array.isArray(rLics.data)) ? rLics.data : [];
@@ -8443,8 +8443,8 @@
     const posts = (rPosts.ok && Array.isArray(rPosts.data)) ? rPosts.data.length : 0;
     const usuarios = (rUsuarios.ok && Array.isArray(rUsuarios.data)) ? rUsuarios.data : [];
     const emailsUnicos = [...new Map(usuarios.map(u => [u.email, u])).values()];
-    // Total real de auth si disponible, si no emails únicos de licencias
-    const totalUsers = (rAuth.ok && Array.isArray(rAuth.data?.users)) ? rAuth.data.users.length : emailsUnicos.length;
+    // Usar función SQL SECURITY DEFINER para el conteo real de auth.users
+    const totalUsers = (rTotalUsers.ok && typeof rTotalUsers.data === 'number') ? rTotalUsers.data : emailsUnicos.length;
 
     cont.innerHTML = `
       <div style="margin-bottom:24px">

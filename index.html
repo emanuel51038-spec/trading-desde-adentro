@@ -309,7 +309,7 @@
 
     /* Gráficos del journal: crecen hacia su valor al dibujarse */
     @keyframes chartGrowIn { from { transform: scaleY(0.05); opacity: 0; } to { transform: scaleY(1); opacity: 1; } }
-    .chart-grow { animation: chartGrowIn 0.6s cubic-bezier(0.22, 1, 0.36, 1) both; transform-origin: bottom; }
+    .chart-grow { animation: chartGrowIn 1.7s cubic-bezier(0.16, 1, 0.3, 1) both; transform-origin: bottom; }
 
     /* Ticker precios */
     .ticker-bar {
@@ -1702,7 +1702,21 @@
     if (!canvas) return;
     canvas.classList.remove('chart-grow');
     void canvas.offsetWidth;
-    canvas.classList.add('chart-grow');
+    if (!('IntersectionObserver' in window)) {
+      canvas.classList.add('chart-grow');
+      return;
+    }
+    if (!canvas._growObserver) {
+      canvas._growObserver = new IntersectionObserver(function(entries) {
+        entries.forEach(function(entry) {
+          if (entry.isIntersecting) {
+            entry.target.classList.add('chart-grow');
+            entry.target._growObserver.unobserve(entry.target);
+          }
+        });
+      }, { threshold: 0.4 });
+    }
+    canvas._growObserver.observe(canvas);
   }
 
   /* ══════════════════════
@@ -4399,6 +4413,13 @@
     _opsFiltradas = opsFiltradas;
     if (typeof iniciarCalendario === 'function') iniciarCalendario(opsFiltradas);
     if (typeof dibujarEquityCurve === 'function') dibujarEquityCurve(opsFiltradas);
+    if (typeof dibujarTradesBar === 'function') dibujarTradesBar(opsFiltradas);
+    if (typeof dibujarDiasSemana === 'function') dibujarDiasSemana(opsFiltradas);
+    if (typeof dibujarHoraDelDia === 'function') dibujarHoraDelDia(opsFiltradas);
+    if (typeof dibujarEstrategia === 'function') dibujarEstrategia(opsFiltradas);
+    if (typeof dibujarRacha === 'function') dibujarRacha(opsFiltradas);
+    if (typeof dibujarRadar === 'function') dibujarRadar(opsFiltradas);
+    if (typeof dibujarRadarPerf === 'function') dibujarRadarPerf(opsFiltradas);
     // Resetear monte carlo al cambiar filtro
     const mcEl = document.getElementById('monteCarloContent');
     if (mcEl && mcEl.querySelector('canvas')) {

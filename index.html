@@ -309,7 +309,7 @@
 
     /* Gráficos del journal: crecen hacia su valor al dibujarse */
     @keyframes chartGrowIn { from { transform: scaleY(0.05); opacity: 0; } to { transform: scaleY(1); opacity: 1; } }
-    .chart-grow { animation: chartGrowIn 1.7s cubic-bezier(0.16, 1, 0.3, 1) both; transform-origin: bottom; }
+    .chart-grow { animation: chartGrowIn 0.6s cubic-bezier(0.22, 1, 0.36, 1) both; transform-origin: bottom; }
 
     /* Ticker precios */
     .ticker-bar {
@@ -872,6 +872,32 @@
     .star-selector { display: flex; gap: 6px; margin: 4px 0 12px; }
     .star-selector span { font-size: 28px; cursor: pointer; opacity: .35; transition: opacity .15s, transform .15s; }
     .star-selector span.activa, .star-selector span:hover { opacity: 1; transform: scale(1.15); }
+
+    /* ── PANEL ADMIN ────────────────────────────────── */
+    .padmin-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 16px; margin-bottom: 28px; }
+    .padmin-stat { background: #0D0D0D; border: 1px solid #1E1E1E; border-radius: 12px; padding: 18px 20px; }
+    .padmin-stat-val { font-size: 28px; font-weight: 700; color: var(--blanco); }
+    .padmin-stat-lbl { font-size: 11px; color: var(--gris); text-transform: uppercase; letter-spacing: 1px; margin-top: 4px; }
+    .padmin-tabs { display: flex; gap: 8px; margin-bottom: 24px; flex-wrap: wrap; }
+    .padmin-tab { background: #1A1A1A; border: 1px solid #2A2A2A; color: var(--gris); padding: 8px 18px; border-radius: 8px; cursor: pointer; font-size: 13px; font-weight: 600; }
+    .padmin-tab.active { background: var(--rojo); border-color: var(--rojo); color: white; }
+    .padmin-section { display: none; }
+    .padmin-section.activa { display: block; }
+    .padmin-card { background: var(--negro-card); border: 1px solid var(--negro-border); border-radius: 14px; padding: 24px; margin-bottom: 16px; }
+    .padmin-input { width: 100%; background: #181818; border: 1px solid #2A2A2A; color: var(--blanco); padding: 10px 14px; border-radius: 8px; font-size: 13px; outline: none; font-family: 'DM Sans', sans-serif; margin-bottom: 12px; }
+    .padmin-input:focus { border-color: var(--rojo); }
+    .padmin-textarea { width: 100%; background: #181818; border: 1px solid #2A2A2A; color: var(--blanco); padding: 10px 14px; border-radius: 8px; font-size: 13px; outline: none; font-family: 'DM Sans', sans-serif; min-height: 120px; resize: vertical; margin-bottom: 12px; line-height: 1.6; }
+    .padmin-label { font-size: 11px; color: var(--gris); text-transform: uppercase; letter-spacing: 1px; display: block; margin-bottom: 6px; }
+    .padmin-select { width: 100%; background: #181818; border: 1px solid #2A2A2A; color: var(--blanco); padding: 10px 14px; border-radius: 8px; font-size: 13px; outline: none; font-family: 'DM Sans', sans-serif; margin-bottom: 12px; }
+    .padmin-btn-primary { background: var(--rojo); border: none; color: white; padding: 12px 24px; border-radius: 8px; cursor: pointer; font-size: 13px; font-weight: 700; width: 100%; }
+    .padmin-btn-primary:hover { opacity: .85; }
+    .padmin-btn-primary:disabled { opacity: .5; cursor: not-allowed; }
+    .padmin-usuarios-tabla { width: 100%; border-collapse: collapse; font-size: 12px; }
+    .padmin-usuarios-tabla th { padding: 10px 12px; text-align: left; color: var(--gris); font-size: 10px; text-transform: uppercase; letter-spacing: 1px; border-bottom: 1px solid #1E1E1E; }
+    .padmin-usuarios-tabla td { padding: 10px 12px; border-bottom: 1px solid #111; color: #CCC; }
+    .padmin-usuarios-tabla tr:last-child td { border-bottom: none; }
+    .padmin-preview { background: #0D0D0D; border: 1px solid #1E1E1E; border-radius: 10px; padding: 20px; margin-bottom: 16px; }
+    .padmin-img-preview { max-width: 100%; max-height: 200px; border-radius: 8px; object-fit: cover; display: block; margin: 8px 0 12px; }
   </style>
   <script defer src="/_vercel/insights/script.js"></script>
 </head>
@@ -1350,6 +1376,7 @@
       <button class="panel-nav-btn" onclick="switchPanelTab('fondeos', this)">🏦 Fondeos</button>
       <button class="panel-nav-btn" id="tabAfiliados" onclick="switchPanelTab('afiliados', this)">🤝 Afiliados</button>
       <button class="panel-nav-btn" id="tabComunidad" onclick="switchPanelTab('comunidad', this)">🌐 Comunidad</button>
+      <button class="panel-nav-btn" id="tabAdmin" style="display:none;color:#FFC107" onclick="switchPanelTab('admin', this)">⚙️ Admin</button>
     </nav>
 
     <!-- Content -->
@@ -1403,6 +1430,10 @@
       </div>
 
       <!-- Sección: Comunidad -->
+      <div class="panel-section" id="sec-admin">
+        <div id="adminContainer"></div>
+      </div>
+
       <div class="panel-section" id="sec-comunidad">
         <div id="comunidadContainer">
           <div style="text-align:center;padding:40px;color:var(--gris)"><span class="spinner"></span> Cargando comunidad...</div>
@@ -1702,22 +1733,7 @@
     if (!canvas) return;
     canvas.classList.remove('chart-grow');
     void canvas.offsetWidth;
-    const rect = canvas.getBoundingClientRect();
-    const inView = rect.top < window.innerHeight && rect.bottom > 0;
-    if (inView || !('IntersectionObserver' in window)) {
-      canvas.classList.add('chart-grow');
-      return;
-    }
-    if (!canvas._growObserver) {
-      canvas._growObserver = new IntersectionObserver(function(entries) {
-        entries.forEach(function(entry) {
-          if (entry.isIntersecting) {
-            entry.target.classList.add('chart-grow');
-          }
-        });
-      }, { threshold: 0.2 });
-    }
-    canvas._growObserver.observe(canvas);
+    canvas.classList.add('chart-grow');
   }
 
   /* ══════════════════════
@@ -1752,6 +1768,7 @@
     if (sec === 'afiliados') cargarAfiliados();
     if (sec === 'comunidad') cargarComunidad();
     if (sec === 'tienda') renderTienda();
+    if (sec === 'admin') cargarPanelAdmin();
   }
 
   /* ══════════════════════
@@ -4414,13 +4431,6 @@
     _opsFiltradas = opsFiltradas;
     if (typeof iniciarCalendario === 'function') iniciarCalendario(opsFiltradas);
     if (typeof dibujarEquityCurve === 'function') dibujarEquityCurve(opsFiltradas);
-    if (typeof dibujarTradesBar === 'function') dibujarTradesBar(opsFiltradas);
-    if (typeof dibujarDiasSemana === 'function') dibujarDiasSemana(opsFiltradas);
-    if (typeof dibujarHoraDelDia === 'function') dibujarHoraDelDia(opsFiltradas);
-    if (typeof dibujarEstrategia === 'function') dibujarEstrategia(opsFiltradas);
-    if (typeof dibujarRacha === 'function') dibujarRacha(opsFiltradas);
-    if (typeof dibujarRadar === 'function') dibujarRadar(opsFiltradas);
-    if (typeof dibujarRadarPerf === 'function') dibujarRadarPerf(opsFiltradas);
     // Resetear monte carlo al cambiar filtro
     const mcEl = document.getElementById('monteCarloContent');
     if (mcEl && mcEl.querySelector('canvas')) {
@@ -5586,6 +5596,8 @@
     cont.innerHTML = '<div style="text-align:center;padding:40px;color:var(--gris)"><span class="spinner"></span> Cargando...</div>';
 
     if (esAdmin()) {
+      const tabAdmin = document.getElementById('tabAdmin');
+      if (tabAdmin) tabAdmin.style.display = 'flex';
       await renderAdminAfiliados(cont);
     } else {
       await renderAfiladoUsuario(cont);
@@ -8384,6 +8396,402 @@
     </div>`;
 
     cont.innerHTML = html;
+  }
+
+
+  // ─── PANEL ADMIN ──────────────────────────────────────────────────────────
+  let _adminTab = 'email';
+  let _adminImgUrl = '';
+
+  async function cargarPanelAdmin() {
+    if (!esAdmin()) return;
+    const cont = document.getElementById('adminContainer');
+    cont.innerHTML = '<div style="text-align:center;padding:40px;color:var(--gris)"><span class="spinner"></span></div>';
+
+    // Cargar estadísticas generales
+    const [rUsers, rLics, rPosts] = await Promise.all([
+      sbFetch('/auth/v1/admin/users?per_page=1000', {}, sesiónActual.access_token).catch(() => ({ ok: false })),
+      sbFetch('/rest/v1/licencias?select=estado,producto', {}, sesiónActual.access_token),
+      sbFetch('/rest/v1/posts_comunidad?select=id', {}, sesiónActual.access_token)
+    ]);
+
+    // Contar usuarios desde licencias (fallback si auth/admin no está disponible)
+    const lics = (rLics.ok && Array.isArray(rLics.data)) ? rLics.data : [];
+    const licsActivas = lics.filter(l => l.estado === 'activa').length;
+    const posts = (rPosts.ok && Array.isArray(rPosts.data)) ? rPosts.data.length : 0;
+
+    // Obtener lista de usuarios con email de licencias
+    const rUsuarios = await sbFetch('/rest/v1/licencias?select=nombre,email,producto,estado,created_at&order=created_at.desc', {}, sesiónActual.access_token);
+    const usuarios = (rUsuarios.ok && Array.isArray(rUsuarios.data)) ? rUsuarios.data : [];
+    const emailsUnicos = [...new Map(usuarios.map(u => [u.email, u])).values()];
+
+    cont.innerHTML = `
+      <div style="margin-bottom:28px">
+        <h2 style="font-size:22px;font-weight:700;margin-bottom:4px">⚙️ Panel del Administrador</h2>
+        <p style="font-size:13px;color:var(--gris)">Acceso exclusivo — ${sesiónActual.user.email}</p>
+      </div>
+
+      <!-- Stats rápidas -->
+      <div class="padmin-grid">
+        <div class="padmin-stat">
+          <div class="padmin-stat-val">${emailsUnicos.length}</div>
+          <div class="padmin-stat-lbl">Usuarios registrados</div>
+        </div>
+        <div class="padmin-stat">
+          <div class="padmin-stat-val" style="color:var(--verde)">${licsActivas}</div>
+          <div class="padmin-stat-lbl">Licencias activas</div>
+        </div>
+        <div class="padmin-stat">
+          <div class="padmin-stat-val" style="color:#FFC107">${posts}</div>
+          <div class="padmin-stat-lbl">Posts en comunidad</div>
+        </div>
+        <div class="padmin-stat">
+          <div class="padmin-stat-val">${lics.length}</div>
+          <div class="padmin-stat-lbl">Total licencias</div>
+        </div>
+      </div>
+
+      <!-- Tabs -->
+      <div class="padmin-tabs">
+        <button class="padmin-tab active" onclick="switchAdminTab('email', this)">📧 Enviar email masivo</button>
+        <button class="padmin-tab" onclick="switchAdminTab('usuarios', this)">👥 Usuarios</button>
+        <button class="padmin-tab" onclick="switchAdminTab('cupones', this)">🎟️ Cupones</button>
+      </div>
+
+      <!-- TAB: Email masivo -->
+      <div class="padmin-section activa" id="padmin-email">
+        <div class="padmin-card">
+          <h3 style="font-size:15px;font-weight:700;margin-bottom:16px">Enviar email a todos los usuarios</h3>
+
+          <label class="padmin-label">Destinatarios</label>
+          <select id="adminEmailDestinatarios" class="padmin-select" onchange="actualizarDestinatariosAdmin(${JSON.stringify(emailsUnicos)})">
+            <option value="todos">Todos los usuarios (${emailsUnicos.length})</option>
+            <option value="activos">Solo con licencia activa (${licsActivas})</option>
+            <option value="DailyLossLimiter">Solo Daily Loss Limiter</option>
+            <option value="ManualBacktestAnalyzer">Solo Manual Backtest Analyzer</option>
+            <option value="TDA_RiskReward">Solo TDA Risk/Reward</option>
+          </select>
+          <div id="adminEmailCount" style="font-size:11px;color:var(--gris);margin-top:-8px;margin-bottom:12px"></div>
+
+          <label class="padmin-label">Asunto</label>
+          <input type="text" id="adminEmailAsunto" class="padmin-input" placeholder="Ej: 🎉 Cupón de descuento exclusivo para vos">
+
+          <label class="padmin-label">Imagen (opcional)</label>
+          <div style="display:flex;gap:8px;margin-bottom:12px">
+            <input type="url" id="adminEmailImgUrl" class="padmin-input" style="margin-bottom:0;flex:1" placeholder="URL de imagen (https://...)" oninput="previewAdminImg(this.value)">
+            <label style="background:#1A1A1A;border:1px solid #2A2A2A;border-radius:8px;padding:10px 14px;cursor:pointer;font-size:12px;color:var(--gris);white-space:nowrap;display:flex;align-items:center">
+              📎 Subir
+              <input type="file" accept="image/*" style="display:none" onchange="subirImgAdmin(this)">
+            </label>
+          </div>
+          <div id="adminImgPreviewContainer" style="display:none;margin-bottom:12px">
+            <img id="adminImgPreview" class="padmin-img-preview">
+            <button onclick="quitarImgAdmin()" style="background:rgba(229,115,115,.1);border:1px solid rgba(229,115,115,.2);color:#E57373;border-radius:6px;padding:4px 10px;font-size:11px;cursor:pointer">✕ Quitar imagen</button>
+          </div>
+
+          <label class="padmin-label">Mensaje</label>
+          <textarea id="adminEmailMensaje" class="padmin-textarea" placeholder="Escribí el mensaje aquí. Podés incluir HTML básico.&#10;&#10;Ej: Hola {nombre}, como cliente especial tenés un &lt;strong&gt;15% OFF&lt;/strong&gt; con el cupón &lt;strong&gt;EXCLUSIVO15&lt;/strong&gt;..."></textarea>
+
+          <!-- Preview -->
+          <div class="padmin-preview" id="adminEmailPreviewBox" style="display:none">
+            <div style="font-size:11px;color:var(--gris);margin-bottom:8px;text-transform:uppercase;letter-spacing:1px">Vista previa</div>
+            <div id="adminEmailPreviewContent"></div>
+          </div>
+
+          <div style="display:flex;gap:8px;margin-bottom:0">
+            <button onclick="previsualizarEmailAdmin()" style="background:#1A1A1A;border:1px solid #2A2A2A;color:var(--gris);padding:12px 20px;border-radius:8px;cursor:pointer;font-size:13px;font-weight:600;flex:1">👁️ Previsualizar</button>
+            <button onclick="enviarEmailMasivoAdmin(${JSON.stringify(emailsUnicos)})" id="btnEnviarEmailMasivo" class="padmin-btn-primary" style="flex:2">📧 Enviar a todos</button>
+          </div>
+          <div id="adminEmailMsg" style="display:none;margin-top:12px;font-size:12px;padding:10px 14px;border-radius:8px"></div>
+        </div>
+      </div>
+
+      <!-- TAB: Usuarios -->
+      <div class="padmin-section" id="padmin-usuarios">
+        <div class="padmin-card">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:8px">
+            <h3 style="font-size:15px;font-weight:700">Usuarios registrados</h3>
+            <input type="text" id="adminBuscadorUsuarios" placeholder="🔍 Buscar por nombre o email..." class="padmin-input" style="max-width:260px;margin-bottom:0" oninput="filtrarUsuariosAdmin()">
+          </div>
+          <div style="overflow-x:auto">
+            <table class="padmin-usuarios-tabla" id="adminTablaUsuarios">
+              <thead>
+                <tr>
+                  <th>Nombre</th>
+                  <th>Email</th>
+                  <th>Producto</th>
+                  <th>Estado</th>
+                  <th>Fecha</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${usuarios.slice(0, 50).map(u => `
+                  <tr>
+                    <td>${esc(u.nombre || '—')}</td>
+                    <td style="color:var(--gris)">${esc(u.email || '—')}</td>
+                    <td style="font-size:11px">${esc(u.producto || '—')}</td>
+                    <td><span style="color:${u.estado==='activa'?'var(--verde)':'#E57373'};font-size:11px;font-weight:600">${u.estado||'—'}</span></td>
+                    <td style="color:var(--gris);font-size:11px">${u.created_at ? new Date(u.created_at).toLocaleDateString('es-AR') : '—'}</td>
+                  </tr>`).join('')}
+              </tbody>
+            </table>
+          </div>
+          ${usuarios.length > 50 ? `<div style="text-align:center;font-size:12px;color:var(--gris);margin-top:12px">Mostrando 50 de ${usuarios.length} registros</div>` : ''}
+        </div>
+      </div>
+
+      <!-- TAB: Cupones -->
+      <div class="padmin-section" id="padmin-cupones">
+        <div class="padmin-card">
+          <h3 style="font-size:15px;font-weight:700;margin-bottom:16px">Crear cupón de descuento</h3>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+            <div>
+              <label class="padmin-label">Código del cupón</label>
+              <input type="text" id="adminCuponCodigo" class="padmin-input" placeholder="Ej: EXCLUSIVO15" oninput="this.value=this.value.toUpperCase()">
+            </div>
+            <div>
+              <label class="padmin-label">Descuento (%)</label>
+              <input type="number" id="adminCuponDescuento" class="padmin-input" placeholder="15" min="1" max="100">
+            </div>
+          </div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+            <div>
+              <label class="padmin-label">Producto</label>
+              <select id="adminCuponProducto" class="padmin-select">
+                <option value="todos">Todos los productos</option>
+                <option value="DailyLossLimiter">Daily Loss Limiter</option>
+                <option value="ManualBacktestAnalyzer">Manual Backtest Analyzer</option>
+                <option value="TDA_RiskReward">TDA Risk/Reward</option>
+              </select>
+            </div>
+            <div>
+              <label class="padmin-label">Vencimiento (opcional)</label>
+              <input type="date" id="adminCuponVence" class="padmin-input" style="color-scheme:dark">
+            </div>
+          </div>
+          <label class="padmin-label">Usos máximos (dejar vacío = ilimitado)</label>
+          <input type="number" id="adminCuponUsos" class="padmin-input" placeholder="Ej: 10">
+          <button onclick="crearCuponAdmin()" class="padmin-btn-primary">🎟️ Crear cupón</button>
+          <div id="adminCuponMsg" style="display:none;margin-top:12px;font-size:12px;padding:10px 14px;border-radius:8px"></div>
+        </div>
+
+        <div class="padmin-card">
+          <h3 style="font-size:15px;font-weight:700;margin-bottom:16px">Cupones activos</h3>
+          <div id="adminCuponesLista"><div style="color:var(--gris);font-size:13px">Cargando...</div></div>
+        </div>
+      </div>
+    `;
+
+    // Cargar cupones
+    cargarCuponesAdmin();
+    actualizarDestinatariosAdmin(emailsUnicos);
+  }
+
+  function switchAdminTab(tab, btn) {
+    _adminTab = tab;
+    document.querySelectorAll('.padmin-tab').forEach(b => b.classList.remove('active'));
+    document.querySelectorAll('.padmin-section').forEach(s => s.classList.remove('activa'));
+    btn.classList.add('active');
+    document.getElementById('padmin-' + tab)?.classList.add('activa');
+  }
+
+  function actualizarDestinatariosAdmin(emailsUnicos) {
+    const sel = document.getElementById('adminEmailDestinatarios');
+    const cnt = document.getElementById('adminEmailCount');
+    if (!sel || !cnt) return;
+    const val = sel.value;
+    let total = 0;
+    if (val === 'todos') total = emailsUnicos.length;
+    else if (val === 'activos') total = emailsUnicos.filter(u => u.estado === 'activa').length;
+    else total = emailsUnicos.filter(u => u.producto === val).length;
+    cnt.textContent = `${total} destinatario${total !== 1 ? 's' : ''}`;
+  }
+
+  async function subirImgAdmin(input) {
+    const file = input.files[0];
+    if (!file) return;
+    const btn = input.parentElement;
+    btn.textContent = '⏳';
+    const ext = file.name.split('.').pop();
+    const fileName = `admin_${Date.now()}.${ext}`;
+    const res = await fetch(`${SUPABASE_URL}/storage/v1/object/comunidad-imagenes/${encodeURIComponent(fileName)}`, {
+      method: 'POST',
+      headers: { 'apikey': SUPABASE_ANON, 'Authorization': 'Bearer ' + sesiónActual.access_token, 'Content-Type': file.type, 'x-upsert': 'true' },
+      body: file
+    });
+    if (res.ok) {
+      _adminImgUrl = `${SUPABASE_URL}/storage/v1/object/public/comunidad-imagenes/${encodeURIComponent(fileName)}`;
+      document.getElementById('adminEmailImgUrl').value = _adminImgUrl;
+      previewAdminImg(_adminImgUrl);
+    }
+    btn.textContent = '📎 Subir';
+  }
+
+  function previewAdminImg(url) {
+    _adminImgUrl = url;
+    const cont = document.getElementById('adminImgPreviewContainer');
+    const img  = document.getElementById('adminImgPreview');
+    if (url && cont && img) { img.src = url; cont.style.display = 'block'; }
+    else if (cont) cont.style.display = 'none';
+  }
+
+  function quitarImgAdmin() {
+    _adminImgUrl = '';
+    document.getElementById('adminEmailImgUrl').value = '';
+    const cont = document.getElementById('adminImgPreviewContainer');
+    if (cont) cont.style.display = 'none';
+  }
+
+  function previsualizarEmailAdmin() {
+    const asunto = document.getElementById('adminEmailAsunto').value;
+    const mensaje = document.getElementById('adminEmailMensaje').value;
+    const box = document.getElementById('adminEmailPreviewBox');
+    const prev = document.getElementById('adminEmailPreviewContent');
+    if (!box || !prev) return;
+    const imgHtml = _adminImgUrl ? `<img src="${_adminImgUrl}" style="max-width:100%;border-radius:8px;margin-bottom:12px">` : '';
+    prev.innerHTML = `
+      <div style="font-weight:700;font-size:15px;margin-bottom:12px;color:var(--blanco)">${esc(asunto) || '(sin asunto)'}</div>
+      ${imgHtml}
+      <div style="font-size:13px;color:#CCC;line-height:1.6">${mensaje.replace(/\n/g,'<br>')}</div>`;
+    box.style.display = 'block';
+  }
+
+  async function enviarEmailMasivoAdmin(emailsUnicos) {
+    const asunto  = document.getElementById('adminEmailAsunto').value.trim();
+    const mensaje = document.getElementById('adminEmailMensaje').value.trim();
+    const dest    = document.getElementById('adminEmailDestinatarios').value;
+    const msg     = document.getElementById('adminEmailMsg');
+    const btn     = document.getElementById('btnEnviarEmailMasivo');
+
+    if (!asunto || !mensaje) {
+      msg.style.cssText = 'display:block;background:rgba(229,115,115,.1);color:#E57373;border:1px solid rgba(229,115,115,.3)';
+      msg.textContent = 'Completá el asunto y el mensaje.'; return;
+    }
+
+    let destinatarios = emailsUnicos;
+    if (dest === 'activos') destinatarios = emailsUnicos.filter(u => u.estado === 'activa');
+    else if (dest !== 'todos') destinatarios = emailsUnicos.filter(u => u.producto === dest);
+
+    if (!confirm(`¿Enviar email a ${destinatarios.length} usuarios?\n\nAsunto: ${asunto}`)) return;
+
+    btn.disabled = true; btn.textContent = `Enviando a ${destinatarios.length} usuarios...`;
+    msg.style.display = 'none';
+
+    let enviados = 0, errores = 0;
+    for (const u of destinatarios) {
+      const mensajeFinal = mensaje
+        .replace(/\{nombre\}/g, u.nombre || 'Trader')
+        .replace(/\{email\}/g, u.email || '')
+        .replace(/\{producto\}/g, u.producto || '');
+      await sendEmail('email_masivo', {
+        nombre: u.nombre || 'Trader',
+        asunto,
+        mensaje: mensajeFinal,
+        imagen_url: _adminImgUrl || null
+      }, u.email);
+      enviados++;
+      btn.textContent = `Enviando... ${enviados}/${destinatarios.length}`;
+    }
+
+    btn.disabled = false; btn.textContent = '📧 Enviar a todos';
+    msg.style.cssText = 'display:block;background:rgba(76,175,80,.1);color:var(--verde);border:1px solid rgba(76,175,80,.3)';
+    msg.textContent = `✓ Email enviado a ${enviados} usuarios.`;
+  }
+
+  // ── CUPONES ──────────────────────────────────────────────────────────────
+  async function crearCuponAdmin() {
+    const codigo    = document.getElementById('adminCuponCodigo').value.trim().toUpperCase();
+    const descuento = parseInt(document.getElementById('adminCuponDescuento').value || '0');
+    const producto  = document.getElementById('adminCuponProducto').value;
+    const vence     = document.getElementById('adminCuponVence').value;
+    const usos      = parseInt(document.getElementById('adminCuponUsos').value || '0');
+    const msg       = document.getElementById('adminCuponMsg');
+
+    if (!codigo || !descuento) {
+      msg.style.cssText = 'display:block;background:rgba(229,115,115,.1);color:#E57373;border:1px solid rgba(229,115,115,.3)';
+      msg.textContent = 'Completá código y descuento.'; return;
+    }
+
+    // Verificar que no exista
+    const check = await sbFetch(`/rest/v1/cupones?codigo=eq.${encodeURIComponent(codigo)}&select=codigo`, {}, sesiónActual.access_token);
+    if (check.ok && check.data?.length > 0) {
+      msg.style.cssText = 'display:block;background:rgba(229,115,115,.1);color:#E57373;border:1px solid rgba(229,115,115,.3)';
+      msg.textContent = 'Ya existe un cupón con ese código.'; return;
+    }
+
+    // Usar estructura real de la tabla: tipo, activo, fecha_expiracion, usos_maximos
+    const payload = { codigo, descuento, tipo: 'campana', activo: true };
+    if (producto !== 'todos') payload.producto = producto;
+    if (vence) payload.fecha_expiracion = new Date(vence).toISOString();
+    if (usos > 0) payload.usos_maximos = usos;
+
+    const r = await sbFetch('/rest/v1/cupones', {
+      method: 'POST', body: JSON.stringify(payload), headers: { 'Prefer': 'return=minimal' }
+    }, sesiónActual.access_token);
+
+    if (r.ok) {
+      msg.style.cssText = 'display:block;background:rgba(76,175,80,.1);color:var(--verde);border:1px solid rgba(76,175,80,.3)';
+      msg.textContent = `✓ Cupón ${codigo} creado — ${descuento}% OFF.`;
+      document.getElementById('adminCuponCodigo').value = '';
+      document.getElementById('adminCuponDescuento').value = '';
+      document.getElementById('adminCuponVence').value = '';
+      document.getElementById('adminCuponUsos').value = '';
+      cargarCuponesAdmin();
+    } else {
+      msg.style.cssText = 'display:block;background:rgba(229,115,115,.1);color:#E57373;border:1px solid rgba(229,115,115,.3)';
+      msg.textContent = 'Error al crear el cupón.';
+    }
+  }
+
+  async function cargarCuponesAdmin() {
+    const cont = document.getElementById('adminCuponesLista');
+    if (!cont) return;
+    const r = await sbFetch('/rest/v1/cupones?select=*&order=created_at.desc', {}, sesiónActual.access_token);
+    const cupones = (r.ok && Array.isArray(r.data)) ? r.data : [];
+    if (cupones.length === 0) { cont.innerHTML = '<div style="color:var(--gris);font-size:13px">No hay cupones creados.</div>'; return; }
+    cont.innerHTML = cupones.map(c => {
+      const vence = c.fecha_expiracion ? new Date(c.fecha_expiracion).toLocaleDateString('es-AR') : 'Sin vencimiento';
+      const vencido = c.fecha_expiracion && new Date(c.fecha_expiracion) < new Date();
+      const agotado = c.usos_maximos && (c.usos_actuales || 0) >= c.usos_maximos;
+      const activo = c.activo && !vencido && !agotado;
+      const tipoColor = c.tipo === 'afiliado' ? '#FFC107' : 'var(--gris)';
+      return `<div style="display:flex;align-items:center;gap:12px;padding:12px 0;border-bottom:1px solid #1A1A1A;flex-wrap:wrap">
+        <div style="background:#1A1A1A;border-radius:6px;padding:6px 12px;font-family:monospace;font-size:14px;font-weight:700;color:${activo?'var(--blanco)':'#444'}">${esc(c.codigo)}</div>
+        <div style="flex:1;min-width:120px">
+          <div style="font-size:13px;color:${activo?'var(--verde)':'var(--gris)'}">
+            <strong>${c.descuento}% OFF</strong>
+            ${c.producto ? ` — ${esc(c.producto)}` : ' — Todos'}
+            <span style="font-size:10px;color:${tipoColor};margin-left:6px;text-transform:uppercase">${esc(c.tipo||'')}</span>
+          </div>
+          <div style="font-size:11px;color:var(--gris)">Vence: ${vence} · Usos: ${c.usos_actuales||0}${c.usos_maximos?'/'+c.usos_maximos:''}</div>
+        </div>
+        <div style="display:flex;gap:6px;align-items:center">
+          <button onclick="toggleCuponAdmin('${c.id}', ${!c.activo})" style="background:${c.activo?'rgba(255,193,7,.1)':'rgba(76,175,80,.1)'};border:1px solid ${c.activo?'rgba(255,193,7,.3)':'rgba(76,175,80,.3)'};color:${c.activo?'#FFC107':'var(--verde)'};border-radius:6px;padding:4px 10px;font-size:11px;cursor:pointer">${c.activo?'⏸️ Pausar':'▶️ Activar'}</button>
+          <span style="font-size:11px;font-weight:600;padding:3px 8px;border-radius:4px;background:${activo?'rgba(76,175,80,.1)':'rgba(229,115,115,.1)'};color:${activo?'var(--verde)':'#E57373'}">${activo?'Activo':vencido?'Vencido':agotado?'Agotado':'Inactivo'}</span>
+          <button onclick="eliminarCuponAdmin('${c.id}')" style="background:rgba(229,115,115,.1);border:1px solid rgba(229,115,115,.2);color:#E57373;border-radius:6px;padding:4px 10px;font-size:11px;cursor:pointer">🗑️</button>
+        </div>
+      </div>`;
+    }).join('');
+  }
+
+  async function toggleCuponAdmin(id, nuevoEstado) {
+    await sbFetch(`/rest/v1/cupones?id=eq.${id}`, {
+      method: 'PATCH', body: JSON.stringify({ activo: nuevoEstado }), headers: { 'Prefer': 'return=minimal' }
+    }, sesiónActual.access_token);
+    cargarCuponesAdmin();
+  }
+
+  async function eliminarCuponAdmin(id) {
+    if (!confirm('¿Eliminar este cupón?')) return;
+    await sbFetch(`/rest/v1/cupones?id=eq.${id}`, { method: 'DELETE' }, sesiónActual.access_token);
+    cargarCuponesAdmin();
+  }
+
+  function filtrarUsuariosAdmin() {
+    const q = document.getElementById('adminBuscadorUsuarios').value.toLowerCase();
+    document.querySelectorAll('#adminTablaUsuarios tbody tr').forEach(tr => {
+      tr.style.display = tr.textContent.toLowerCase().includes(q) ? '' : 'none';
+    });
   }
 
   (function init() {

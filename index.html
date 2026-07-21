@@ -1500,6 +1500,16 @@
   </div>
 </div>
 
+<!-- MODAL: Perfil completo de usuario -->
+<div class="modal-overlay" id="modalPerfilCompleto">
+  <div class="modal" style="max-width:820px;max-height:92vh;overflow-y:auto">
+    <button class="modal-close" onclick="cerrarModal('modalPerfilCompleto')">✕</button>
+    <div id="modalPerfilCompletoContent">
+      <div style="text-align:center;padding:40px;color:var(--gris)"><span class="spinner"></span></div>
+    </div>
+  </div>
+</div>
+
 <!-- MODAL: Imagen ampliada -->
 <div class="modal-overlay" id="modalImagenAmpliada" onclick="cerrarModal('modalImagenAmpliada')" style="cursor:zoom-out;align-items:center;justify-content:center">
   <img id="imgAmpliadaSrc" style="max-width:95vw;max-height:90vh;border-radius:12px;object-fit:contain">
@@ -7438,6 +7448,166 @@
     document.getElementById('modalImagenAmpliada').classList.add('active');
   }
 
+  function _statsJournalHTML(ops, mostrarJournal) {
+    if (mostrarJournal && ops.length > 0) {
+      const pnls = ops.map(o => parseFloat(o.pnl || 0));
+      const ganadoras = pnls.filter(p => p > 0).length;
+      const perdedoras = pnls.filter(p => p < 0).length;
+      const pnlTotal = pnls.reduce((a,b) => a+b, 0);
+      const pnlProm = pnlTotal / pnls.length;
+      const winRate = (ganadoras / pnls.length) * 100;
+
+      let rachaCurr = 0, rachaDir = '';
+      for (const p of pnls) {
+        const d = p > 0 ? 'win' : 'loss';
+        if (!rachaDir) { rachaDir = d; rachaCurr = 1; }
+        else if (d === rachaDir) rachaCurr++;
+        else break;
+      }
+
+      const porDia = {};
+      ops.forEach(o => {
+        const d = o.fecha ? o.fecha.substring(0,10) : '?';
+        porDia[d] = (porDia[d] || 0) + parseFloat(o.pnl || 0);
+      });
+      const peorDia = Math.min(...Object.values(porDia));
+
+      const instCount = {};
+      ops.forEach(o => { if(o.instrumento) instCount[o.instrumento] = (instCount[o.instrumento]||0)+1; });
+      const instrTop = Object.entries(instCount).sort((a,b)=>b[1]-a[1]).slice(0,3).map(([k])=>k).join(', ');
+
+      const statItems = [
+        { val: `${winRate.toFixed(1)}%`, lbl: 'Win Rate', color: 'var(--verde)' },
+        { val: `${pnls.length}`, lbl: 'Operaciones', color: 'var(--blanco)' },
+        { val: `${pnlTotal>=0?'+':''}$${Math.abs(pnlTotal).toFixed(2)}`, lbl: 'PnL Total', color: pnlTotal>=0?'var(--verde)':'#E57373' },
+        { val: `${pnlProm>=0?'+':''}$${Math.abs(pnlProm).toFixed(2)}`, lbl: 'PnL Promedio', color: pnlProm>=0?'var(--verde)':'#E57373' },
+        { val: `${ganadoras}W / ${perdedoras}L`, lbl: 'Ganadoras / Perdedoras', color: 'var(--blanco)' },
+        { val: `${rachaCurr} ${rachaDir==='win'?'✅':'❌'}`, lbl: 'Racha actual', color: rachaDir==='win'?'var(--verde)':'#E57373' },
+        { val: `$${peorDia.toFixed(2)}`, lbl: 'Peor día', color: '#E57373' },
+        { val: instrTop || '—', lbl: 'Instrumentos', color: 'var(--blanco)' },
+      ];
+
+      return `
+        <div style="margin-bottom:20px">
+          <div style="font-size:11px;color:var(--gris);text-transform:uppercase;letter-spacing:1px;margin-bottom:10px">📊 Estadísticas del Journal</div>
+          <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:10px">
+            ${statItems.map(s => `
+              <div style="background:#111;border:1px solid #1E1E1E;border-radius:10px;padding:12px;text-align:center">
+                <div style="font-size:16px;font-weight:700;color:${s.color}">${s.val}</div>
+                <div style="font-size:10px;color:var(--gris);text-transform:uppercase;letter-spacing:.7px;margin-top:3px">${s.lbl}</div>
+              </div>`).join('')}
+          </div>
+        </div>
+
+        <div style="margin-bottom:20px">
+          <div style="font-size:11px;color:var(--gris);text-transform:uppercase;letter-spacing:1px;margin-bottom:10px">📅 Últimas operaciones</div>
+          <div style="background:#111;border:1px solid #1E1E1E;border-radius:10px;overflow:hidden">
+            ${ops.slice(0,8).map((o,i) => {
+              const pnl = parseFloat(o.pnl||0);
+              const pnlColor = pnl>=0?'var(--verde)':'#E57373';
+              const fecha = o.fecha ? new Date(o.fecha).toLocaleDateString('es-AR',{day:'2-digit',month:'short'}) : '';
+              return `<div style="display:flex;align-items:center;gap:12px;padding:10px 14px;${i<ops.slice(0,8).length-1?'border-bottom:1px solid #1A1A1A':''}">
+                <span style="font-size:11px;color:var(--gris);min-width:50px">${fecha}</span>
+                <span style="font-size:12px">${o.direccion==='Long'?'🟢':'🔴'}</span>
+                <span style="font-size:13px;font-weight:600;color:var(--blanco);flex:1">${esc(o.instrumento||'')}</span>
+                ${o.estrategia?`<span style="font-size:11px;color:var(--gris)">${esc(o.estrategia)}</span>`:''}
+                <span style="font-size:13px;font-weight:700;color:${pnlColor}">${pnl>=0?'+':''}$${Math.abs(pnl).toFixed(2)}</span>
+              </div>`;
+            }).join('')}
+          </div>
+        </div>`;
+    } else if (mostrarJournal && ops.length === 0) {
+      return `<div style="background:#111;border:1px solid #1E1E1E;border-radius:10px;padding:20px;text-align:center;color:var(--gris);font-size:13px;margin-bottom:20px">Sin operaciones en el journal aún.</div>`;
+    } else {
+      return `<div style="background:#111;border:1px solid #1E1E1E;border-radius:10px;padding:16px;text-align:center;color:var(--gris);font-size:13px;margin-bottom:20px">🔒 Este trader no compartió su journal.</div>`;
+    }
+  }
+
+  async function _fetchOpsPerfil(userId, perfil) {
+    const pCuenta = perfil?.cuenta_compartir || '';
+    let url = `/rest/v1/operaciones_journal?user_id=eq.${userId}&select=fecha,pnl,instrumento,direccion,estrategia,cuenta,origen&order=fecha.desc`;
+    if (pCuenta) url += `&cuenta=eq.${encodeURIComponent(pCuenta)}`;
+    const r = await sbFetch(url, {}, sesiónActual.access_token);
+    if (r.ok && Array.isArray(r.data)) return { ok: true, data: r.data.filter(o => o.origen !== 'manual') };
+    let url2 = `/rest/v1/operaciones_journal?user_id=eq.${userId}&select=fecha,pnl,instrumento,direccion,estrategia,cuenta&order=fecha.desc`;
+    if (pCuenta) url2 += `&cuenta=eq.${encodeURIComponent(pCuenta)}`;
+    return sbFetch(url2, {}, sesiónActual.access_token);
+  }
+
+  let _perfilCompletoUserId = null;
+  let _perfilCompletoOffset = 0;
+  const _perfilCompletoLimit = 12;
+
+  async function verPerfilCompleto(userId) {
+    cerrarModal('modalPerfilUsuario');
+    _perfilCompletoUserId = userId;
+    _perfilCompletoOffset = 0;
+    document.getElementById('modalPerfilCompleto').classList.add('active');
+    const cont = document.getElementById('modalPerfilCompletoContent');
+    cont.innerHTML = '<div style="text-align:center;padding:40px;color:var(--gris)"><span class="spinner"></span></div>';
+
+    const esMiPerfil = userId === sesiónActual.user.id;
+    const rPerfil = await sbFetch(`/rest/v1/perfiles_comunidad?user_id=eq.${userId}&select=*`, {}, sesiónActual.access_token);
+    const perfil = (rPerfil.ok && rPerfil.data?.length > 0) ? rPerfil.data[0] : null;
+    const nombre = perfil?.nombre || 'Trader';
+
+    const [rPosts, rOps] = await Promise.all([
+      sbFetch(`/rest/v1/posts_comunidad?user_id=eq.${userId}&select=*&order=created_at.desc&limit=${_perfilCompletoLimit}&offset=0`, {}, sesiónActual.access_token),
+      _fetchOpsPerfil(userId, perfil)
+    ]);
+
+    const posts = (rPosts.ok && Array.isArray(rPosts.data)) ? rPosts.data : [];
+    _perfilCompletoOffset = posts.length;
+    const mostrarJournal = perfil?.mostrar_journal || esMiPerfil;
+    const ops = (mostrarJournal && rOps.ok && Array.isArray(rOps.data)) ? rOps.data : [];
+
+    const statsHTML = _statsJournalHTML(ops, mostrarJournal);
+
+    const anioActual = new Date().getFullYear();
+    let antiguedadHTML = '';
+    if (perfil?.trading_desde) {
+      const anios = anioActual - perfil.trading_desde;
+      antiguedadHTML = `<div style="font-size:12px;color:var(--rojo-bright);margin-top:4px;font-weight:600">📈 Trading desde ${perfil.trading_desde} · ${anios} año${anios===1?'':'s'}</div>`;
+    }
+
+    cont.innerHTML = `
+      <div style="display:flex;align-items:flex-start;gap:16px;margin-bottom:20px;flex-wrap:wrap">
+        <div class="com-avatar" style="width:64px;height:64px;font-size:24px;flex-shrink:0">${nombre[0].toUpperCase()}</div>
+        <div style="flex:1;min-width:200px">
+          <div style="font-weight:700;font-size:22px;color:var(--blanco)">${esc(nombre)}</div>
+          <div style="font-size:12px;color:var(--gris);margin-top:2px">Miembro de la comunidad</div>
+          ${antiguedadHTML}
+          ${perfil?.bio ? `<div style="font-size:13px;color:#CCC;margin-top:10px;line-height:1.5;max-width:520px">${esc(perfil.bio)}</div>` : ''}
+        </div>
+        <div style="display:flex;gap:8px;flex-shrink:0">
+          ${esMiPerfil
+            ? `<button onclick="abrirConfigPerfilComunidad();cerrarModal('modalPerfilCompleto')" style="background:#1A1A1A;border:1px solid #2A2A2A;color:var(--gris);padding:8px 14px;border-radius:7px;cursor:pointer;font-size:12px;white-space:nowrap">⚙️ Editar mi perfil</button>`
+            : `<button disabled title="Próximamente" style="background:#1A1A1A;border:1px solid #2A2A2A;color:#666;padding:8px 14px;border-radius:7px;cursor:not-allowed;font-size:12px;white-space:nowrap">✉️ Mensaje (próx.)</button>`}
+        </div>
+      </div>
+      ${statsHTML}
+      <div>
+        <div style="font-size:11px;color:var(--gris);text-transform:uppercase;letter-spacing:1px;margin-bottom:10px">📌 Todas las publicaciones</div>
+        <div class="com-feed" id="perfilCompletoFeed">
+          ${posts.length > 0 ? _renderPostsHTML(posts, {}) : '<div class="com-empty"><div class="com-empty-icon">📭</div><p>Sin publicaciones aún.</p></div>'}
+        </div>
+        ${posts.length === _perfilCompletoLimit ? `<div class="com-load-more" id="perfilCompletoLoadMore"><button onclick="cargarMasPerfilCompleto()">Ver publicaciones más antiguas</button></div>` : ''}
+      </div>`;
+  }
+
+  async function cargarMasPerfilCompleto() {
+    const r = await sbFetch(`/rest/v1/posts_comunidad?user_id=eq.${_perfilCompletoUserId}&select=*&order=created_at.desc&limit=${_perfilCompletoLimit}&offset=${_perfilCompletoOffset}`, {}, sesiónActual.access_token);
+    const posts = (r.ok && Array.isArray(r.data)) ? r.data : [];
+    const feedEl = document.getElementById('perfilCompletoFeed');
+    if (feedEl) feedEl.insertAdjacentHTML('beforeend', _renderPostsHTML(posts, {}));
+    const loadMore = document.getElementById('perfilCompletoLoadMore');
+    if (loadMore) loadMore.remove();
+    _perfilCompletoOffset += posts.length;
+    if (posts.length === _perfilCompletoLimit && feedEl) {
+      feedEl.insertAdjacentHTML('afterend', `<div class="com-load-more" id="perfilCompletoLoadMore"><button onclick="cargarMasPerfilCompleto()">Ver publicaciones más antiguas</button></div>`);
+    }
+  }
+
   async function verPerfilUsuario(userId) {
     document.getElementById('modalPerfilUsuario').classList.add('active');
     const cont = document.getElementById('modalPerfilUsuarioContent');
@@ -7568,14 +7738,21 @@
         }).join('')}
       </div>` : '<div style="color:var(--gris);font-size:13px;padding:12px 0">Sin posts aún.</div>';
 
+    const anioActual = new Date().getFullYear();
+    const antiguedadCorta = perfil?.trading_desde ? `· Trading desde ${perfil.trading_desde} (${anioActual - perfil.trading_desde} año${(anioActual - perfil.trading_desde)===1?'':'s'})` : '';
+
     cont.innerHTML = `
-      <div style="display:flex;align-items:center;gap:14px;margin-bottom:24px">
+      <div style="display:flex;align-items:center;gap:14px;margin-bottom:24px;flex-wrap:wrap">
         <div class="com-avatar" style="width:56px;height:56px;font-size:22px">${nombre[0].toUpperCase()}</div>
-        <div>
+        <div style="flex:1;min-width:180px">
           <div style="font-weight:700;font-size:20px;color:var(--blanco)">${esc(nombre)}</div>
-          <div style="font-size:12px;color:var(--gris);margin-top:2px">Miembro de la comunidad · ${ops.length} operaciones registradas</div>
+          <div style="font-size:12px;color:var(--gris);margin-top:2px">Miembro de la comunidad · ${ops.length} operaciones registradas ${antiguedadCorta}</div>
+          ${perfil?.bio ? `<div style="font-size:12px;color:#AAA;margin-top:6px;line-height:1.4;max-width:420px">${esc(perfil.bio)}</div>` : ''}
         </div>
-        ${esMiPerfil ? `<button onclick="abrirConfigPerfilComunidad();cerrarModal('modalPerfilUsuario')" style="margin-left:auto;background:#1A1A1A;border:1px solid #2A2A2A;color:var(--gris);padding:8px 14px;border-radius:7px;cursor:pointer;font-size:12px;white-space:nowrap">⚙️ Mi perfil</button>` : ''}
+        <div style="display:flex;gap:8px;margin-left:auto">
+          <button onclick="verPerfilCompleto('${userId}')" style="background:#1A1A1A;border:1px solid #2A2A2A;color:var(--gris);padding:8px 14px;border-radius:7px;cursor:pointer;font-size:12px;white-space:nowrap">👤 Ver perfil completo</button>
+          ${esMiPerfil ? `<button onclick="abrirConfigPerfilComunidad();cerrarModal('modalPerfilUsuario')" style="background:#1A1A1A;border:1px solid #2A2A2A;color:var(--gris);padding:8px 14px;border-radius:7px;cursor:pointer;font-size:12px;white-space:nowrap">⚙️ Mi perfil</button>` : ''}
+        </div>
       </div>
       ${statsJournalHTML}
       <div>
@@ -7612,6 +7789,12 @@
     const cuentasOptions = cuentas.length > 0
       ? cuentas.map(c => `<option value="${c}" ${cuentaActual===c?'selected':''}>${c}</option>`).join('')
       : '<option value="">Sin cuentas registradas</option>';
+
+    const anioActualCfg = new Date().getFullYear();
+    let aniosOptions = '';
+    for (let y = anioActualCfg; y >= 2010; y--) {
+      aniosOptions += `<option value="${y}" ${p.trading_desde===y?'selected':''}>${y}</option>`;
+    }
 
     modal.innerHTML = `
       <div class="modal" style="max-width:460px">
@@ -7651,6 +7834,20 @@
           <label class="com-switch"><input type="checkbox" id="togPnlProm" ${p.mostrar_pnl_promedio?'checked':''}><span class="com-switch-slider"></span></label>
         </div>
 
+        <div style="padding:14px 0;border-bottom:1px solid #1A1A1A">
+          <label style="font-size:11px;color:var(--gris);text-transform:uppercase;letter-spacing:1px;display:block;margin-bottom:8px">Trading desde (año)</label>
+          <select id="inputTradingDesde" style="width:100%;background:#181818;border:1px solid #2A2A2A;color:var(--blanco);padding:9px 12px;border-radius:7px;font-size:13px;outline:none;font-family:'DM Sans',sans-serif">
+            <option value="">— No especificar —</option>
+            ${aniosOptions}
+          </select>
+        </div>
+
+        <div style="padding:14px 0;border-bottom:1px solid #1A1A1A">
+          <label style="font-size:11px;color:var(--gris);text-transform:uppercase;letter-spacing:1px;display:block;margin-bottom:8px">Bio</label>
+          <textarea id="inputBio" maxlength="280" placeholder="Contá quién sos, tu estilo de trading, o lo que quieras compartir con la comunidad..." style="width:100%;background:#181818;border:1px solid #2A2A2A;color:var(--blanco);padding:10px 12px;border-radius:7px;font-size:13px;outline:none;font-family:'DM Sans',sans-serif;resize:vertical;min-height:70px">${esc(p.bio||'')}</textarea>
+          <div style="font-size:10px;color:var(--gris);margin-top:4px;text-align:right">Máx. 280 caracteres</div>
+        </div>
+
         <div id="configPerfilMsg" style="display:none;margin-top:12px;font-size:12px;padding:8px 12px;border-radius:6px"></div>
         <button onclick="guardarConfigPerfil()" class="modal-confirm" style="width:100%;margin-top:16px">Guardar cambios</button>
       </div>`;
@@ -7667,6 +7864,9 @@
     const mostrar_winrate       = document.getElementById('togWinrate').checked;
     const mostrar_pnl_promedio  = document.getElementById('togPnlProm').checked;
     const cuenta_compartir      = document.getElementById('selectCuentaCompartir')?.value || '';
+    const bio                   = (document.getElementById('inputBio')?.value || '').trim().substring(0, 280);
+    const tradingDesdeRaw       = document.getElementById('inputTradingDesde')?.value || '';
+    const trading_desde         = tradingDesdeRaw ? parseInt(tradingDesdeRaw) : null;
     const msg = document.getElementById('configPerfilMsg');
 
     // Calcular stats del journal (filtradas por cuenta si se eligió una)
@@ -7689,7 +7889,7 @@
     }
 
     const nombre = sesiónActual.user.user_metadata?.nombre || sesiónActual.user.email.split('@')[0];
-    const payload = { user_id: sesiónActual.user.id, nombre, mostrar_journal, mostrar_winrate, mostrar_pnl_promedio, cuenta_compartir };
+    const payload = { user_id: sesiónActual.user.id, nombre, mostrar_journal, mostrar_winrate, mostrar_pnl_promedio, cuenta_compartir, bio, trading_desde };
     if (winrate !== null)      payload.winrate = winrate;
     if (pnl_promedio !== null) payload.pnl_promedio = pnl_promedio;
 

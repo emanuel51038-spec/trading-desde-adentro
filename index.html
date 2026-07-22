@@ -1172,8 +1172,8 @@
   </section>
 
   <!-- TICKER PRECIOS EN VIVO - TradingView Widget -->
-  <div style="background:#0D0D0D;border-top:1px solid #1E1E1E;border-bottom:1px solid #1E1E1E;">
-    <div class="tradingview-widget-container">
+  <div style="background:#0D0D0D;border-top:1px solid #1E1E1E;border-bottom:1px solid #1E1E1E;" id="tickerPreciosWrap">
+    <div class="tradingview-widget-container" id="tickerWidgetContainer">
       <div class="tradingview-widget-container__widget"></div>
       <script type="text/javascript" src="https://s3.tradingview.com/external-embedding/embed-widget-ticker-tape.js" async>
       {
@@ -1192,6 +1192,18 @@
       </script>
     </div>
   </div>
+  <script>
+    // Si el widget de TradingView no logra montarse (falla de red, auth, o tracking
+    // prevention del navegador bloqueando sus recursos), ocultamos la barra en vez
+    // de dejar los placeholders vacíos colgados para siempre.
+    setTimeout(function() {
+      var cont = document.getElementById('tickerWidgetContainer');
+      var wrap = document.getElementById('tickerPreciosWrap');
+      if (cont && wrap && !cont.querySelector('iframe')) {
+        wrap.style.display = 'none';
+      }
+    }, 6000);
+  </script>
 
   <!-- BIO -->
   <div class="home-section reveal-up">
@@ -1313,6 +1325,13 @@
         <div class="screenshot-card-body">
           <div class="screenshot-card-title">👤 Perfil de Trader</div>
           <div class="screenshot-card-desc">Mostrá tu win rate, tu racha, hace cuánto tradeás y contá tu historia en tu bio. Vos elegís qué estadísticas compartir con la comunidad y cuáles mantener privadas.</div>
+        </div>
+      </div>
+      <div class="screenshot-card">
+        <img src="comunidad_mensajes.png" alt="Mensajería y notificaciones - Comunidad T.D.A">
+        <div class="screenshot-card-body">
+          <div class="screenshot-card-title">✉️ Mensajes y Notificaciones</div>
+          <div class="screenshot-card-desc">Conectá en privado con otros traders para resolver dudas, armar equipo o simplemente compartir ideas. Enterate al instante de cada reacción y mensaje nuevo.</div>
         </div>
       </div>
     </div>

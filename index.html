@@ -543,6 +543,14 @@
     }
     .panel-nav-dropdown-item:hover { background: #1E1E1E; color: var(--blanco); }
 
+    /* Badge de no leídos */
+    .nav-badge {
+      display: inline-flex; align-items: center; justify-content: center;
+      min-width: 16px; height: 16px; padding: 0 4px; border-radius: 8px;
+      background: var(--rojo); color: #fff; font-size: 10px; font-weight: 700;
+      margin-left: 5px; line-height: 1;
+    }
+
     /* Content */
     .panel-content { padding: 32px 24px; max-width: 900px; margin: 0 auto; width: 100%; flex: 1; }
     .panel-section { display: none; }
@@ -1408,6 +1416,7 @@
       </div>
       <button class="panel-nav-btn" id="tabAfiliados" onclick="switchPanelTab('afiliados', this)">🤝 Panel del Afiliado</button>
       <button class="panel-nav-btn" id="tabComunidad" onclick="switchPanelTab('comunidad', this)">🌐 Comunidad T.D.A</button>
+      <button class="panel-nav-btn" id="tabMensajes" onclick="switchPanelTab('mensajes', this)">✉️ Mensajes<span class="nav-badge" id="badgeMensajes" style="display:none">0</span></button>
       <button class="panel-nav-btn" id="tabAdmin" style="display:none;color:#FFC107" onclick="switchPanelTab('admin', this)">⚙️ Admin</button>
     </nav>
 
@@ -1477,6 +1486,13 @@
       <!-- Sección: Configuración de privacidad del perfil -->
       <div class="panel-section" id="sec-configPerfil">
         <div id="configPerfilContainer"></div>
+      </div>
+
+      <!-- Sección: Mensajes privados -->
+      <div class="panel-section" id="sec-mensajes">
+        <div id="mensajesContainer">
+          <div style="text-align:center;padding:40px;color:var(--gris)"><span class="spinner"></span> Cargando mensajes...</div>
+        </div>
       </div>
     </div>
 
@@ -1812,6 +1828,7 @@
     if (sec === 'fondeos') cargarFondeos();
     if (sec === 'afiliados') cargarAfiliados();
     if (sec === 'comunidad') cargarComunidad();
+    if (sec === 'mensajes') cargarConversaciones();
     if (sec === 'tienda') renderTienda();
     if (sec === 'admin') cargarPanelAdmin();
   }
@@ -2313,6 +2330,11 @@
     await cargarHistorial();
     renderTienda(); // async — carga versiones desde productos_config
     renderRecursos();
+    actualizarBadgeMensajes();
+    if (!window._pollingMensajesActivo) {
+      window._pollingMensajesActivo = true;
+      setInterval(actualizarBadgeMensajes, 30000);
+    }
   }
 
   async function cargarHerramientas() {
@@ -7634,7 +7656,7 @@
         <div style="display:flex;gap:8px;flex-shrink:0">
           ${esMiPerfil
             ? `<button onclick="abrirConfigPerfilPagina()" style="background:#1A1A1A;border:1px solid #2A2A2A;color:var(--gris);padding:8px 14px;border-radius:7px;cursor:pointer;font-size:12px;white-space:nowrap">⚙️ Editar mi perfil</button>`
-            : `<button disabled title="Próximamente" style="background:#1A1A1A;border:1px solid #2A2A2A;color:#666;padding:8px 14px;border-radius:7px;cursor:not-allowed;font-size:12px;white-space:nowrap">✉️ Mensaje (próx.)</button>`}
+            : `<button onclick="abrirChat('${userId}')" style="background:var(--rojo);color:white;border:none;padding:8px 14px;border-radius:7px;cursor:pointer;font-size:12px;white-space:nowrap;font-weight:600">✉️ Enviar mensaje</button>`}
         </div>
       </div>
       ${statsHTML}
@@ -7804,6 +7826,172 @@
     }
   }
 
+
+  // ─── MENSAJERÍA PRIVADA ─────────────────────────────────────────────────
+  let _chatOtroId = null;
+  let _chatOtroNombre = '';
+
+  async function _nombresDePerfil(userIds) {
+    if (userIds.length === 0) return {};
+    const r = await sbFetch(`/rest/v1/perfiles_comunidad?user_id=in.(${userIds.join(',')})&select=user_id,nombre`, {}, sesiónActual.access_token);
+    const map = {};
+    if (r.ok && Array.isArray(r.data)) r.data.forEach(p => { map[p.user_id] = p.nombre; });
+    return map;
+  }
+
+  async function actualizarBadgeMensajes() {
+    if (!sesiónActual) return;
+    const r = await sbFetch(`/rest/v1/mensajes_privados?receptor_id=eq.${sesiónActual.user.id}&leido=eq.false&select=id`, {}, sesiónActual.access_token);
+    const badge = document.getElementById('badgeMensajes');
+    if (!badge) return;
+    const n = (r.ok && Array.isArray(r.data)) ? r.data.length : 0;
+    if (n > 0) { badge.textContent = n > 99 ? '99+' : n; badge.style.display = 'inline-flex'; }
+    else { badge.style.display = 'none'; }
+  }
+
+  async function cargarConversaciones() {
+    const cont = document.getElementById('mensajesContainer');
+    cont.innerHTML = '<div style="text-align:center;padding:40px;color:var(--gris)"><span class="spinner"></span> Cargando mensajes...</div>';
+
+    const myId = sesiónActual.user.id;
+    const r = await sbFetch(`/rest/v1/mensajes_privados?or=(emisor_id.eq.${myId},receptor_id.eq.${myId})&select=*&order=created_at.desc&limit=500`, {}, sesiónActual.access_token);
+    const msgs = (r.ok && Array.isArray(r.data)) ? r.data : [];
+
+    const convMap = {};
+    msgs.forEach(m => {
+      const otro = m.emisor_id === myId ? m.receptor_id : m.emisor_id;
+      if (!convMap[otro]) convMap[otro] = { ultimo: m, noLeidos: 0 };
+      if (m.receptor_id === myId && !m.leido) convMap[otro].noLeidos++;
+    });
+
+    const otroIds = Object.keys(convMap);
+    const nombres = await _nombresDePerfil(otroIds);
+
+    const conversaciones = otroIds
+      .map(id => ({ id, nombre: nombres[id] || 'Trader', ...convMap[id] }))
+      .sort((a, b) => new Date(b.ultimo.created_at) - new Date(a.ultimo.created_at));
+
+    if (conversaciones.length === 0) {
+      cont.innerHTML = `
+        <div class="com-empty">
+          <div class="com-empty-icon">✉️</div>
+          <p>Todavía no tenés conversaciones.</p>
+          <p style="font-size:12px;color:var(--gris);margin-top:6px">Escribile a un trader desde su perfil en la Comunidad.</p>
+        </div>`;
+      return;
+    }
+
+    cont.innerHTML = `
+      <h3 style="margin-bottom:16px">✉️ Mensajes</h3>
+      <div style="display:flex;flex-direction:column;gap:2px">
+        ${conversaciones.map(c => {
+          const esMio = c.ultimo.emisor_id === myId;
+          const preview = (esMio ? 'Vos: ' : '') + (c.ultimo.texto.length > 60 ? c.ultimo.texto.substring(0,60) + '…' : c.ultimo.texto);
+          const fecha = new Date(c.ultimo.created_at).toLocaleDateString('es-AR', {day:'2-digit', month:'short'});
+          return `
+          <div onclick="abrirChat('${c.id}')" style="display:flex;align-items:center;gap:12px;padding:14px;border-radius:10px;cursor:pointer;background:${c.noLeidos>0?'#161010':'transparent'};border:1px solid #1A1A1A;transition:background .15s" onmouseover="this.style.background='#161616'" onmouseout="this.style.background='${c.noLeidos>0?'#161010':'transparent'}'">
+            <div class="com-avatar" style="flex-shrink:0">${c.nombre[0].toUpperCase()}</div>
+            <div style="flex:1;min-width:0">
+              <div style="display:flex;align-items:center;gap:8px">
+                <span style="font-weight:700;font-size:14px;color:var(--blanco)">${esc(c.nombre)}</span>
+                ${c.noLeidos>0?`<span class="nav-badge" style="margin-left:0">${c.noLeidos}</span>`:''}
+              </div>
+              <div style="font-size:12px;color:var(--gris);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:2px">${esc(preview)}</div>
+            </div>
+            <div style="font-size:11px;color:var(--gris);flex-shrink:0">${fecha}</div>
+          </div>`;
+        }).join('')}
+      </div>`;
+  }
+
+  async function abrirChat(otroId) {
+    _mostrarPanelSeccion('sec-mensajes', 'tabMensajes');
+    _chatOtroId = otroId;
+    const cont = document.getElementById('mensajesContainer');
+    cont.innerHTML = '<div style="text-align:center;padding:40px;color:var(--gris)"><span class="spinner"></span></div>';
+
+    const myId = sesiónActual.user.id;
+    const [rMsgs, nombres] = await Promise.all([
+      sbFetch(`/rest/v1/mensajes_privados?or=(and(emisor_id.eq.${myId},receptor_id.eq.${otroId}),and(emisor_id.eq.${otroId},receptor_id.eq.${myId}))&select=*&order=created_at.asc&limit=300`, {}, sesiónActual.access_token),
+      _nombresDePerfil([otroId])
+    ]);
+    const msgs = (rMsgs.ok && Array.isArray(rMsgs.data)) ? rMsgs.data : [];
+    _chatOtroNombre = nombres[otroId] || 'Trader';
+
+    cont.innerHTML = `
+      <button onclick="cargarConversaciones()" style="background:none;border:none;color:var(--gris);cursor:pointer;font-size:13px;margin-bottom:16px;display:flex;align-items:center;gap:6px;padding:0;font-family:'DM Sans',sans-serif">← Volver a Mensajes</button>
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px;padding-bottom:16px;border-bottom:1px solid #1A1A1A">
+        <div class="com-avatar">${_chatOtroNombre[0].toUpperCase()}</div>
+        <div style="font-weight:700;font-size:16px;color:var(--blanco)">${esc(_chatOtroNombre)}</div>
+      </div>
+      <div id="chatMensajesLista" style="display:flex;flex-direction:column;gap:8px;max-height:50vh;overflow-y:auto;padding:4px;margin-bottom:16px">
+        ${msgs.length === 0 ? '<div style="text-align:center;color:var(--gris);font-size:13px;padding:20px 0">Todavía no hay mensajes. ¡Escribí el primero!</div>' : msgs.map(m => _burbujaMensaje(m, myId)).join('')}
+      </div>
+      <div style="display:flex;gap:8px">
+        <input id="chatInputTexto" type="text" maxlength="1000" placeholder="Escribí un mensaje..." style="flex:1;background:#181818;border:1px solid #2A2A2A;color:var(--blanco);padding:11px 14px;border-radius:8px;font-size:13px;outline:none;font-family:'DM Sans',sans-serif" onkeydown="if(event.key==='Enter'){event.preventDefault();enviarMensajePrivado();}">
+        <button onclick="enviarMensajePrivado()" style="background:var(--rojo);color:white;border:none;padding:0 20px;border-radius:8px;cursor:pointer;font-size:13px;font-weight:600">Enviar</button>
+      </div>`;
+
+    _scrollChatAbajo();
+    document.getElementById('chatInputTexto')?.focus();
+
+    // Marcar como leídos los mensajes recibidos de este usuario
+    const rUnread = await sbFetch(`/rest/v1/mensajes_privados?emisor_id=eq.${otroId}&receptor_id=eq.${myId}&leido=eq.false&select=id`, {}, sesiónActual.access_token);
+    if (rUnread.ok && Array.isArray(rUnread.data) && rUnread.data.length > 0) {
+      await sbFetch(`/rest/v1/mensajes_privados?emisor_id=eq.${otroId}&receptor_id=eq.${myId}&leido=eq.false`, {
+        method: 'PATCH',
+        body: JSON.stringify({ leido: true }),
+        headers: { 'Prefer': 'return=minimal' }
+      }, sesiónActual.access_token);
+      actualizarBadgeMensajes();
+    }
+  }
+
+  function _burbujaMensaje(m, myId) {
+    const esMio = m.emisor_id === myId;
+    const hora = new Date(m.created_at).toLocaleString('es-AR', {day:'2-digit', month:'short', hour:'2-digit', minute:'2-digit'});
+    return `
+      <div style="align-self:${esMio?'flex-end':'flex-start'};max-width:75%">
+        <div style="background:${esMio?'var(--rojo)':'#1E1E1E'};color:${esMio?'#fff':'var(--blanco)'};padding:9px 13px;border-radius:${esMio?'12px 12px 2px 12px':'12px 12px 12px 2px'};font-size:13px;line-height:1.4;word-break:break-word">${esc(m.texto)}</div>
+        <div style="font-size:10px;color:var(--gris);margin-top:3px;text-align:${esMio?'right':'left'}">${hora}</div>
+      </div>`;
+  }
+
+  function _scrollChatAbajo() {
+    const lista = document.getElementById('chatMensajesLista');
+    if (lista) lista.scrollTop = lista.scrollHeight;
+  }
+
+  async function enviarMensajePrivado() {
+    const input = document.getElementById('chatInputTexto');
+    const texto = (input?.value || '').trim();
+    if (!texto || !_chatOtroId) return;
+    input.value = '';
+    input.disabled = true;
+
+    const payload = { emisor_id: sesiónActual.user.id, receptor_id: _chatOtroId, texto };
+    const r = await sbFetch('/rest/v1/mensajes_privados', {
+      method: 'POST',
+      body: JSON.stringify(payload),
+      headers: { 'Prefer': 'return=representation' }
+    }, sesiónActual.access_token);
+
+    input.disabled = false;
+    input.focus();
+
+    if (r.ok && Array.isArray(r.data) && r.data[0]) {
+      const lista = document.getElementById('chatMensajesLista');
+      if (lista) {
+        const vacio = lista.querySelector('div[style*="Todavía no hay mensajes"]');
+        if (vacio) vacio.remove();
+        lista.insertAdjacentHTML('beforeend', _burbujaMensaje(r.data[0], sesiónActual.user.id));
+        _scrollChatAbajo();
+      }
+    } else {
+      input.value = texto;
+      alert('No se pudo enviar el mensaje. Intentá de nuevo.');
+    }
+  }
 
   // ─── RESEÑAS ──────────────────────────────────────────────────────────────
   let _resenasEstrellas = 0;

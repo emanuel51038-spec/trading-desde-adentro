@@ -509,32 +509,6 @@
       padding: 6px 14px; cursor: pointer; transition: all 0.2s;
     }
     .panel-logout-btn:hover { border-color: var(--rojo); color: var(--blanco); }
-    .panel-inbox-btn {
-      background: none; border: 1px solid var(--negro-border); border-radius: 8px;
-      color: var(--gris); font-family: 'DM Sans', sans-serif; font-size: 12px; font-weight: 600;
-      padding: 6px 14px; cursor: pointer; transition: all 0.2s; display: flex; align-items: center; gap: 6px;
-    }
-    .panel-inbox-btn:hover { border-color: var(--rojo); color: var(--blanco); }
-    .panel-inbox-btn.active { border-color: var(--rojo); color: var(--blanco); }
-
-    /* Notificaciones */
-    .notif-dropdown { position: relative; }
-    .notif-dropdown-menu {
-      display: none; position: absolute; top: 100%; right: 0; margin-top: 8px;
-      width: 340px; max-height: 420px; overflow-y: auto;
-      background: #141414; border: 1px solid var(--negro-border); border-radius: 12px;
-      box-shadow: 0 14px 32px rgba(0,0,0,0.55); z-index: 60; padding: 6px;
-    }
-    .notif-dropdown.open .notif-dropdown-menu { display: block; animation: navDropIn 0.15s ease both; }
-    .notif-item { display: flex; gap: 10px; padding: 10px; border-radius: 8px; cursor: pointer; transition: background 0.15s; }
-    .notif-item:hover { background: #1E1E1E; }
-    .notif-item.unread { background: #161010; }
-    .notif-item-icon {
-      width: 32px; height: 32px; border-radius: 50%; background: #1E1E1E;
-      display: flex; align-items: center; justify-content: center; font-size: 14px; flex-shrink: 0;
-    }
-    .notif-item-text { font-size: 12.5px; color: var(--blanco); line-height: 1.4; }
-    .notif-item-time { font-size: 10px; color: var(--gris); margin-top: 3px; }
 
     /* Nav tabs */
     .panel-nav {
@@ -548,34 +522,6 @@
     }
     .panel-nav-btn.active { color: var(--blanco); border-bottom-color: var(--rojo); }
     .panel-nav-btn:hover { color: var(--blanco); }
-
-    /* Nav dropdowns (Mi Panel / Mi Trading) */
-    .panel-nav { z-index: 30; }
-    .panel-nav-dropdown { position: relative; }
-    .panel-nav-dropdown .panel-nav-btn { display: flex; align-items: center; gap: 5px; }
-    .panel-nav-dropdown-caret { font-size: 9px; transition: transform 0.2s; }
-    .panel-nav-dropdown.open .panel-nav-dropdown-caret { transform: rotate(180deg); }
-    .panel-nav-dropdown-menu {
-      display: none; position: absolute; top: 100%; left: 0; margin-top: 6px;
-      background: #141414; border: 1px solid var(--negro-border); border-radius: 10px;
-      min-width: 210px; padding: 6px; box-shadow: 0 14px 32px rgba(0,0,0,0.55); z-index: 60;
-    }
-    .panel-nav-dropdown.open .panel-nav-dropdown-menu { display: block; animation: navDropIn 0.15s ease both; }
-    @keyframes navDropIn { from { opacity: 0; transform: translateY(-6px); } to { opacity: 1; transform: translateY(0); } }
-    .panel-nav-dropdown-item {
-      display: block; width: 100%; text-align: left; padding: 10px 12px; border-radius: 7px;
-      font-size: 13px; font-weight: 600; color: var(--gris); background: none; border: none;
-      cursor: pointer; font-family: 'DM Sans', sans-serif; transition: all 0.15s;
-    }
-    .panel-nav-dropdown-item:hover { background: #1E1E1E; color: var(--blanco); }
-
-    /* Badge de no leídos */
-    .nav-badge {
-      display: inline-flex; align-items: center; justify-content: center;
-      min-width: 16px; height: 16px; padding: 0 4px; border-radius: 8px;
-      background: var(--rojo); color: #fff; font-size: 10px; font-weight: 700;
-      margin-left: 5px; line-height: 1;
-    }
 
     /* Content */
     .panel-content { padding: 32px 24px; max-width: 900px; margin: 0 auto; width: 100%; flex: 1; }
@@ -1293,43 +1239,6 @@
     </div>
   </div>
 
-  <!-- COMUNIDAD T.D.A -->
-  <div class="home-section reveal-up" style="padding-top:0">
-    <h2 class="home-section-title">🌐 COMUNIDAD T.D.A</h2>
-    <p class="home-section-sub">Tu red social de traders. Un espacio para compartir operaciones, retroalimentarnos y aprender de la experiencia de otros que están parados frente a la misma pantalla que vos — porque operar solo es mucho más difícil que operar acompañado.</p>
-    <p style="font-size:14px;color:#B8B8B8;line-height:1.7;margin-bottom:36px;max-width:720px">
-      Dentro de la plataforma, cada usuario tiene su propio perfil, su feed y su bandeja de mensajes. Publicá tus trades con imagen y análisis, reaccioná a los posts de otros traders, armá tu historial público (o mantenelo privado, vos decidís), y conectate 1 a 1 con quien quieras por mensaje directo. Todo pensado para que la disciplina y el aprendizaje se construyan en comunidad, no en soledad.
-    </p>
-    <div class="screenshots-grid">
-      <div class="screenshot-card">
-        <img src="comunidad_feed.png" alt="Feed en vivo - Comunidad T.D.A">
-        <div class="screenshot-card-body">
-          <div class="screenshot-card-title">📈 Feed en Vivo</div>
-          <div class="screenshot-card-desc">Publicá tus operaciones con imagen y análisis, reaccioná a los trades de otros y sumate a la conversación diaria del mercado con traders que entienden lo que estás viviendo.</div>
-        </div>
-      </div>
-      <div class="screenshot-card">
-        <img src="comunidad_perfil.png" alt="Perfil de Trader - Comunidad T.D.A">
-        <div class="screenshot-card-body">
-          <div class="screenshot-card-title">👤 Perfil de Trader</div>
-          <div class="screenshot-card-desc">Mostrá tu win rate, tu racha, hace cuánto tradeás y contá tu historia en tu bio. Vos elegís qué estadísticas compartir con la comunidad y cuáles mantener privadas.</div>
-        </div>
-      </div>
-      <div class="screenshot-card">
-        <img src="comunidad_mensajes.png" alt="Mensajería y notificaciones - Comunidad T.D.A">
-        <div class="screenshot-card-body">
-          <div class="screenshot-card-title">✉️ Mensajes y Notificaciones</div>
-          <div class="screenshot-card-desc">Conectá en privado con otros traders para resolver dudas, armar equipo o simplemente compartir ideas. Enterate al instante de cada reacción y mensaje nuevo.</div>
-        </div>
-      </div>
-    </div>
-    <div style="text-align:center;margin-top:36px">
-      <button class="home-btn-primary" onclick="document.getElementById('loginSection').scrollIntoView({behavior:'smooth'})">
-        Sumate a la Comunidad →
-      </button>
-    </div>
-  </div>
-
   <!-- CALENDARIO ECONOMICO -->
   <div class="home-section reveal-up" style="padding-top:0">
     <h2 class="home-section-title">CALENDARIO ECONOMICO</h2>
@@ -1451,15 +1360,6 @@
     <header class="panel-header">
       <img src="logo.png" alt="Trading desde Adentro" class="panel-header-logo">
       <div class="panel-header-right">
-        <div class="notif-dropdown" id="navNotif">
-          <button class="panel-inbox-btn" id="btnNotif" onclick="toggleNotifDropdown()">
-            🔔<span class="nav-badge" id="badgeNotif" style="display:none">0</span>
-          </button>
-          <div class="notif-dropdown-menu" id="notifDropdownMenu"></div>
-        </div>
-        <button class="panel-inbox-btn" id="btnInbox" onclick="switchPanelTab('mensajes', this)">
-          ✉️ Inbox<span class="nav-badge" id="badgeMensajes" style="display:none">0</span>
-        </button>
         <div class="panel-user-badge">
           <div class="panel-avatar" id="panelAvatar">?</div>
           <span id="panelEmail" style="display:none"></span>
@@ -1470,24 +1370,14 @@
 
     <!-- Nav tabs -->
     <nav class="panel-nav">
-      <div class="panel-nav-dropdown" id="navMiPanel">
-        <button class="panel-nav-btn active" id="tabMiPanel" onclick="toggleNavDropdown('navMiPanel')">Mi Panel <span class="panel-nav-dropdown-caret">▾</span></button>
-        <div class="panel-nav-dropdown-menu">
-          <button class="panel-nav-dropdown-item" onclick="switchPanelTab('herramientas', document.getElementById('tabMiPanel'))">🧰 Mis herramientas</button>
-          <button class="panel-nav-dropdown-item" onclick="switchPanelTab('historial', document.getElementById('tabMiPanel'))">🧾 Historial de pagos</button>
-        </div>
-      </div>
+      <button class="panel-nav-btn active" onclick="switchPanelTab('herramientas', this)">Mis herramientas</button>
+      <button class="panel-nav-btn" onclick="switchPanelTab('historial', this)">Historial de pagos</button>
       <button class="panel-nav-btn" onclick="switchPanelTab('tienda', this)">Comprar herramienta</button>
       <button class="panel-nav-btn" onclick="switchPanelTab('recursos', this)">Recursos gratuitos</button>
-      <div class="panel-nav-dropdown" id="navMiTrading">
-        <button class="panel-nav-btn" id="tabMiTrading" onclick="toggleNavDropdown('navMiTrading')">Mi Trading <span class="panel-nav-dropdown-caret">▾</span></button>
-        <div class="panel-nav-dropdown-menu">
-          <button class="panel-nav-dropdown-item" onclick="switchPanelTab('journal', document.getElementById('tabMiTrading'))">📒 Trading Journal</button>
-          <button class="panel-nav-dropdown-item" onclick="switchPanelTab('fondeos', document.getElementById('tabMiTrading'))">🏦 Registro de Gastos (Fondeo)</button>
-        </div>
-      </div>
-      <button class="panel-nav-btn" id="tabAfiliados" onclick="switchPanelTab('afiliados', this)">🤝 Panel del Afiliado</button>
-      <button class="panel-nav-btn" id="tabComunidad" onclick="switchPanelTab('comunidad', this)">🌐 Comunidad T.D.A</button>
+      <button class="panel-nav-btn" onclick="switchPanelTab('journal', this)">📒 Trading Journal</button>
+      <button class="panel-nav-btn" onclick="switchPanelTab('fondeos', this)">🏦 Fondeos</button>
+      <button class="panel-nav-btn" id="tabAfiliados" onclick="switchPanelTab('afiliados', this)">🤝 Afiliados</button>
+      <button class="panel-nav-btn" id="tabComunidad" onclick="switchPanelTab('comunidad', this)">🌐 Comunidad</button>
       <button class="panel-nav-btn" id="tabAdmin" style="display:none;color:#FFC107" onclick="switchPanelTab('admin', this)">⚙️ Admin</button>
     </nav>
 
@@ -1557,13 +1447,6 @@
       <!-- Sección: Configuración de privacidad del perfil -->
       <div class="panel-section" id="sec-configPerfil">
         <div id="configPerfilContainer"></div>
-      </div>
-
-      <!-- Sección: Mensajes privados -->
-      <div class="panel-section" id="sec-mensajes">
-        <div id="mensajesContainer">
-          <div style="text-align:center;padding:40px;color:var(--gris)"><span class="spinner"></span> Cargando mensajes...</div>
-        </div>
       </div>
     </div>
 
@@ -1891,34 +1774,16 @@
     // Cerrar cualquier modal abierto antes de cambiar de sección
     document.querySelectorAll('.modal-overlay.active').forEach(m => m.classList.remove('active'));
     document.querySelectorAll('.panel-section').forEach(s => s.classList.remove('activa'));
-    document.querySelectorAll('.panel-nav-btn, .panel-inbox-btn').forEach(b => b.classList.remove('active'));
-    document.querySelectorAll('.panel-nav-dropdown').forEach(d => d.classList.remove('open'));
+    document.querySelectorAll('.panel-nav-btn').forEach(b => b.classList.remove('active'));
     document.getElementById('sec-' + sec).classList.add('activa');
-    if (btn) btn.classList.add('active');
+    btn.classList.add('active');
     if (sec === 'journal') cargarJournal();
     if (sec === 'fondeos') cargarFondeos();
     if (sec === 'afiliados') cargarAfiliados();
     if (sec === 'comunidad') cargarComunidad();
-    if (sec === 'mensajes') cargarConversaciones();
     if (sec === 'tienda') renderTienda();
     if (sec === 'admin') cargarPanelAdmin();
   }
-
-  function toggleNavDropdown(id) {
-    const target = document.getElementById(id);
-    const wasOpen = target.classList.contains('open');
-    document.querySelectorAll('.panel-nav-dropdown').forEach(d => d.classList.remove('open'));
-    if (!wasOpen) target.classList.add('open');
-  }
-
-  document.addEventListener('click', function(e) {
-    if (!e.target.closest('.panel-nav-dropdown')) {
-      document.querySelectorAll('.panel-nav-dropdown').forEach(d => d.classList.remove('open'));
-    }
-    if (!e.target.closest('.notif-dropdown')) {
-      document.querySelectorAll('.notif-dropdown').forEach(d => d.classList.remove('open'));
-    }
-  });
 
   /* ══════════════════════
      SUPABASE AUTH
@@ -2404,13 +2269,6 @@
     await cargarHistorial();
     renderTienda(); // async — carga versiones desde productos_config
     renderRecursos();
-    actualizarBadgeMensajes();
-    actualizarBadgeNotificaciones();
-    if (!window._pollingMensajesActivo) {
-      window._pollingMensajesActivo = true;
-      setInterval(actualizarBadgeMensajes, 30000);
-      setInterval(actualizarBadgeNotificaciones, 30000);
-    }
   }
 
   async function cargarHerramientas() {
@@ -7555,23 +7413,18 @@
         method: 'POST', body: JSON.stringify({ user_id: sesiónActual.user.id, post_id: postId, emoji }),
         headers: { 'Prefer': 'return=minimal' }
       }, sesiónActual.access_token);
-      const ownerId = await _actualizarContadorReaccion(postId, emoji, +1);
-      if (ownerId) {
-        const miNombre = sesiónActual.user.user_metadata?.nombre || sesiónActual.user.email.split('@')[0];
-        _crearNotificacion(ownerId, 'reaccion', postId, `${miNombre} reaccionó ${emoji} a tu publicación`);
-      }
+      await _actualizarContadorReaccion(postId, emoji, +1);
     }
   }
 
   async function _actualizarContadorReaccion(postId, emoji, delta) {
-    const rPost = await sbFetch(`/rest/v1/posts_comunidad?id=eq.${postId}&select=reacciones,user_id`, {}, sesiónActual.access_token);
-    if (!rPost.ok || !rPost.data[0]) return null;
+    const rPost = await sbFetch(`/rest/v1/posts_comunidad?id=eq.${postId}&select=reacciones`, {}, sesiónActual.access_token);
+    if (!rPost.ok || !rPost.data[0]) return;
     const reacs = rPost.data[0].reacciones || {};
     reacs[emoji] = Math.max(0, (reacs[emoji] || 0) + delta);
     await sbFetch(`/rest/v1/posts_comunidad?id=eq.${postId}`, {
       method: 'PATCH', body: JSON.stringify({ reacciones: reacs }), headers: { 'Prefer': 'return=minimal' }
     }, sesiónActual.access_token);
-    return rPost.data[0].user_id;
   }
 
   async function eliminarPost(postId) {
@@ -7678,8 +7531,7 @@
 
   function _mostrarPanelSeccion(id, tabActivoId) {
     document.querySelectorAll('.panel-section').forEach(s => s.classList.remove('activa'));
-    document.querySelectorAll('.panel-nav-btn, .panel-inbox-btn').forEach(b => b.classList.remove('active'));
-    document.querySelectorAll('.panel-nav-dropdown').forEach(d => d.classList.remove('open'));
+    document.querySelectorAll('.panel-nav-btn').forEach(b => b.classList.remove('active'));
     const sec = document.getElementById(id);
     if (sec) sec.classList.add('activa');
     if (tabActivoId) {
@@ -7701,12 +7553,9 @@
     cont.innerHTML = '<div style="text-align:center;padding:40px;color:var(--gris)"><span class="spinner"></span></div>';
 
     const esMiPerfil = userId === sesiónActual.user.id;
-    const [rPerfil, nombresMap] = await Promise.all([
-      sbFetch(`/rest/v1/perfiles_comunidad?user_id=eq.${userId}&select=*`, {}, sesiónActual.access_token),
-      _nombresDePerfil([userId])
-    ]);
+    const rPerfil = await sbFetch(`/rest/v1/perfiles_comunidad?user_id=eq.${userId}&select=*`, {}, sesiónActual.access_token);
     const perfil = (rPerfil.ok && rPerfil.data?.length > 0) ? rPerfil.data[0] : null;
-    const nombre = nombresMap[userId] || perfil?.nombre || 'Trader';
+    const nombre = perfil?.nombre || 'Trader';
 
     const [rPosts, rOps] = await Promise.all([
       sbFetch(`/rest/v1/posts_comunidad?user_id=eq.${userId}&select=*&order=created_at.desc&limit=${_perfilCompletoLimit}&offset=0`, {}, sesiónActual.access_token),
@@ -7740,7 +7589,7 @@
         <div style="display:flex;gap:8px;flex-shrink:0">
           ${esMiPerfil
             ? `<button onclick="abrirConfigPerfilPagina()" style="background:#1A1A1A;border:1px solid #2A2A2A;color:var(--gris);padding:8px 14px;border-radius:7px;cursor:pointer;font-size:12px;white-space:nowrap">⚙️ Editar mi perfil</button>`
-            : `<button onclick="abrirChat('${userId}')" style="background:var(--rojo);color:white;border:none;padding:8px 14px;border-radius:7px;cursor:pointer;font-size:12px;white-space:nowrap;font-weight:600">✉️ Enviar mensaje</button>`}
+            : `<button disabled title="Próximamente" style="background:#1A1A1A;border:1px solid #2A2A2A;color:#666;padding:8px 14px;border-radius:7px;cursor:not-allowed;font-size:12px;white-space:nowrap">✉️ Mensaje (próx.)</button>`}
         </div>
       </div>
       ${statsHTML}
@@ -7910,258 +7759,6 @@
     }
   }
 
-
-  // ─── NOTIFICACIONES ─────────────────────────────────────────────────────
-  async function _crearNotificacion(destinatarioId, tipo, referenciaId, texto) {
-    if (!destinatarioId || destinatarioId === sesiónActual.user.id) return; // no notificarme a mí mismo
-    await sbFetch('/rest/v1/notificaciones_comunidad', {
-      method: 'POST',
-      body: JSON.stringify({ user_id: destinatarioId, tipo, actor_id: sesiónActual.user.id, referencia_id: referenciaId, texto }),
-      headers: { 'Prefer': 'return=minimal' }
-    }, sesiónActual.access_token);
-  }
-
-  function _tiempoRelativo(fechaIso) {
-    const diff = (Date.now() - new Date(fechaIso).getTime()) / 1000;
-    if (diff < 60) return 'Recién';
-    if (diff < 3600) return Math.floor(diff / 60) + ' min';
-    if (diff < 86400) return Math.floor(diff / 3600) + ' h';
-    return Math.floor(diff / 86400) + ' d';
-  }
-
-  async function actualizarBadgeNotificaciones() {
-    if (!sesiónActual) return;
-    const r = await sbFetch(`/rest/v1/notificaciones_comunidad?user_id=eq.${sesiónActual.user.id}&tipo=eq.reaccion&leida=eq.false&select=id`, {}, sesiónActual.access_token);
-    const badge = document.getElementById('badgeNotif');
-    if (!badge) return;
-    const n = (r.ok && Array.isArray(r.data)) ? r.data.length : 0;
-    if (n > 0) { badge.textContent = n > 99 ? '99+' : n; badge.style.display = 'inline-flex'; }
-    else { badge.style.display = 'none'; }
-  }
-
-  async function toggleNotifDropdown() {
-    const el = document.getElementById('navNotif');
-    const willOpen = !el.classList.contains('open');
-    document.querySelectorAll('.panel-nav-dropdown, .notif-dropdown').forEach(d => d.classList.remove('open'));
-    if (willOpen) {
-      el.classList.add('open');
-      await cargarNotificaciones();
-    }
-  }
-
-  async function cargarNotificaciones() {
-    const cont = document.getElementById('notifDropdownMenu');
-    cont.innerHTML = '<div style="text-align:center;padding:24px;color:var(--gris)"><span class="spinner"></span></div>';
-
-    const r = await sbFetch(`/rest/v1/notificaciones_comunidad?user_id=eq.${sesiónActual.user.id}&tipo=eq.reaccion&select=*&order=created_at.desc&limit=20`, {}, sesiónActual.access_token);
-    const notifs = (r.ok && Array.isArray(r.data)) ? r.data : [];
-
-    if (notifs.length === 0) {
-      cont.innerHTML = '<div style="text-align:center;padding:28px 16px;color:var(--gris);font-size:12px">Sin notificaciones todavía.</div>';
-      return;
-    }
-
-    cont.innerHTML = notifs.map(n => {
-      const icono = n.tipo === 'mensaje' ? '✉️' : '❤️';
-      return `<div class="notif-item${n.leida ? '' : ' unread'}" onclick="abrirNotificacion('${n.tipo}','${n.referencia_id}')">
-        <div class="notif-item-icon">${icono}</div>
-        <div style="flex:1;min-width:0">
-          <div class="notif-item-text">${esc(n.texto)}</div>
-          <div class="notif-item-time">${_tiempoRelativo(n.created_at)}</div>
-        </div>
-      </div>`;
-    }).join('');
-
-    // Marcar como leídas las que estaban sin leer
-    const noLeidasIds = notifs.filter(n => !n.leida).map(n => n.id);
-    if (noLeidasIds.length > 0) {
-      await sbFetch(`/rest/v1/notificaciones_comunidad?id=in.(${noLeidasIds.join(',')})`, {
-        method: 'PATCH', body: JSON.stringify({ leida: true }), headers: { 'Prefer': 'return=minimal' }
-      }, sesiónActual.access_token);
-      actualizarBadgeNotificaciones();
-    }
-  }
-
-  function abrirNotificacion(tipo, referenciaId) {
-    document.getElementById('navNotif').classList.remove('open');
-    if (tipo === 'mensaje') {
-      abrirChat(referenciaId);
-    } else {
-      switchPanelTab('comunidad', document.getElementById('tabComunidad'));
-      setTimeout(() => {
-        document.getElementById('post-' + referenciaId)?.scrollIntoView({ behavior: 'smooth', block: 'center' });
-      }, 400);
-    }
-  }
-
-  // ─── MENSAJERÍA PRIVADA ─────────────────────────────────────────────────
-  let _chatOtroId = null;
-  let _chatOtroNombre = '';
-
-  async function _nombresDePerfil(userIds) {
-    if (userIds.length === 0) return {};
-    const r = await sbFetch('/rest/v1/rpc/obtener_nombres_usuarios', {
-      method: 'POST', body: JSON.stringify({ uids: userIds })
-    }, sesiónActual.access_token);
-    const map = {};
-    if (r.ok && Array.isArray(r.data)) r.data.forEach(p => { map[p.user_id] = p.nombre; });
-    return map;
-  }
-
-  async function actualizarBadgeMensajes() {
-    if (!sesiónActual) return;
-    const r = await sbFetch(`/rest/v1/mensajes_privados?receptor_id=eq.${sesiónActual.user.id}&leido=eq.false&select=id`, {}, sesiónActual.access_token);
-    const badge = document.getElementById('badgeMensajes');
-    if (!badge) return;
-    const n = (r.ok && Array.isArray(r.data)) ? r.data.length : 0;
-    if (n > 0) { badge.textContent = n > 99 ? '99+' : n; badge.style.display = 'inline-flex'; }
-    else { badge.style.display = 'none'; }
-  }
-
-  async function cargarConversaciones() {
-    const cont = document.getElementById('mensajesContainer');
-    cont.innerHTML = '<div style="text-align:center;padding:40px;color:var(--gris)"><span class="spinner"></span> Cargando mensajes...</div>';
-
-    const myId = sesiónActual.user.id;
-    const r = await sbFetch(`/rest/v1/mensajes_privados?or=(emisor_id.eq.${myId},receptor_id.eq.${myId})&select=*&order=created_at.desc&limit=500`, {}, sesiónActual.access_token);
-    const msgs = (r.ok && Array.isArray(r.data)) ? r.data : [];
-
-    const convMap = {};
-    msgs.forEach(m => {
-      const otro = m.emisor_id === myId ? m.receptor_id : m.emisor_id;
-      if (!convMap[otro]) convMap[otro] = { ultimo: m, noLeidos: 0 };
-      if (m.receptor_id === myId && !m.leido) convMap[otro].noLeidos++;
-    });
-
-    const otroIds = Object.keys(convMap);
-    const nombres = await _nombresDePerfil(otroIds);
-
-    const conversaciones = otroIds
-      .map(id => ({ id, nombre: nombres[id] || 'Trader', ...convMap[id] }))
-      .sort((a, b) => new Date(b.ultimo.created_at) - new Date(a.ultimo.created_at));
-
-    if (conversaciones.length === 0) {
-      cont.innerHTML = `
-        <div class="com-empty">
-          <div class="com-empty-icon">✉️</div>
-          <p>Todavía no tenés conversaciones.</p>
-          <p style="font-size:12px;color:var(--gris);margin-top:6px">Escribile a un trader desde su perfil en la Comunidad.</p>
-        </div>`;
-      return;
-    }
-
-    cont.innerHTML = `
-      <h3 style="margin-bottom:16px">✉️ Mensajes</h3>
-      <div style="display:flex;flex-direction:column;gap:2px">
-        ${conversaciones.map(c => {
-          const esMio = c.ultimo.emisor_id === myId;
-          const preview = (esMio ? 'Vos: ' : '') + (c.ultimo.texto.length > 60 ? c.ultimo.texto.substring(0,60) + '…' : c.ultimo.texto);
-          const fecha = new Date(c.ultimo.created_at).toLocaleDateString('es-AR', {day:'2-digit', month:'short'});
-          return `
-          <div onclick="abrirChat('${c.id}')" style="display:flex;align-items:center;gap:12px;padding:14px;border-radius:10px;cursor:pointer;background:${c.noLeidos>0?'#161010':'transparent'};border:1px solid #1A1A1A;transition:background .15s" onmouseover="this.style.background='#161616'" onmouseout="this.style.background='${c.noLeidos>0?'#161010':'transparent'}'">
-            <div class="com-avatar" style="flex-shrink:0">${c.nombre[0].toUpperCase()}</div>
-            <div style="flex:1;min-width:0">
-              <div style="display:flex;align-items:center;gap:8px">
-                <span style="font-weight:700;font-size:14px;color:var(--blanco)">${esc(c.nombre)}</span>
-                ${c.noLeidos>0?`<span class="nav-badge" style="margin-left:0">${c.noLeidos}</span>`:''}
-              </div>
-              <div style="font-size:12px;color:var(--gris);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:2px">${esc(preview)}</div>
-            </div>
-            <div style="font-size:11px;color:var(--gris);flex-shrink:0">${fecha}</div>
-          </div>`;
-        }).join('')}
-      </div>`;
-  }
-
-  async function abrirChat(otroId) {
-    _mostrarPanelSeccion('sec-mensajes', 'btnInbox');
-    _chatOtroId = otroId;
-    const cont = document.getElementById('mensajesContainer');
-    cont.innerHTML = '<div style="text-align:center;padding:40px;color:var(--gris)"><span class="spinner"></span></div>';
-
-    const myId = sesiónActual.user.id;
-    const [rMsgs, nombres] = await Promise.all([
-      sbFetch(`/rest/v1/mensajes_privados?or=(and(emisor_id.eq.${myId},receptor_id.eq.${otroId}),and(emisor_id.eq.${otroId},receptor_id.eq.${myId}))&select=*&order=created_at.asc&limit=300`, {}, sesiónActual.access_token),
-      _nombresDePerfil([otroId])
-    ]);
-    const msgs = (rMsgs.ok && Array.isArray(rMsgs.data)) ? rMsgs.data : [];
-    _chatOtroNombre = nombres[otroId] || 'Trader';
-
-    cont.innerHTML = `
-      <button onclick="cargarConversaciones()" style="background:none;border:none;color:var(--gris);cursor:pointer;font-size:13px;margin-bottom:16px;display:flex;align-items:center;gap:6px;padding:0;font-family:'DM Sans',sans-serif">← Volver a Mensajes</button>
-      <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px;padding-bottom:16px;border-bottom:1px solid #1A1A1A">
-        <div class="com-avatar">${_chatOtroNombre[0].toUpperCase()}</div>
-        <div style="font-weight:700;font-size:16px;color:var(--blanco)">${esc(_chatOtroNombre)}</div>
-      </div>
-      <div id="chatMensajesLista" style="display:flex;flex-direction:column;gap:8px;max-height:50vh;overflow-y:auto;padding:4px;margin-bottom:16px">
-        ${msgs.length === 0 ? '<div style="text-align:center;color:var(--gris);font-size:13px;padding:20px 0">Todavía no hay mensajes. ¡Escribí el primero!</div>' : msgs.map(m => _burbujaMensaje(m, myId)).join('')}
-      </div>
-      <div style="display:flex;gap:8px">
-        <input id="chatInputTexto" type="text" maxlength="1000" placeholder="Escribí un mensaje..." style="flex:1;background:#181818;border:1px solid #2A2A2A;color:var(--blanco);padding:11px 14px;border-radius:8px;font-size:13px;outline:none;font-family:'DM Sans',sans-serif" onkeydown="if(event.key==='Enter'){event.preventDefault();enviarMensajePrivado();}">
-        <button onclick="enviarMensajePrivado()" style="background:var(--rojo);color:white;border:none;padding:0 20px;border-radius:8px;cursor:pointer;font-size:13px;font-weight:600">Enviar</button>
-      </div>`;
-
-    _scrollChatAbajo();
-    document.getElementById('chatInputTexto')?.focus();
-
-    // Marcar como leídos los mensajes recibidos de este usuario
-    const rUnread = await sbFetch(`/rest/v1/mensajes_privados?emisor_id=eq.${otroId}&receptor_id=eq.${myId}&leido=eq.false&select=id`, {}, sesiónActual.access_token);
-    if (rUnread.ok && Array.isArray(rUnread.data) && rUnread.data.length > 0) {
-      await sbFetch(`/rest/v1/mensajes_privados?emisor_id=eq.${otroId}&receptor_id=eq.${myId}&leido=eq.false`, {
-        method: 'PATCH',
-        body: JSON.stringify({ leido: true }),
-        headers: { 'Prefer': 'return=minimal' }
-      }, sesiónActual.access_token);
-      actualizarBadgeMensajes();
-    }
-  }
-
-  function _burbujaMensaje(m, myId) {
-    const esMio = m.emisor_id === myId;
-    const hora = new Date(m.created_at).toLocaleString('es-AR', {day:'2-digit', month:'short', hour:'2-digit', minute:'2-digit'});
-    return `
-      <div style="align-self:${esMio?'flex-end':'flex-start'};max-width:75%">
-        <div style="background:${esMio?'var(--rojo)':'#1E1E1E'};color:${esMio?'#fff':'var(--blanco)'};padding:9px 13px;border-radius:${esMio?'12px 12px 2px 12px':'12px 12px 12px 2px'};font-size:13px;line-height:1.4;word-break:break-word">${esc(m.texto)}</div>
-        <div style="font-size:10px;color:var(--gris);margin-top:3px;text-align:${esMio?'right':'left'}">${hora}</div>
-      </div>`;
-  }
-
-  function _scrollChatAbajo() {
-    const lista = document.getElementById('chatMensajesLista');
-    if (lista) lista.scrollTop = lista.scrollHeight;
-  }
-
-  async function enviarMensajePrivado() {
-    const input = document.getElementById('chatInputTexto');
-    const texto = (input?.value || '').trim();
-    if (!texto || !_chatOtroId) return;
-    input.value = '';
-    input.disabled = true;
-
-    const payload = { emisor_id: sesiónActual.user.id, receptor_id: _chatOtroId, texto };
-    const r = await sbFetch('/rest/v1/mensajes_privados', {
-      method: 'POST',
-      body: JSON.stringify(payload),
-      headers: { 'Prefer': 'return=representation' }
-    }, sesiónActual.access_token);
-
-    input.disabled = false;
-    input.focus();
-
-    if (r.ok && Array.isArray(r.data) && r.data[0]) {
-      const lista = document.getElementById('chatMensajesLista');
-      if (lista) {
-        const vacio = lista.querySelector('div[style*="Todavía no hay mensajes"]');
-        if (vacio) vacio.remove();
-        lista.insertAdjacentHTML('beforeend', _burbujaMensaje(r.data[0], sesiónActual.user.id));
-        _scrollChatAbajo();
-      }
-      // Los mensajes nuevos se ven solo en el Inbox, no duplicamos aviso en la campanita.
-    } else {
-      input.value = texto;
-      alert('No se pudo enviar el mensaje. Intentá de nuevo.');
-    }
-  }
 
   // ─── RESEÑAS ──────────────────────────────────────────────────────────────
   let _resenasEstrellas = 0;
@@ -9351,6 +8948,7 @@
     }
     resizeHeroCanvas();
     window.addEventListener('resize', resizeHeroCanvas);
+
     var candles = [];
     function initCandles() {
       candles = [];
@@ -9366,21 +8964,6 @@
       }
     }
     initCandles();
-
-    // Fix: en la primera carga (sin cache), fuentes/recursos externos a veces
-    // terminan de cargar DESPUÉS de esta medición inicial, dejando el canvas
-    // con tamaño 0 y las velas invisibles hasta refrescar. Re-medimos cuando
-    // la página termina de cargar del todo para corregirlo sin necesidad de F5.
-    window.addEventListener('load', function() {
-      resizeHeroCanvas();
-      initCandles();
-    });
-    if (document.fonts && document.fonts.ready) {
-      document.fonts.ready.then(function() {
-        resizeHeroCanvas();
-        initCandles();
-      });
-    }
 
     var offset = 0;
     function drawCandles() {

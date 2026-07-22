@@ -509,6 +509,13 @@
       padding: 6px 14px; cursor: pointer; transition: all 0.2s;
     }
     .panel-logout-btn:hover { border-color: var(--rojo); color: var(--blanco); }
+    .panel-inbox-btn {
+      background: none; border: 1px solid var(--negro-border); border-radius: 8px;
+      color: var(--gris); font-family: 'DM Sans', sans-serif; font-size: 12px; font-weight: 600;
+      padding: 6px 14px; cursor: pointer; transition: all 0.2s; display: flex; align-items: center; gap: 6px;
+    }
+    .panel-inbox-btn:hover { border-color: var(--rojo); color: var(--blanco); }
+    .panel-inbox-btn.active { border-color: var(--rojo); color: var(--blanco); }
 
     /* Nav tabs */
     .panel-nav {
@@ -1388,6 +1395,9 @@
     <header class="panel-header">
       <img src="logo.png" alt="Trading desde Adentro" class="panel-header-logo">
       <div class="panel-header-right">
+        <button class="panel-inbox-btn" id="btnInbox" onclick="switchPanelTab('mensajes', this)">
+          ✉️ Inbox<span class="nav-badge" id="badgeMensajes" style="display:none">0</span>
+        </button>
         <div class="panel-user-badge">
           <div class="panel-avatar" id="panelAvatar">?</div>
           <span id="panelEmail" style="display:none"></span>
@@ -1416,7 +1426,6 @@
       </div>
       <button class="panel-nav-btn" id="tabAfiliados" onclick="switchPanelTab('afiliados', this)">🤝 Panel del Afiliado</button>
       <button class="panel-nav-btn" id="tabComunidad" onclick="switchPanelTab('comunidad', this)">🌐 Comunidad T.D.A</button>
-      <button class="panel-nav-btn" id="tabMensajes" onclick="switchPanelTab('mensajes', this)">✉️ Mensajes<span class="nav-badge" id="badgeMensajes" style="display:none">0</span></button>
       <button class="panel-nav-btn" id="tabAdmin" style="display:none;color:#FFC107" onclick="switchPanelTab('admin', this)">⚙️ Admin</button>
     </nav>
 
@@ -1820,7 +1829,7 @@
     // Cerrar cualquier modal abierto antes de cambiar de sección
     document.querySelectorAll('.modal-overlay.active').forEach(m => m.classList.remove('active'));
     document.querySelectorAll('.panel-section').forEach(s => s.classList.remove('activa'));
-    document.querySelectorAll('.panel-nav-btn').forEach(b => b.classList.remove('active'));
+    document.querySelectorAll('.panel-nav-btn, .panel-inbox-btn').forEach(b => b.classList.remove('active'));
     document.querySelectorAll('.panel-nav-dropdown').forEach(d => d.classList.remove('open'));
     document.getElementById('sec-' + sec).classList.add('activa');
     if (btn) btn.classList.add('active');
@@ -7597,7 +7606,7 @@
 
   function _mostrarPanelSeccion(id, tabActivoId) {
     document.querySelectorAll('.panel-section').forEach(s => s.classList.remove('activa'));
-    document.querySelectorAll('.panel-nav-btn').forEach(b => b.classList.remove('active'));
+    document.querySelectorAll('.panel-nav-btn, .panel-inbox-btn').forEach(b => b.classList.remove('active'));
     document.querySelectorAll('.panel-nav-dropdown').forEach(d => d.classList.remove('open'));
     const sec = document.getElementById(id);
     if (sec) sec.classList.add('activa');
@@ -7620,9 +7629,12 @@
     cont.innerHTML = '<div style="text-align:center;padding:40px;color:var(--gris)"><span class="spinner"></span></div>';
 
     const esMiPerfil = userId === sesiónActual.user.id;
-    const rPerfil = await sbFetch(`/rest/v1/perfiles_comunidad?user_id=eq.${userId}&select=*`, {}, sesiónActual.access_token);
+    const [rPerfil, nombresMap] = await Promise.all([
+      sbFetch(`/rest/v1/perfiles_comunidad?user_id=eq.${userId}&select=*`, {}, sesiónActual.access_token),
+      _nombresDePerfil([userId])
+    ]);
     const perfil = (rPerfil.ok && rPerfil.data?.length > 0) ? rPerfil.data[0] : null;
-    const nombre = perfil?.nombre || 'Trader';
+    const nombre = nombresMap[userId] || perfil?.nombre || 'Trader';
 
     const [rPosts, rOps] = await Promise.all([
       sbFetch(`/rest/v1/posts_comunidad?user_id=eq.${userId}&select=*&order=created_at.desc&limit=${_perfilCompletoLimit}&offset=0`, {}, sesiónActual.access_token),
@@ -7833,7 +7845,9 @@
 
   async function _nombresDePerfil(userIds) {
     if (userIds.length === 0) return {};
-    const r = await sbFetch(`/rest/v1/perfiles_comunidad?user_id=in.(${userIds.join(',')})&select=user_id,nombre`, {}, sesiónActual.access_token);
+    const r = await sbFetch('/rest/v1/rpc/obtener_nombres_usuarios', {
+      method: 'POST', body: JSON.stringify({ uids: userIds })
+    }, sesiónActual.access_token);
     const map = {};
     if (r.ok && Array.isArray(r.data)) r.data.forEach(p => { map[p.user_id] = p.nombre; });
     return map;
@@ -7905,7 +7919,7 @@
   }
 
   async function abrirChat(otroId) {
-    _mostrarPanelSeccion('sec-mensajes', 'tabMensajes');
+    _mostrarPanelSeccion('sec-mensajes', 'btnInbox');
     _chatOtroId = otroId;
     const cont = document.getElementById('mensajesContainer');
     cont.innerHTML = '<div style="text-align:center;padding:40px;color:var(--gris)"><span class="spinner"></span></div>';

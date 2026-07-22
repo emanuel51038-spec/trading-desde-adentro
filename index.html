@@ -1171,39 +1171,35 @@
     </div>
   </section>
 
-  <!-- TICKER PRECIOS EN VIVO - TradingView Widget -->
-  <div style="background:#0D0D0D;border-top:1px solid #1E1E1E;border-bottom:1px solid #1E1E1E;" id="tickerPreciosWrap">
-    <div class="tradingview-widget-container" id="tickerWidgetContainer">
-      <div class="tradingview-widget-container__widget"></div>
-      <script type="text/javascript" src="https://s3.tradingview.com/external-embedding/embed-widget-ticker-tape.js" async>
-      {
-        "symbols": [
-          {"proName": "NASDAQ:QQQ", "title": "Nasdaq"},
-          {"proName": "AMEX:SPY", "title": "S&P 500"},
-          {"proName": "AMEX:GLD", "title": "Oro"},
-          {"proName": "CBOE:VIX", "title": "VIX"}
-        ],
-        "showSymbolLogo": true,
-        "isTransparent": true,
-        "displayMode": "adaptive",
-        "colorTheme": "dark",
-        "locale": "es"
-      }
-      </script>
+  <!-- TICKER PRECIOS EN VIVO - propio (Yahoo Finance vía proxy), sin depender de TradingView -->
+  <div style="background:#0D0D0D;border-top:1px solid #1E1E1E;border-bottom:1px solid #1E1E1E;padding:12px 0;overflow-x:auto" id="tickerBar">
+    <div style="display:flex;gap:32px;justify-content:center;flex-wrap:wrap;padding:0 24px;font-family:'DM Sans',sans-serif;min-width:max-content;margin:0 auto">
+      <div style="display:flex;align-items:center;gap:8px;font-size:13px">
+        <span class="ticker-dot" id="dot-NQ"></span>
+        <span style="color:var(--gris);font-weight:600">Nasdaq</span>
+        <span id="price-NQ" style="color:var(--blanco);font-weight:700">—</span>
+        <span class="ticker-change" id="chg-NQ">—</span>
+      </div>
+      <div style="display:flex;align-items:center;gap:8px;font-size:13px">
+        <span class="ticker-dot" id="dot-ES"></span>
+        <span style="color:var(--gris);font-weight:600">S&amp;P 500</span>
+        <span id="price-ES" style="color:var(--blanco);font-weight:700">—</span>
+        <span class="ticker-change" id="chg-ES">—</span>
+      </div>
+      <div style="display:flex;align-items:center;gap:8px;font-size:13px">
+        <span class="ticker-dot" id="dot-GC"></span>
+        <span style="color:var(--gris);font-weight:600">Oro</span>
+        <span id="price-GC" style="color:var(--blanco);font-weight:700">—</span>
+        <span class="ticker-change" id="chg-GC">—</span>
+      </div>
+      <div style="display:flex;align-items:center;gap:8px;font-size:13px">
+        <span class="ticker-dot" id="dot-VIX"></span>
+        <span style="color:var(--gris);font-weight:600">VIX</span>
+        <span id="price-VIX" style="color:var(--blanco);font-weight:700">—</span>
+        <span class="ticker-change" id="chg-VIX">—</span>
+      </div>
     </div>
   </div>
-  <script>
-    // Si el widget de TradingView no logra montarse (falla de red, auth, o tracking
-    // prevention del navegador bloqueando sus recursos), ocultamos la barra en vez
-    // de dejar los placeholders vacíos colgados para siempre.
-    setTimeout(function() {
-      var cont = document.getElementById('tickerWidgetContainer');
-      var wrap = document.getElementById('tickerPreciosWrap');
-      if (cont && wrap && !cont.querySelector('iframe')) {
-        wrap.style.display = 'none';
-      }
-    }, 6000);
-  </script>
 
   <!-- BIO -->
   <div class="home-section reveal-up">

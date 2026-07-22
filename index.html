@@ -1438,16 +1438,6 @@
           <div style="text-align:center;padding:40px;color:var(--gris)"><span class="spinner"></span> Cargando comunidad...</div>
         </div>
       </div>
-
-      <!-- Sección: Perfil de usuario (página completa, tipo Facebook) -->
-      <div class="panel-section" id="sec-perfilUsuario">
-        <div id="perfilUsuarioContainer"></div>
-      </div>
-
-      <!-- Sección: Configuración de privacidad del perfil -->
-      <div class="panel-section" id="sec-configPerfil">
-        <div id="configPerfilContainer"></div>
-      </div>
     </div>
 
   </div>
@@ -1500,6 +1490,15 @@
   </div>
 </div>
 
+<!-- MODAL: Perfil público de usuario -->
+<div class="modal-overlay" id="modalPerfilUsuario">
+  <div class="modal" style="max-width:720px;max-height:90vh;overflow-y:auto">
+    <button class="modal-close" onclick="cerrarModal('modalPerfilUsuario')">✕</button>
+    <div id="modalPerfilUsuarioContent">
+      <div style="text-align:center;padding:40px;color:var(--gris)"><span class="spinner"></span></div>
+    </div>
+  </div>
+</div>
 
 <!-- MODAL: Imagen ampliada -->
 <div class="modal-overlay" id="modalImagenAmpliada" onclick="cerrarModal('modalImagenAmpliada')" style="cursor:zoom-out;align-items:center;justify-content:center">
@@ -7242,7 +7241,7 @@
           <div style="font-weight:700;font-size:15px;color:var(--blanco)">${sesiónActual.user.user_metadata?.nombre||'Mi perfil'}</div>
           <div style="font-size:11px;color:var(--gris);margin-top:2px">Configurá la privacidad de tu perfil para compartir tu journal con la comunidad.</div>
         </div>
-        <button onclick="abrirConfigPerfilPagina()" style="margin-left:auto;background:#1A1A1A;border:1px solid #2A2A2A;color:var(--gris);padding:8px 14px;border-radius:7px;cursor:pointer;font-size:12px;white-space:nowrap">⚙️ Privacidad</button>
+        <button onclick="abrirConfigPerfilComunidad()" style="margin-left:auto;background:#1A1A1A;border:1px solid #2A2A2A;color:var(--gris);padding:8px 14px;border-radius:7px;cursor:pointer;font-size:12px;white-space:nowrap">⚙️ Privacidad</button>
       </div>
     </div>`;
 
@@ -7287,9 +7286,9 @@
 
       return `<div class="com-post" id="post-${p.id}">
         <div class="com-post-header">
-          <div class="com-avatar" style="cursor:pointer" onclick="abrirPerfilUsuario('${p.user_id}')">${inicial}</div>
+          <div class="com-avatar">${inicial}</div>
           <div class="com-post-meta">
-            <div class="com-post-autor" onclick="abrirPerfilUsuario('${p.user_id}')">${esc(nombre)}</div>
+            <div class="com-post-autor" onclick="verPerfilUsuario('${p.user_id}')">${esc(nombre)}</div>
             <div class="com-post-fecha">${fecha}</div>
           </div>
           ${esMio ? `<div class="com-post-acciones"><button class="com-btn-eliminar" onclick="eliminarPost('${p.id}')">🗑️ Eliminar</button></div>` : ''}
@@ -7439,8 +7438,44 @@
     document.getElementById('modalImagenAmpliada').classList.add('active');
   }
 
-  function _statsJournalHTML(ops, mostrarJournal) {
-    if (mostrarJournal && ops.length > 0) {
+  async function verPerfilUsuario(userId) {
+    document.getElementById('modalPerfilUsuario').classList.add('active');
+    const cont = document.getElementById('modalPerfilUsuarioContent');
+    cont.innerHTML = '<div style="text-align:center;padding:40px;color:var(--gris)"><span class="spinner"></span></div>';
+
+    const esMiPerfil = userId === sesiónActual.user.id;
+
+    // Primero cargar perfil para conocer la cuenta elegida
+    const rPerfil = await sbFetch(`/rest/v1/perfiles_comunidad?user_id=eq.${userId}&select=*`, {}, sesiónActual.access_token);
+    const perfil = (rPerfil.ok && rPerfil.data?.length > 0) ? rPerfil.data[0] : null;
+
+    const [rPosts, rOps] = await Promise.all([
+      sbFetch(`/rest/v1/posts_comunidad?user_id=eq.${userId}&select=*&order=created_at.desc&limit=6`, {}, sesiónActual.access_token),
+      (async () => {
+        const pCuenta = perfil?.cuenta_compartir || '';
+        // Intentar con filtro de origen (excluye manuales)
+        let url = `/rest/v1/operaciones_journal?user_id=eq.${userId}&select=fecha,pnl,instrumento,direccion,estrategia,cuenta,origen&order=fecha.desc`;
+        if (pCuenta) url += `&cuenta=eq.${encodeURIComponent(pCuenta)}`;
+        const r = await sbFetch(url, {}, sesiónActual.access_token);
+        if (r.ok && Array.isArray(r.data)) {
+          // Filtrar manuales en cliente si la columna existe
+          return { ok: true, data: r.data.filter(o => o.origen !== 'manual') };
+        }
+        // fallback sin filtro origen
+        let url2 = `/rest/v1/operaciones_journal?user_id=eq.${userId}&select=fecha,pnl,instrumento,direccion,estrategia,cuenta&order=fecha.desc`;
+        if (pCuenta) url2 += `&cuenta=eq.${encodeURIComponent(pCuenta)}`;
+        return sbFetch(url2, {}, sesiónActual.access_token);
+      })()
+    ]);
+
+    const posts  = (rPosts.ok && Array.isArray(rPosts.data)) ? rPosts.data : [];
+    const nombre = perfil?.nombre || 'Trader';
+    const mostrarJournal = perfil?.mostrar_journal || esMiPerfil;
+    const ops = (mostrarJournal && rOps.ok && Array.isArray(rOps.data)) ? rOps.data : [];
+
+    // Calcular stats del journal
+    let statsJournalHTML = '';
+    if (ops.length > 0) {
       const pnls = ops.map(o => parseFloat(o.pnl || 0));
       const ganadoras = pnls.filter(p => p > 0).length;
       const perdedoras = pnls.filter(p => p < 0).length;
@@ -7448,6 +7483,7 @@
       const pnlProm = pnlTotal / pnls.length;
       const winRate = (ganadoras / pnls.length) * 100;
 
+      // Racha actual
       let rachaCurr = 0, rachaDir = '';
       for (const p of pnls) {
         const d = p > 0 ? 'win' : 'loss';
@@ -7456,6 +7492,7 @@
         else break;
       }
 
+      // Max drawdown diario (por día)
       const porDia = {};
       ops.forEach(o => {
         const d = o.fecha ? o.fecha.substring(0,10) : '?';
@@ -7463,6 +7500,7 @@
       });
       const peorDia = Math.min(...Object.values(porDia));
 
+      // Instrumentos top
       const instCount = {};
       ops.forEach(o => { if(o.instrumento) instCount[o.instrumento] = (instCount[o.instrumento]||0)+1; });
       const instrTop = Object.entries(instCount).sort((a,b)=>b[1]-a[1]).slice(0,3).map(([k])=>k).join(', ');
@@ -7478,7 +7516,7 @@
         { val: instrTop || '—', lbl: 'Instrumentos', color: 'var(--blanco)' },
       ];
 
-      return `
+      statsJournalHTML = `
         <div style="margin-bottom:20px">
           <div style="font-size:11px;color:var(--gris);text-transform:uppercase;letter-spacing:1px;margin-bottom:10px">📊 Estadísticas del Journal</div>
           <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:10px">
@@ -7508,117 +7546,52 @@
           </div>
         </div>`;
     } else if (mostrarJournal && ops.length === 0) {
-      return `<div style="background:#111;border:1px solid #1E1E1E;border-radius:10px;padding:20px;text-align:center;color:var(--gris);font-size:13px;margin-bottom:20px">Sin operaciones en el journal aún.</div>`;
-    } else {
-      return `<div style="background:#111;border:1px solid #1E1E1E;border-radius:10px;padding:16px;text-align:center;color:var(--gris);font-size:13px;margin-bottom:20px">🔒 Este trader no compartió su journal.</div>`;
+      statsJournalHTML = `<div style="background:#111;border:1px solid #1E1E1E;border-radius:10px;padding:20px;text-align:center;color:var(--gris);font-size:13px;margin-bottom:20px">Sin operaciones en el journal aún.</div>`;
+    } else if (!mostrarJournal) {
+      statsJournalHTML = `<div style="background:#111;border:1px solid #1E1E1E;border-radius:10px;padding:16px;text-align:center;color:var(--gris);font-size:13px;margin-bottom:20px">🔒 Este trader no compartió su journal.</div>`;
     }
-  }
 
-  async function _fetchOpsPerfil(userId, perfil) {
-    const pCuenta = perfil?.cuenta_compartir || '';
-    let url = `/rest/v1/operaciones_journal?user_id=eq.${userId}&select=fecha,pnl,instrumento,direccion,estrategia,cuenta,origen&order=fecha.desc`;
-    if (pCuenta) url += `&cuenta=eq.${encodeURIComponent(pCuenta)}`;
-    const r = await sbFetch(url, {}, sesiónActual.access_token);
-    if (r.ok && Array.isArray(r.data)) return { ok: true, data: r.data.filter(o => o.origen !== 'manual') };
-    let url2 = `/rest/v1/operaciones_journal?user_id=eq.${userId}&select=fecha,pnl,instrumento,direccion,estrategia,cuenta&order=fecha.desc`;
-    if (pCuenta) url2 += `&cuenta=eq.${encodeURIComponent(pCuenta)}`;
-    return sbFetch(url2, {}, sesiónActual.access_token);
-  }
-
-  let _perfilCompletoUserId = null;
-  let _perfilCompletoOffset = 0;
-  const _perfilCompletoLimit = 12;
-
-  function _mostrarPanelSeccion(id, tabActivoId) {
-    document.querySelectorAll('.panel-section').forEach(s => s.classList.remove('activa'));
-    document.querySelectorAll('.panel-nav-btn').forEach(b => b.classList.remove('active'));
-    const sec = document.getElementById(id);
-    if (sec) sec.classList.add('activa');
-    if (tabActivoId) {
-      const btn = document.getElementById(tabActivoId);
-      if (btn) btn.classList.add('active');
-    }
-    window.scrollTo(0, 0);
-  }
-
-  function volverAComunidad() {
-    _mostrarPanelSeccion('sec-comunidad', 'tabComunidad');
-  }
-
-  async function abrirPerfilUsuario(userId) {
-    _mostrarPanelSeccion('sec-perfilUsuario', 'tabComunidad');
-    _perfilCompletoUserId = userId;
-    _perfilCompletoOffset = 0;
-    const cont = document.getElementById('perfilUsuarioContainer');
-    cont.innerHTML = '<div style="text-align:center;padding:40px;color:var(--gris)"><span class="spinner"></span></div>';
-
-    const esMiPerfil = userId === sesiónActual.user.id;
-    const rPerfil = await sbFetch(`/rest/v1/perfiles_comunidad?user_id=eq.${userId}&select=*`, {}, sesiónActual.access_token);
-    const perfil = (rPerfil.ok && rPerfil.data?.length > 0) ? rPerfil.data[0] : null;
-    const nombre = perfil?.nombre || 'Trader';
-
-    const [rPosts, rOps] = await Promise.all([
-      sbFetch(`/rest/v1/posts_comunidad?user_id=eq.${userId}&select=*&order=created_at.desc&limit=${_perfilCompletoLimit}&offset=0`, {}, sesiónActual.access_token),
-      _fetchOpsPerfil(userId, perfil)
-    ]);
-
-    const posts = (rPosts.ok && Array.isArray(rPosts.data)) ? rPosts.data : [];
-    _perfilCompletoOffset = posts.length;
-    const mostrarJournal = perfil?.mostrar_journal || esMiPerfil;
-    const ops = (mostrarJournal && rOps.ok && Array.isArray(rOps.data)) ? rOps.data : [];
-
-    const statsHTML = _statsJournalHTML(ops, mostrarJournal);
-
-    const anioActual = new Date().getFullYear();
-    let antiguedadHTML = '';
-    if (perfil?.trading_desde) {
-      const anios = anioActual - perfil.trading_desde;
-      antiguedadHTML = `<div style="font-size:12px;color:var(--rojo-bright);margin-top:4px;font-weight:600">📈 Trading desde ${perfil.trading_desde} · ${anios} año${anios===1?'':'s'}</div>`;
-    }
+    // Posts recientes
+    const postsHTML = posts.length > 0 ? `
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:10px">
+        ${posts.map(p => {
+          const pnl = parseFloat(p.pnl||0);
+          const pnlColor = pnl>=0?'var(--verde)':'#E57373';
+          return `<div style="background:#111;border:1px solid #1E1E1E;border-radius:10px;padding:12px">
+            <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">
+              <span style="font-size:12px">${p.direccion==='Long'?'🟢':'🔴'} ${esc(p.instrumento||'')}</span>
+              <span style="font-size:13px;font-weight:700;color:${pnlColor};margin-left:auto">${pnl>=0?'+':''}$${Math.abs(pnl).toFixed(2)}</span>
+            </div>
+            ${p.imagen_url?`<img src="${p.imagen_url}" style="width:100%;height:80px;object-fit:cover;border-radius:6px;margin-bottom:6px" onclick="ampliarImagen('${p.imagen_url}');cerrarModal('modalPerfilUsuario')">`:''}
+            ${p.texto?`<div style="font-size:12px;color:#AAA;line-height:1.4">${esc(p.texto.substring(0,60))}${p.texto.length>60?'…':''}</div>`:''}
+          </div>`;
+        }).join('')}
+      </div>` : '<div style="color:var(--gris);font-size:13px;padding:12px 0">Sin posts aún.</div>';
 
     cont.innerHTML = `
-      <button onclick="volverAComunidad()" style="background:none;border:none;color:var(--gris);cursor:pointer;font-size:13px;margin-bottom:20px;display:flex;align-items:center;gap:6px;padding:0;font-family:'DM Sans',sans-serif">← Volver a Comunidad</button>
-      <div style="display:flex;align-items:flex-start;gap:16px;margin-bottom:20px;flex-wrap:wrap">
-        <div class="com-avatar" style="width:64px;height:64px;font-size:24px;flex-shrink:0">${nombre[0].toUpperCase()}</div>
-        <div style="flex:1;min-width:200px">
-          <div style="font-weight:700;font-size:22px;color:var(--blanco)">${esc(nombre)}</div>
-          <div style="font-size:12px;color:var(--gris);margin-top:2px">Miembro de la comunidad</div>
-          ${antiguedadHTML}
-          ${perfil?.bio ? `<div style="font-size:13px;color:#CCC;margin-top:10px;line-height:1.5;max-width:520px">${esc(perfil.bio)}</div>` : ''}
+      <div style="display:flex;align-items:center;gap:14px;margin-bottom:24px">
+        <div class="com-avatar" style="width:56px;height:56px;font-size:22px">${nombre[0].toUpperCase()}</div>
+        <div>
+          <div style="font-weight:700;font-size:20px;color:var(--blanco)">${esc(nombre)}</div>
+          <div style="font-size:12px;color:var(--gris);margin-top:2px">Miembro de la comunidad · ${ops.length} operaciones registradas</div>
         </div>
-        <div style="display:flex;gap:8px;flex-shrink:0">
-          ${esMiPerfil
-            ? `<button onclick="abrirConfigPerfilPagina()" style="background:#1A1A1A;border:1px solid #2A2A2A;color:var(--gris);padding:8px 14px;border-radius:7px;cursor:pointer;font-size:12px;white-space:nowrap">⚙️ Editar mi perfil</button>`
-            : `<button disabled title="Próximamente" style="background:#1A1A1A;border:1px solid #2A2A2A;color:#666;padding:8px 14px;border-radius:7px;cursor:not-allowed;font-size:12px;white-space:nowrap">✉️ Mensaje (próx.)</button>`}
-        </div>
+        ${esMiPerfil ? `<button onclick="abrirConfigPerfilComunidad();cerrarModal('modalPerfilUsuario')" style="margin-left:auto;background:#1A1A1A;border:1px solid #2A2A2A;color:var(--gris);padding:8px 14px;border-radius:7px;cursor:pointer;font-size:12px;white-space:nowrap">⚙️ Mi perfil</button>` : ''}
       </div>
-      ${statsHTML}
+      ${statsJournalHTML}
       <div>
-        <div style="font-size:11px;color:var(--gris);text-transform:uppercase;letter-spacing:1px;margin-bottom:10px">📌 Todas las publicaciones</div>
-        <div class="com-feed" id="perfilUsuarioFeed">
-          ${posts.length > 0 ? _renderPostsHTML(posts, {}) : '<div class="com-empty"><div class="com-empty-icon">📭</div><p>Sin publicaciones aún.</p></div>'}
-        </div>
-        ${posts.length === _perfilCompletoLimit ? `<div class="com-load-more" id="perfilUsuarioLoadMore"><button onclick="cargarMasPerfilUsuario()">Ver publicaciones más antiguas</button></div>` : ''}
+        <div style="font-size:11px;color:var(--gris);text-transform:uppercase;letter-spacing:1px;margin-bottom:10px">📌 Posts recientes</div>
+        ${postsHTML}
       </div>`;
   }
 
-  async function cargarMasPerfilUsuario() {
-    const r = await sbFetch(`/rest/v1/posts_comunidad?user_id=eq.${_perfilCompletoUserId}&select=*&order=created_at.desc&limit=${_perfilCompletoLimit}&offset=${_perfilCompletoOffset}`, {}, sesiónActual.access_token);
-    const posts = (r.ok && Array.isArray(r.data)) ? r.data : [];
-    const feedEl = document.getElementById('perfilUsuarioFeed');
-    if (feedEl) feedEl.insertAdjacentHTML('beforeend', _renderPostsHTML(posts, {}));
-    const loadMore = document.getElementById('perfilUsuarioLoadMore');
-    if (loadMore) loadMore.remove();
-    _perfilCompletoOffset += posts.length;
-    if (posts.length === _perfilCompletoLimit && feedEl) {
-      feedEl.insertAdjacentHTML('afterend', `<div class="com-load-more" id="perfilUsuarioLoadMore"><button onclick="cargarMasPerfilUsuario()">Ver publicaciones más antiguas</button></div>`);
+  async function abrirConfigPerfilComunidad() {
+    let modal = document.getElementById('modalConfigPerfil');
+    if (!modal) {
+      modal = document.createElement('div');
+      modal.id = 'modalConfigPerfil';
+      modal.className = 'modal-overlay';
+      document.body.appendChild(modal);
     }
-  }
-
-  async function abrirConfigPerfilPagina() {
-    _mostrarPanelSeccion('sec-configPerfil', 'tabComunidad');
-    const cont = document.getElementById('configPerfilContainer');
-    cont.innerHTML = '<div style="text-align:center;padding:40px;color:var(--gris)"><span class="spinner"></span></div>';
 
     // Cargar cuentas únicas del journal (solo ops NO manuales)
     const rCuentas = await sbFetch(
@@ -7640,15 +7613,9 @@
       ? cuentas.map(c => `<option value="${c}" ${cuentaActual===c?'selected':''}>${c}</option>`).join('')
       : '<option value="">Sin cuentas registradas</option>';
 
-    const anioActualCfg = new Date().getFullYear();
-    let aniosOptions = '';
-    for (let y = anioActualCfg; y >= 2010; y--) {
-      aniosOptions += `<option value="${y}" ${p.trading_desde===y?'selected':''}>${y}</option>`;
-    }
-
-    cont.innerHTML = `
-      <button onclick="volverAComunidad()" style="background:none;border:none;color:var(--gris);cursor:pointer;font-size:13px;margin-bottom:20px;display:flex;align-items:center;gap:6px;padding:0;font-family:'DM Sans',sans-serif">← Volver a Comunidad</button>
-      <div style="max-width:520px">
+    modal.innerHTML = `
+      <div class="modal" style="max-width:460px">
+        <button class="modal-close" onclick="cerrarModal('modalConfigPerfil')">✕</button>
         <h3 style="margin-bottom:4px">Privacidad del perfil</h3>
         <p class="modal-desc">Elegí qué información querés mostrar en tu perfil público.</p>
 
@@ -7684,23 +7651,10 @@
           <label class="com-switch"><input type="checkbox" id="togPnlProm" ${p.mostrar_pnl_promedio?'checked':''}><span class="com-switch-slider"></span></label>
         </div>
 
-        <div style="padding:14px 0;border-bottom:1px solid #1A1A1A">
-          <label style="font-size:11px;color:var(--gris);text-transform:uppercase;letter-spacing:1px;display:block;margin-bottom:8px">Trading desde (año)</label>
-          <select id="inputTradingDesde" style="width:100%;background:#181818;border:1px solid #2A2A2A;color:var(--blanco);padding:9px 12px;border-radius:7px;font-size:13px;outline:none;font-family:'DM Sans',sans-serif">
-            <option value="">— No especificar —</option>
-            ${aniosOptions}
-          </select>
-        </div>
-
-        <div style="padding:14px 0;border-bottom:1px solid #1A1A1A">
-          <label style="font-size:11px;color:var(--gris);text-transform:uppercase;letter-spacing:1px;display:block;margin-bottom:8px">Bio</label>
-          <textarea id="inputBio" maxlength="280" placeholder="Contá quién sos, tu estilo de trading, o lo que quieras compartir con la comunidad..." style="width:100%;background:#181818;border:1px solid #2A2A2A;color:var(--blanco);padding:10px 12px;border-radius:7px;font-size:13px;outline:none;font-family:'DM Sans',sans-serif;resize:vertical;min-height:70px">${esc(p.bio||'')}</textarea>
-          <div style="font-size:10px;color:var(--gris);margin-top:4px;text-align:right">Máx. 280 caracteres</div>
-        </div>
-
         <div id="configPerfilMsg" style="display:none;margin-top:12px;font-size:12px;padding:8px 12px;border-radius:6px"></div>
         <button onclick="guardarConfigPerfil()" class="modal-confirm" style="width:100%;margin-top:16px">Guardar cambios</button>
       </div>`;
+    modal.classList.add('active');
 
     // Mostrar/ocultar selector de cuenta según el toggle
     document.getElementById('togJournal').addEventListener('change', function() {
@@ -7713,9 +7667,6 @@
     const mostrar_winrate       = document.getElementById('togWinrate').checked;
     const mostrar_pnl_promedio  = document.getElementById('togPnlProm').checked;
     const cuenta_compartir      = document.getElementById('selectCuentaCompartir')?.value || '';
-    const bio                   = (document.getElementById('inputBio')?.value || '').trim().substring(0, 280);
-    const tradingDesdeRaw       = document.getElementById('inputTradingDesde')?.value || '';
-    const trading_desde         = tradingDesdeRaw ? parseInt(tradingDesdeRaw) : null;
     const msg = document.getElementById('configPerfilMsg');
 
     // Calcular stats del journal (filtradas por cuenta si se eligió una)
@@ -7738,7 +7689,7 @@
     }
 
     const nombre = sesiónActual.user.user_metadata?.nombre || sesiónActual.user.email.split('@')[0];
-    const payload = { user_id: sesiónActual.user.id, nombre, mostrar_journal, mostrar_winrate, mostrar_pnl_promedio, cuenta_compartir, bio, trading_desde };
+    const payload = { user_id: sesiónActual.user.id, nombre, mostrar_journal, mostrar_winrate, mostrar_pnl_promedio, cuenta_compartir };
     if (winrate !== null)      payload.winrate = winrate;
     if (pnl_promedio !== null) payload.pnl_promedio = pnl_promedio;
 
@@ -7752,7 +7703,7 @@
       _comPerfilPublico = { ..._comPerfilPublico, ...payload };
       msg.style.display='block'; msg.style.background='rgba(76,175,80,.1)'; msg.style.color='var(--verde)'; msg.style.border='1px solid rgba(76,175,80,.3)';
       msg.textContent='✓ Perfil actualizado.';
-      setTimeout(() => abrirPerfilUsuario(sesiónActual.user.id), 900);
+      setTimeout(() => cerrarModal('modalConfigPerfil'), 900);
     } else {
       msg.style.display='block'; msg.style.background='rgba(229,115,115,.1)'; msg.style.color='#E57373'; msg.style.border='1px solid rgba(229,115,115,.3)';
       msg.textContent='Error al guardar. Verificá la tabla perfiles_comunidad.';

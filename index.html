@@ -524,6 +524,7 @@
     .panel-nav-btn:hover { color: var(--blanco); }
 
     /* Nav dropdowns (Mi Panel / Mi Trading) */
+    .panel-nav { z-index: 30; }
     .panel-nav-dropdown { position: relative; }
     .panel-nav-dropdown .panel-nav-btn { display: flex; align-items: center; gap: 5px; }
     .panel-nav-dropdown-caret { font-size: 9px; transition: transform 0.2s; }
@@ -1402,7 +1403,7 @@
         <button class="panel-nav-btn" id="tabMiTrading" onclick="toggleNavDropdown('navMiTrading')">Mi Trading <span class="panel-nav-dropdown-caret">▾</span></button>
         <div class="panel-nav-dropdown-menu">
           <button class="panel-nav-dropdown-item" onclick="switchPanelTab('journal', document.getElementById('tabMiTrading'))">📒 Trading Journal</button>
-          <button class="panel-nav-dropdown-item" onclick="switchPanelTab('fondeos', document.getElementById('tabMiTrading'))">🏦 Fondeos</button>
+          <button class="panel-nav-dropdown-item" onclick="switchPanelTab('fondeos', document.getElementById('tabMiTrading'))">🏦 Registro de Gastos (Fondeo)</button>
         </div>
       </div>
       <button class="panel-nav-btn" id="tabAfiliados" onclick="switchPanelTab('afiliados', this)">🤝 Panel del Afiliado</button>

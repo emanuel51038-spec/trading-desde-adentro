@@ -523,6 +523,25 @@
     .panel-nav-btn.active { color: var(--blanco); border-bottom-color: var(--rojo); }
     .panel-nav-btn:hover { color: var(--blanco); }
 
+    /* Nav dropdowns (Mi Panel / Mi Trading) */
+    .panel-nav-dropdown { position: relative; }
+    .panel-nav-dropdown .panel-nav-btn { display: flex; align-items: center; gap: 5px; }
+    .panel-nav-dropdown-caret { font-size: 9px; transition: transform 0.2s; }
+    .panel-nav-dropdown.open .panel-nav-dropdown-caret { transform: rotate(180deg); }
+    .panel-nav-dropdown-menu {
+      display: none; position: absolute; top: 100%; left: 0; margin-top: 6px;
+      background: #141414; border: 1px solid var(--negro-border); border-radius: 10px;
+      min-width: 210px; padding: 6px; box-shadow: 0 14px 32px rgba(0,0,0,0.55); z-index: 60;
+    }
+    .panel-nav-dropdown.open .panel-nav-dropdown-menu { display: block; animation: navDropIn 0.15s ease both; }
+    @keyframes navDropIn { from { opacity: 0; transform: translateY(-6px); } to { opacity: 1; transform: translateY(0); } }
+    .panel-nav-dropdown-item {
+      display: block; width: 100%; text-align: left; padding: 10px 12px; border-radius: 7px;
+      font-size: 13px; font-weight: 600; color: var(--gris); background: none; border: none;
+      cursor: pointer; font-family: 'DM Sans', sans-serif; transition: all 0.15s;
+    }
+    .panel-nav-dropdown-item:hover { background: #1E1E1E; color: var(--blanco); }
+
     /* Content */
     .panel-content { padding: 32px 24px; max-width: 900px; margin: 0 auto; width: 100%; flex: 1; }
     .panel-section { display: none; }
@@ -1370,14 +1389,24 @@
 
     <!-- Nav tabs -->
     <nav class="panel-nav">
-      <button class="panel-nav-btn active" onclick="switchPanelTab('herramientas', this)">Mis herramientas</button>
-      <button class="panel-nav-btn" onclick="switchPanelTab('historial', this)">Historial de pagos</button>
+      <div class="panel-nav-dropdown" id="navMiPanel">
+        <button class="panel-nav-btn active" id="tabMiPanel" onclick="toggleNavDropdown('navMiPanel')">Mi Panel <span class="panel-nav-dropdown-caret">▾</span></button>
+        <div class="panel-nav-dropdown-menu">
+          <button class="panel-nav-dropdown-item" onclick="switchPanelTab('herramientas', document.getElementById('tabMiPanel'))">🧰 Mis herramientas</button>
+          <button class="panel-nav-dropdown-item" onclick="switchPanelTab('historial', document.getElementById('tabMiPanel'))">🧾 Historial de pagos</button>
+        </div>
+      </div>
       <button class="panel-nav-btn" onclick="switchPanelTab('tienda', this)">Comprar herramienta</button>
       <button class="panel-nav-btn" onclick="switchPanelTab('recursos', this)">Recursos gratuitos</button>
-      <button class="panel-nav-btn" onclick="switchPanelTab('journal', this)">📒 Trading Journal</button>
-      <button class="panel-nav-btn" onclick="switchPanelTab('fondeos', this)">🏦 Fondeos</button>
-      <button class="panel-nav-btn" id="tabAfiliados" onclick="switchPanelTab('afiliados', this)">🤝 Afiliados</button>
-      <button class="panel-nav-btn" id="tabComunidad" onclick="switchPanelTab('comunidad', this)">🌐 Comunidad</button>
+      <div class="panel-nav-dropdown" id="navMiTrading">
+        <button class="panel-nav-btn" id="tabMiTrading" onclick="toggleNavDropdown('navMiTrading')">Mi Trading <span class="panel-nav-dropdown-caret">▾</span></button>
+        <div class="panel-nav-dropdown-menu">
+          <button class="panel-nav-dropdown-item" onclick="switchPanelTab('journal', document.getElementById('tabMiTrading'))">📒 Trading Journal</button>
+          <button class="panel-nav-dropdown-item" onclick="switchPanelTab('fondeos', document.getElementById('tabMiTrading'))">🏦 Fondeos</button>
+        </div>
+      </div>
+      <button class="panel-nav-btn" id="tabAfiliados" onclick="switchPanelTab('afiliados', this)">🤝 Panel del Afiliado</button>
+      <button class="panel-nav-btn" id="tabComunidad" onclick="switchPanelTab('comunidad', this)">🌐 Comunidad T.D.A</button>
       <button class="panel-nav-btn" id="tabAdmin" style="display:none;color:#FFC107" onclick="switchPanelTab('admin', this)">⚙️ Admin</button>
     </nav>
 
@@ -1775,8 +1804,9 @@
     document.querySelectorAll('.modal-overlay.active').forEach(m => m.classList.remove('active'));
     document.querySelectorAll('.panel-section').forEach(s => s.classList.remove('activa'));
     document.querySelectorAll('.panel-nav-btn').forEach(b => b.classList.remove('active'));
+    document.querySelectorAll('.panel-nav-dropdown').forEach(d => d.classList.remove('open'));
     document.getElementById('sec-' + sec).classList.add('activa');
-    btn.classList.add('active');
+    if (btn) btn.classList.add('active');
     if (sec === 'journal') cargarJournal();
     if (sec === 'fondeos') cargarFondeos();
     if (sec === 'afiliados') cargarAfiliados();
@@ -1784,6 +1814,19 @@
     if (sec === 'tienda') renderTienda();
     if (sec === 'admin') cargarPanelAdmin();
   }
+
+  function toggleNavDropdown(id) {
+    const target = document.getElementById(id);
+    const wasOpen = target.classList.contains('open');
+    document.querySelectorAll('.panel-nav-dropdown').forEach(d => d.classList.remove('open'));
+    if (!wasOpen) target.classList.add('open');
+  }
+
+  document.addEventListener('click', function(e) {
+    if (!e.target.closest('.panel-nav-dropdown')) {
+      document.querySelectorAll('.panel-nav-dropdown').forEach(d => d.classList.remove('open'));
+    }
+  });
 
   /* ══════════════════════
      SUPABASE AUTH
@@ -7532,6 +7575,7 @@
   function _mostrarPanelSeccion(id, tabActivoId) {
     document.querySelectorAll('.panel-section').forEach(s => s.classList.remove('activa'));
     document.querySelectorAll('.panel-nav-btn').forEach(b => b.classList.remove('active'));
+    document.querySelectorAll('.panel-nav-dropdown').forEach(d => d.classList.remove('open'));
     const sec = document.getElementById(id);
     if (sec) sec.classList.add('activa');
     if (tabActivoId) {

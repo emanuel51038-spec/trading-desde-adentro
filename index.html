@@ -879,6 +879,17 @@
     .com-post-texto { font-size:14px; color:#CCC; line-height:1.6; margin-bottom:14px; white-space:pre-wrap; word-break:break-word; }
     .com-post-img { width:100%; max-height:340px; object-fit:cover; border-radius:10px; margin-bottom:14px; cursor:pointer; }
     .com-reacciones { display:flex; gap:8px; flex-wrap:wrap; }
+    .pm-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(300px,1fr)); gap:18px; margin-top:16px; }
+    .pm-card { background:#141414; border:1px solid #2A2A2A; border-radius:10px; overflow:hidden; display:flex; flex-direction:column; }
+    .pm-video-wrap { position:relative; width:100%; padding-top:56.25%; background:#000; }
+    .pm-video-wrap iframe { position:absolute; top:0; left:0; width:100%; height:100%; border:0; }
+    .pm-card-body { padding:14px 16px; }
+    .pm-card-titulo { font-size:15px; font-weight:700; margin-bottom:4px; }
+    .pm-card-desc { font-size:12.5px; color:var(--gris); margin-bottom:10px; line-height:1.4; }
+    .pm-card-meta { display:flex; align-items:center; justify-content:space-between; font-size:12px; color:var(--gris); margin-bottom:10px; }
+    .pm-card-footer { display:flex; align-items:center; justify-content:space-between; }
+    .pm-admin-del { background:transparent; border:none; color:#E57373; cursor:pointer; font-size:12px; }
+    .pm-header { display:flex; align-items:center; justify-content:space-between; margin-bottom:4px; flex-wrap:wrap; gap:10px; }
     .com-reac-btn { background:#111; border:1px solid #222; border-radius:20px; padding:5px 12px; cursor:pointer; font-size:13px; display:flex; align-items:center; gap:5px; color:var(--gris); transition:all .15s; }
     .com-reac-btn:hover, .com-reac-btn.mia { background:#1E1E1E; border-color:var(--rojo); color:var(--blanco); }
     .com-reac-count { font-size:12px; font-weight:600; }
@@ -1487,7 +1498,13 @@
         </div>
       </div>
       <button class="panel-nav-btn" id="tabAfiliados" onclick="switchPanelTab('afiliados', this)">🤝 Panel del Afiliado</button>
-      <button class="panel-nav-btn" id="tabComunidad" onclick="switchPanelTab('comunidad', this)">🌐 Comunidad T.D.A</button>
+      <div class="panel-nav-dropdown" id="navComunidad">
+        <button class="panel-nav-btn" id="tabComunidad" onclick="toggleNavDropdown('navComunidad')">🌐 Comunidad T.D.A <span class="panel-nav-dropdown-caret">▾</span></button>
+        <div class="panel-nav-dropdown-menu">
+          <button class="panel-nav-dropdown-item" onclick="switchPanelTab('comunidad', document.getElementById('tabComunidad'))">🌐 Muro</button>
+          <button class="panel-nav-dropdown-item" onclick="switchPanelTab('postmercado', document.getElementById('tabComunidad'))">🎥 Postmercado</button>
+        </div>
+      </div>
       <button class="panel-nav-btn" id="tabAdmin" style="display:none;color:#FFC107" onclick="switchPanelTab('admin', this)">⚙️ Admin</button>
     </nav>
 
@@ -1546,6 +1563,13 @@
       <div class="panel-section" id="sec-comunidad">
         <div id="comunidadContainer">
           <div style="text-align:center;padding:40px;color:var(--gris)"><span class="spinner"></span> Cargando comunidad...</div>
+        </div>
+      </div>
+
+      <!-- Sección: Postmercado -->
+      <div class="panel-section" id="sec-postmercado">
+        <div id="postmercadoContainer">
+          <div style="text-align:center;padding:40px;color:var(--gris)"><span class="spinner"></span> Cargando postmercado...</div>
         </div>
       </div>
 
@@ -1617,6 +1641,33 @@
   </div>
 </div>
 
+
+<!-- MODAL: Nuevo video Postmercado (solo admin) -->
+<div class="modal-overlay" id="modalNuevoVideoPM">
+  <div class="modal" style="max-width:520px">
+    <button class="modal-close" onclick="cerrarModal('modalNuevoVideoPM')">✕</button>
+    <h3 style="margin-bottom:4px">🎥 Subir Postmercado</h3>
+    <p class="modal-desc">Pegá el link de YouTube (puede ser "no listado").</p>
+
+    <label class="afil-label">Link de YouTube</label>
+    <input type="text" id="pmUrl" placeholder="https://youtu.be/..."
+      style="width:100%;background:#181818;border:1px solid #2A2A2A;color:var(--blanco);padding:9px 12px;border-radius:7px;font-size:13px;outline:none;font-family:'DM Sans',sans-serif;margin-bottom:14px">
+
+    <label class="afil-label">Título</label>
+    <input type="text" id="pmTitulo" placeholder="Postmercado 24/7 - MNQ"
+      style="width:100%;background:#181818;border:1px solid #2A2A2A;color:var(--blanco);padding:9px 12px;border-radius:7px;font-size:13px;outline:none;font-family:'DM Sans',sans-serif;margin-bottom:14px">
+
+    <label class="afil-label">Descripción (opcional)</label>
+    <textarea id="pmDescripcion" placeholder="De qué habla este postmercado..."
+      style="width:100%;background:#181818;border:1px solid #2A2A2A;color:var(--blanco);padding:12px;border-radius:7px;font-size:13px;min-height:70px;resize:vertical;outline:none;font-family:'DM Sans',sans-serif;line-height:1.5;margin-bottom:16px"></textarea>
+
+    <div id="pmMsg" style="display:none;margin-bottom:12px;font-size:12px;padding:8px 12px;border-radius:6px"></div>
+    <div style="display:flex;gap:8px">
+      <button id="btnPublicarPM" onclick="publicarVideoPostmercado()" class="modal-confirm" style="flex:1">🚀 Publicar</button>
+      <button onclick="cerrarModal('modalNuevoVideoPM')" style="background:#1E1E1E;border:1px solid #2A2A2A;color:var(--gris);padding:12px 18px;border-radius:8px;cursor:pointer;font-size:13px;font-weight:600">Cancelar</button>
+    </div>
+  </div>
+</div>
 
 <!-- MODAL: Imagen ampliada -->
 <div class="modal-overlay" id="modalImagenAmpliada" onclick="cerrarModal('modalImagenAmpliada')" style="cursor:zoom-out;align-items:center;justify-content:center">
@@ -1899,6 +1950,7 @@
     if (sec === 'fondeos') cargarFondeos();
     if (sec === 'afiliados') cargarAfiliados();
     if (sec === 'comunidad') cargarComunidad();
+    if (sec === 'postmercado') cargarPostmercado();
     if (sec === 'mensajes') cargarConversaciones();
     if (sec === 'tienda') renderTienda();
     if (sec === 'admin') cargarPanelAdmin();
@@ -7572,6 +7624,175 @@
       method: 'PATCH', body: JSON.stringify({ reacciones: reacs }), headers: { 'Prefer': 'return=minimal' }
     }, sesiónActual.access_token);
     return rPost.data[0].user_id;
+  }
+
+  // ─── POSTMERCADO ──────────────────────────────────────────────────────────
+  async function cargarPostmercado() {
+    const cont = document.getElementById('postmercadoContainer');
+    cont.innerHTML = '<div style="text-align:center;padding:40px;color:var(--gris)"><span class="spinner"></span> Cargando...</div>';
+
+    const [rVideos, rMisReac] = await Promise.all([
+      sbFetch('/rest/v1/postmercado_videos?select=*&activo=eq.true&order=fecha_publicacion.desc', {}, sesiónActual.access_token),
+      sbFetch('/rest/v1/postmercado_reacciones?usuario_id=eq.' + sesiónActual.user.id + '&select=video_id,tipo_reaccion', {}, sesiónActual.access_token)
+    ]);
+
+    const videos = (rVideos.ok && Array.isArray(rVideos.data)) ? rVideos.data : [];
+    const misReac = (rMisReac.ok && Array.isArray(rMisReac.data)) ? rMisReac.data : [];
+    const misReacMap = {};
+    misReac.forEach(r => { if (!misReacMap[r.video_id]) misReacMap[r.video_id] = []; misReacMap[r.video_id].push(r.tipo_reaccion); });
+
+    cont.innerHTML = _renderPostmercadoHTML(videos, misReacMap);
+  }
+
+  function _renderPostmercadoHTML(videos, misReacMap) {
+    const btnAdmin = esAdmin() ? `<button class="modal-confirm" onclick="abrirModalNuevoVideoPM()">🎥 Subir video</button>` : '';
+    const lista = videos.length > 0
+      ? `<div class="pm-grid">${videos.map(v => _renderVideoCardPM(v, misReacMap)).join('')}</div>`
+      : '<div class="com-empty"><div class="com-empty-icon">🎬</div><p>Todavía no hay videos de postmercado subidos.</p></div>';
+
+    return `
+      <div class="pm-header">
+        <h2>🎥 Postmercado</h2>
+        ${btnAdmin}
+      </div>
+      <p style="color:var(--gris);font-size:13px;margin-bottom:6px">Análisis de cierre de mercado, solo para miembros registrados.</p>
+      ${lista}`;
+  }
+
+  function _renderVideoCardPM(v, misReacMap) {
+    const fecha = new Date(v.fecha_publicacion).toLocaleDateString('es-AR', {day:'2-digit',month:'short',year:'numeric'});
+    const reacs = v.reacciones || {};
+    const misReacs = misReacMap[v.id] || [];
+    const reacHTML = REACCIONES_DEF.map(emoji => {
+      const count = reacs[emoji] || 0;
+      const mia = misReacs.includes(emoji);
+      return `<button class="com-reac-btn${mia?' mia':''}" onclick="togglePostmercadoReaccion('${v.id}','${emoji}',this)">
+        ${emoji} <span class="com-reac-count">${count > 0 ? count : ''}</span>
+      </button>`;
+    }).join('');
+    const btnEliminar = esAdmin() ? `<button class="pm-admin-del" onclick="eliminarVideoPostmercado('${v.id}')">🗑️ Eliminar</button>` : '';
+
+    return `<div class="pm-card" id="pm-card-${v.id}">
+      <div class="pm-video-wrap">
+        <iframe src="https://www.youtube-nocookie.com/embed/${v.youtube_video_id}" title="${esc(v.titulo)}"
+          loading="lazy" allow="accelerometer; autoplay; encrypted-media; picture-in-picture" allowfullscreen
+          onload="registrarVistaPostmercado('${v.id}')"></iframe>
+      </div>
+      <div class="pm-card-body">
+        <div class="pm-card-titulo">${esc(v.titulo)}</div>
+        ${v.descripcion ? `<div class="pm-card-desc">${esc(v.descripcion)}</div>` : ''}
+        <div class="pm-card-meta">
+          <span>${fecha}</span>
+          <span id="pm-vistas-${v.id}">👁️ ${v.vistas || 0} vistas</span>
+        </div>
+        <div class="pm-card-footer">
+          <div class="com-reacciones">${reacHTML}</div>
+          ${btnEliminar}
+        </div>
+      </div>
+    </div>`;
+  }
+
+  let _pmVistaRegistrada = {};
+  async function registrarVistaPostmercado(videoId) {
+    if (_pmVistaRegistrada[videoId]) return;
+    _pmVistaRegistrada[videoId] = true;
+    const r = await sbFetch('/rest/v1/rpc/registrar_vista_postmercado', {
+      method: 'POST', body: JSON.stringify({ p_video_id: videoId })
+    }, sesiónActual.access_token);
+    if (r.ok && typeof r.data === 'number') {
+      const el = document.getElementById('pm-vistas-' + videoId);
+      if (el) el.textContent = `👁️ ${r.data} vistas`;
+    }
+  }
+
+  async function togglePostmercadoReaccion(videoId, emoji, btn) {
+    const mia = btn.classList.contains('mia');
+    const countEl = btn.querySelector('.com-reac-count');
+
+    if (mia) {
+      btn.classList.remove('mia');
+      const curr = parseInt(countEl.textContent || '0');
+      countEl.textContent = curr > 1 ? curr - 1 : '';
+      await sbFetch(`/rest/v1/postmercado_reacciones?usuario_id=eq.${sesiónActual.user.id}&video_id=eq.${videoId}&tipo_reaccion=eq.${encodeURIComponent(emoji)}`,
+        { method: 'DELETE' }, sesiónActual.access_token);
+      await _actualizarContadorReaccionPM(videoId, emoji, -1);
+    } else {
+      btn.classList.add('mia');
+      const curr = parseInt(countEl.textContent || '0');
+      countEl.textContent = curr + 1;
+      await sbFetch('/rest/v1/postmercado_reacciones', {
+        method: 'POST', body: JSON.stringify({ usuario_id: sesiónActual.user.id, video_id: videoId, tipo_reaccion: emoji }),
+        headers: { 'Prefer': 'return=minimal' }
+      }, sesiónActual.access_token);
+      await _actualizarContadorReaccionPM(videoId, emoji, +1);
+    }
+  }
+
+  async function _actualizarContadorReaccionPM(videoId, emoji, delta) {
+    const rVideo = await sbFetch(`/rest/v1/postmercado_videos?id=eq.${videoId}&select=reacciones`, {}, sesiónActual.access_token);
+    if (!rVideo.ok || !rVideo.data[0]) return;
+    const reacs = rVideo.data[0].reacciones || {};
+    reacs[emoji] = Math.max(0, (reacs[emoji] || 0) + delta);
+    await sbFetch(`/rest/v1/postmercado_videos?id=eq.${videoId}`, {
+      method: 'PATCH', body: JSON.stringify({ reacciones: reacs }), headers: { 'Prefer': 'return=minimal' }
+    }, sesiónActual.access_token);
+  }
+
+  function extraerYoutubeId(url) {
+    const m = url.match(/(?:youtu\.be\/|youtube\.com\/(?:watch\?v=|embed\/|shorts\/))([A-Za-z0-9_-]{11})/);
+    return m ? m[1] : null;
+  }
+
+  function abrirModalNuevoVideoPM() {
+    document.getElementById('pmUrl').value = '';
+    document.getElementById('pmTitulo').value = '';
+    document.getElementById('pmDescripcion').value = '';
+    document.getElementById('pmMsg').style.display = 'none';
+    document.getElementById('modalNuevoVideoPM').classList.add('active');
+  }
+
+  async function publicarVideoPostmercado() {
+    const url = document.getElementById('pmUrl').value.trim();
+    const titulo = document.getElementById('pmTitulo').value.trim();
+    const descripcion = document.getElementById('pmDescripcion').value.trim();
+    const msg = document.getElementById('pmMsg');
+    const btn = document.getElementById('btnPublicarPM');
+
+    msg.style.display = 'none';
+    const videoId = extraerYoutubeId(url);
+    if (!videoId) { showAuthMsg(msg, 'El link de YouTube no es válido.', 'err'); return; }
+    if (!titulo) { showAuthMsg(msg, 'Poné un título.', 'err'); return; }
+
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner"></span>Publicando...';
+
+    const r = await sbFetch('/rest/v1/postmercado_videos', {
+      method: 'POST',
+      body: JSON.stringify({
+        titulo, descripcion: descripcion || null, youtube_url: url, youtube_video_id: videoId,
+        creado_por: sesiónActual.user.id
+      }),
+      headers: { 'Prefer': 'return=minimal' }
+    }, sesiónActual.access_token);
+
+    btn.disabled = false;
+    btn.textContent = '🚀 Publicar';
+
+    if (r.ok) {
+      cerrarModal('modalNuevoVideoPM');
+      cargarPostmercado();
+    } else {
+      showAuthMsg(msg, 'Error al publicar. Revisá el link e intentá de nuevo.', 'err');
+    }
+  }
+
+  async function eliminarVideoPostmercado(videoId) {
+    if (!confirm('¿Eliminar este video de Postmercado?')) return;
+    await sbFetch(`/rest/v1/postmercado_videos?id=eq.${videoId}`, {
+      method: 'PATCH', body: JSON.stringify({ activo: false }), headers: { 'Prefer': 'return=minimal' }
+    }, sesiónActual.access_token);
+    cargarPostmercado();
   }
 
   async function eliminarPost(postId) {

@@ -3637,7 +3637,8 @@
             <div style="font-size:15px;font-weight:600;margin-bottom:6px">Sin registros todavía</div>
             <div style="font-size:13px">Hacé clic en <strong>+ Nuevo registro</strong> para empezar</div>
           </div>` : `
-        <table style="width:100%;border-collapse:collapse">
+        <div style="overflow-x:auto">
+        <table style="width:100%;min-width:1100px;border-collapse:collapse">
           <thead>
             <tr style="border-bottom:1px solid #1E1E1E;color:var(--gris)">
               <th style="padding:12px 16px;font-weight:600;text-align:left;font-size:11px;text-transform:uppercase;letter-spacing:1px">Fecha</th>
@@ -3653,7 +3654,8 @@
             </tr>
           </thead>
           <tbody id="fondeosTbody">${fondeos.map(renderFondeoFila).join('')}</tbody>
-        </table>`}
+        </table>
+        </div>`}
       </div>`;
 
     // Dibujar gráficos

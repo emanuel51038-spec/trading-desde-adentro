@@ -3559,6 +3559,10 @@
     const totalGastado = evals.reduce((a, f) => a + Number(f.monto), 0);
     const totalRetirado = retiros.reduce((a, f) => a + Number(f.monto), 0);
     const neto = totalRetirado - totalGastado;
+    const superadasConTiempo = evals.filter(f => f.resultado === 'Superada' && f.fecha_resultado);
+    const promedioDias = superadasConTiempo.length > 0
+      ? Math.round(superadasConTiempo.reduce((a, f) => a + _diasEntreFechas(f.fecha, f.fecha_resultado), 0) / superadasConTiempo.length)
+      : null;
 
     // Empresas únicas para filtro
     const empresas = [...new Set(fondeos.map(f => f.empresa))].sort();
@@ -3581,6 +3585,8 @@
         ${renderFondeoCard('RATIO APROBACIÓN', ratioAprobacion + '%', ratioAprobacion >= 50 ? 'var(--verde)' : '#E57373')}
         ${renderFondeoCard('SUPERADAS', superadas + ' / ' + totalEvals, 'var(--verde)')}
         ${renderFondeoCard('QUEMADAS', String(quemadas), '#E57373')}
+        ${renderFondeoCard('CUENTAS FONDEADAS', String(superadas), 'var(--verde)')}
+        ${renderFondeoCard('TIEMPO PROMEDIO', promedioDias !== null ? promedioDias + ' días' : '—', '#64B5F6')}
       </div>
 
       <!-- Gráficos -->
@@ -3639,6 +3645,8 @@
               <th style="padding:12px 16px;font-weight:600;text-align:left;font-size:11px;text-transform:uppercase;letter-spacing:1px">Tipo</th>
               <th style="padding:12px 16px;font-weight:600;text-align:left;font-size:11px;text-transform:uppercase;letter-spacing:1px">Motivo</th>
               <th style="padding:12px 16px;font-weight:600;text-align:left;font-size:11px;text-transform:uppercase;letter-spacing:1px">Resultado</th>
+              <th style="padding:12px 16px;font-weight:600;text-align:left;font-size:11px;text-transform:uppercase;letter-spacing:1px">Estado actual</th>
+              <th style="padding:12px 16px;font-weight:600;text-align:left;font-size:11px;text-transform:uppercase;letter-spacing:1px">Tiempo</th>
               <th style="padding:12px 16px;font-weight:600;text-align:left;font-size:11px;text-transform:uppercase;letter-spacing:1px">Monto</th>
               <th style="padding:12px 16px;font-weight:600;text-align:left;font-size:11px;text-transform:uppercase;letter-spacing:1px">Notas</th>
               <th style="padding:12px 16px;font-weight:600;text-align:left;font-size:11px;text-transform:uppercase;letter-spacing:1px"></th>
@@ -3661,6 +3669,12 @@
     </div>`;
   }
 
+  function _diasEntreFechas(f1, f2) {
+    const d1 = new Date(f1 + 'T00:00:00');
+    const d2 = new Date(f2 + 'T00:00:00');
+    return Math.round((d2 - d1) / 86400000);
+  }
+
   function renderFondeoFila(f) {
     const fecha = new Date(f.fecha + 'T00:00:00').toLocaleDateString('es-AR', {day:'2-digit',month:'2-digit',year:'2-digit'});
     const esRetiro = f.tipo === 'Retiro';
@@ -3670,12 +3684,24 @@
       'Superada': 'var(--verde)', 'Quemada': '#E57373', 'En curso': '#FFD700', 'Renovada': '#64B5F6'
     }[f.resultado] || 'var(--gris)';
     const motivoColor = f.motivo === 'Renovacion' ? '#64B5F6' : 'var(--gris)';
+    const estadoActualMap = {
+      'Superada': { texto: 'Fondeada', color: 'var(--verde)' },
+      'Quemada': { texto: 'Quemada', color: '#E57373' },
+      'En curso': { texto: 'En evaluación', color: '#FFD700' },
+      'Renovada': { texto: 'En evaluación', color: '#64B5F6' }
+    };
+    const estadoActual = esRetiro ? null : estadoActualMap[f.resultado];
+    const tiempoStr = (!esRetiro && f.resultado === 'Superada' && f.fecha_resultado)
+      ? _diasEntreFechas(f.fecha, f.fecha_resultado) + ' días'
+      : '—';
     return `<tr style="border-bottom:1px solid #1A1A1A" onmouseover="this.style.background='#111'" onmouseout="this.style.background='transparent'">
       <td style="padding:12px 16px;color:var(--gris)">${fecha}</td>
       <td style="padding:12px 16px;font-weight:600">${esc(f.empresa)}</td>
       <td style="padding:12px 16px;color:var(--gris)">${f.tipo === 'Evaluacion' ? 'Evaluación' : 'Retiro'}</td>
       <td style="padding:12px 16px"><span style="color:${motivoColor};font-size:12px;font-weight:600">${f.motivo || '—'}</span></td>
       <td style="padding:12px 16px"><span style="color:${resultadoColor};font-size:12px;font-weight:600">${f.resultado || '—'}</span></td>
+      <td style="padding:12px 16px">${estadoActual ? `<span style="color:${estadoActual.color};font-size:12px;font-weight:600">${estadoActual.texto}</span>` : '<span style="color:var(--gris)">—</span>'}</td>
+      <td style="padding:12px 16px;color:var(--gris);font-size:12px">${tiempoStr}</td>
       <td style="padding:12px 16px;font-weight:700;color:${montoColor}">${montoStr}</td>
       <td style="padding:12px 16px;color:var(--gris);font-size:12px;max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(f.notas || '—')}</td>
       <td style="padding:12px 16px;white-space:nowrap">
@@ -3805,12 +3831,18 @@
           </select>
 
           <label style="font-size:11px;color:var(--gris);display:block;margin-bottom:5px;text-transform:uppercase;letter-spacing:1px">Resultado</label>
-          <select id="fondeoResultado" style="width:100%;background:#181818;border:1px solid #2A2A2A;color:var(--blanco);padding:9px 12px;border-radius:7px;font-size:13px;margin-bottom:14px;outline:none;font-family:'DM Sans',sans-serif">
+          <select id="fondeoResultado" onchange="toggleFondeoFechaResultado()" style="width:100%;background:#181818;border:1px solid #2A2A2A;color:var(--blanco);padding:9px 12px;border-radius:7px;font-size:13px;margin-bottom:14px;outline:none;font-family:'DM Sans',sans-serif">
             <option value="En curso" ${(!fondeo || fondeo.resultado === 'En curso') ? 'selected' : ''}>En curso</option>
             <option value="Superada" ${fondeo?.resultado === 'Superada' ? 'selected' : ''}>Superada</option>
             <option value="Quemada" ${fondeo?.resultado === 'Quemada' ? 'selected' : ''}>Quemada</option>
             <option value="Renovada" ${fondeo?.resultado === 'Renovada' ? 'selected' : ''}>Renovada</option>
           </select>
+
+          <div id="fondeoFechaResultadoWrap">
+            <label style="font-size:11px;color:var(--gris);display:block;margin-bottom:5px;text-transform:uppercase;letter-spacing:1px">Fecha del resultado</label>
+            <input type="date" id="fondeoFechaResultado" value="${fondeo?.fecha_resultado || new Date().toISOString().slice(0,10)}"
+              style="width:100%;background:#181818;border:1px solid #2A2A2A;color:var(--blanco);padding:9px 12px;border-radius:7px;font-size:13px;margin-bottom:14px;outline:none;font-family:'DM Sans',sans-serif">
+          </div>
         </div>
 
         <label style="font-size:11px;color:var(--gris);display:block;margin-bottom:5px;text-transform:uppercase;letter-spacing:1px">Monto (USD)</label>
@@ -3828,12 +3860,19 @@
       </div>`;
     modal.classList.add('active');
     toggleFondeoEstado();
+    toggleFondeoFechaResultado();
   }
 
   function toggleFondeoEstado() {
     const tipo = document.getElementById('fondeoTipo')?.value;
     const wrap = document.getElementById('fondeoEvalWrap');
     if (wrap) wrap.style.display = tipo === 'Retiro' ? 'none' : 'block';
+  }
+
+  function toggleFondeoFechaResultado() {
+    const resultado = document.getElementById('fondeoResultado')?.value;
+    const wrap = document.getElementById('fondeoFechaResultadoWrap');
+    if (wrap) wrap.style.display = (resultado === 'Superada' || resultado === 'Quemada') ? 'block' : 'none';
   }
 
   async function guardarFondeo(id) {
@@ -3843,6 +3882,9 @@
     const tipo    = document.getElementById('fondeoTipo')?.value;
     const motivo   = tipo === 'Retiro' ? null : document.getElementById('fondeoMotivo')?.value;
     const resultado = tipo === 'Retiro' ? null : document.getElementById('fondeoResultado')?.value;
+    const fechaResultado = (tipo !== 'Retiro' && (resultado === 'Superada' || resultado === 'Quemada'))
+      ? document.getElementById('fondeoFechaResultado')?.value || null
+      : null;
     const monto   = parseFloat(document.getElementById('fondeoMonto')?.value || '0');
     const notas   = document.getElementById('fondeoNotas')?.value?.trim() || null;
 
@@ -3851,9 +3893,9 @@
       msg.textContent = 'Completá fecha, empresa y monto.'; return;
     }
 
-    const payload = { user_id: sesiónActual.user.id, fecha, empresa, tipo, motivo, resultado, monto, notas };
+    const payload = { user_id: sesiónActual.user.id, fecha, empresa, tipo, motivo, resultado, fecha_resultado: fechaResultado, monto, notas };
     const r = id
-      ? await sbFetch('/rest/v1/fondeos?id=eq.' + id, { method: 'PATCH', body: JSON.stringify({ fecha, empresa, tipo, motivo, resultado, monto, notas }) }, sesiónActual.access_token)
+      ? await sbFetch('/rest/v1/fondeos?id=eq.' + id, { method: 'PATCH', body: JSON.stringify({ fecha, empresa, tipo, motivo, resultado, fecha_resultado: fechaResultado, monto, notas }) }, sesiónActual.access_token)
       : await sbFetch('/rest/v1/fondeos', { method: 'POST', body: JSON.stringify(payload), headers: { 'Prefer': 'return=minimal' } }, sesiónActual.access_token);
 
     if (r.ok || r.status === 201) {

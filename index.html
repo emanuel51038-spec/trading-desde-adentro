@@ -3351,18 +3351,8 @@
 
     cont.innerHTML = header + renderJournalTabs('real') + instaladorPanel + `
       <div id="journalRealContent">
-      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:12px;margin-bottom:28px">
-        ${renderStatCard('Acumulado', (stats.acumulado >= 0 ? '+' : '-') + '$' + Math.abs(stats.acumulado).toFixed(2), stats.acumulado >= 0 ? 'var(--verde)' : '#E57373')}
-        ${renderStatCard('Win Rate', stats.winRate + '%', stats.winRate >= 50 ? 'var(--verde)' : '#E57373')}
-        ${renderStatCard('Ratio R:R', stats.ratio, parseFloat(stats.ratio) >= 1 ? 'var(--verde)' : '#E57373')}
-        ${renderStatCard('Profit Factor', stats.pf, parseFloat(stats.pf) >= 1 ? 'var(--verde)' : '#E57373')}
-        ${renderStatCard('Expected Value', stats.evR + 'R', parseFloat(stats.evR) >= 0 ? 'var(--verde)' : '#E57373')}
-        ${renderStatCard('Sharpe Ratio', stats.sharpe, parseFloat(stats.sharpe) >= 1 ? 'var(--verde)' : parseFloat(stats.sharpe) >= 0 ? '#FFD700' : '#E57373')}
-        ${renderStatCard('Max Drawdown', '-$' + stats.maxDD, '#E57373')}
-        ${renderStatCard('Máx. racha negativa', stats.rachaMax + ' ops', '#E57373')}
-        ${renderStatCard('Racha actual', stats.rachaActualCount + (stats.rachaActualTipo==='win' ? ' ✅' : ' ❌'), stats.rachaActualTipo==='win' ? 'var(--verde)' : '#E57373')}
-        ${renderStatCard('Estrategia top', stats.estMasUsada, 'var(--blanco)')}
-        ${renderStatCard('Emoción top', stats.emocionTop, 'var(--blanco)')}
+      <div id="journalStatsGrid" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:12px;margin-bottom:28px">
+        ${_renderStatsCardsHTML(stats)}
       </div>
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;flex-wrap:wrap;gap:10px">
         <span id="journalConteo" style="font-size:14px;font-weight:600">${ops.length} operaciones</span>
@@ -4052,6 +4042,22 @@
     }, 300);
   }
 
+  function _renderStatsCardsHTML(stats) {
+    return `
+      ${renderStatCard('Acumulado', (stats.acumulado >= 0 ? '+' : '-') + '$' + Math.abs(stats.acumulado).toFixed(2), stats.acumulado >= 0 ? 'var(--verde)' : '#E57373')}
+      ${renderStatCard('Win Rate', stats.winRate + '%', stats.winRate >= 50 ? 'var(--verde)' : '#E57373')}
+      ${renderStatCard('Ratio R:R', stats.ratio, parseFloat(stats.ratio) >= 1 ? 'var(--verde)' : '#E57373')}
+      ${renderStatCard('Profit Factor', stats.pf, parseFloat(stats.pf) >= 1 ? 'var(--verde)' : '#E57373')}
+      ${renderStatCard('Expected Value', stats.evR + 'R', parseFloat(stats.evR) >= 0 ? 'var(--verde)' : '#E57373')}
+      ${renderStatCard('Sharpe Ratio', stats.sharpe, parseFloat(stats.sharpe) >= 1 ? 'var(--verde)' : parseFloat(stats.sharpe) >= 0 ? '#FFD700' : '#E57373')}
+      ${renderStatCard('Max Drawdown', '-$' + stats.maxDD, '#E57373')}
+      ${renderStatCard('Máx. racha negativa', stats.rachaMax + ' ops', '#E57373')}
+      ${renderStatCard('Racha actual', stats.rachaActualCount + (stats.rachaActualTipo==='win' ? ' ✅' : ' ❌'), stats.rachaActualTipo==='win' ? 'var(--verde)' : '#E57373')}
+      ${renderStatCard('Estrategia top', stats.estMasUsada, 'var(--blanco)')}
+      ${renderStatCard('Emoción top', stats.emocionTop, 'var(--blanco)')}
+    `;
+  }
+
   function renderStatCard(label, valor, color) {
     return `<div style="background:var(--negro-card);border:1px solid var(--negro-border);border-radius:12px;padding:16px 18px">
       <div style="font-size:10px;color:var(--gris);text-transform:uppercase;letter-spacing:1px;margin-bottom:8px">${label}</div>
@@ -4685,10 +4691,14 @@
 
     if (opsFiltradas.length > 0) {
       const s = calcularStats(opsFiltradas);
-      actualizarStatCards(s);
+      const statsGrid = document.getElementById('journalStatsGrid');
+      if (statsGrid) statsGrid.innerHTML = _renderStatsCardsHTML(s);
       // Actualizar fondeo con ops filtradas
       const fondeoEl = document.getElementById('fondeoContent');
       if (fondeoEl) fondeoEl.innerHTML = renderEvalFondeo(s, opsFiltradas);
+    } else {
+      const statsGrid = document.getElementById('journalStatsGrid');
+      if (statsGrid) statsGrid.innerHTML = _renderStatsCardsHTML(calcularStats([]));
     }
     _opsFiltradas = opsFiltradas;
     if (typeof iniciarCalendario === 'function') iniciarCalendario(opsFiltradas);
@@ -4716,25 +4726,6 @@
     document.querySelectorAll('.chkCuenta').forEach(c => c.checked = true);
     actualizarLabelCuentas();
     filtrarJournal();
-  }
-
-  function actualizarStatCards(s) {
-    const mapa = {
-      'Acumulado':       (s.acumulado >= 0 ? '+' : '') + '$' + Math.abs(s.acumulado).toFixed(2),
-      'Win Rate':        s.winRate + '%',
-      'Ratio R:R':       s.ratio,
-      'Profit Factor':   s.pf,
-      'Expected Value':  s.evR + 'R',
-      'Max Drawdown':    '-$' + s.maxDD,
-      'Máx. racha negativa':  s.rachaMax + ' ops',
-      'Racha actual':           s.rachaActualCount + (s.rachaActualTipo==='win'?' ✅':' ❌'),
-      'Estrategia top':  s.estMasUsada,
-      'Emoción top':     s.emocionTop,
-    };
-    document.querySelectorAll('#journalContainer [data-stat]').forEach(el => {
-      const key = el.dataset.stat;
-      if (mapa[key] !== undefined) el.textContent = mapa[key];
-    });
   }
 
   /* ══════════════════════

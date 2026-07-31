@@ -4060,6 +4060,7 @@
       ${renderStatCard('Max Drawdown', '-$' + stats.maxDD, '#E57373')}
       ${renderStatCard('Máx. racha negativa', stats.rachaMax + ' ops', '#E57373')}
       ${renderStatCard('Racha actual', stats.rachaActualCount + (stats.rachaActualTipo==='win' ? ' ✅' : ' ❌'), stats.rachaActualTipo==='win' ? 'var(--verde)' : '#E57373')}
+      ${renderStatCard('Breakeven', String(stats.beCount || 0), '#FFD700')}
       ${renderStatCard('Estrategia top', stats.estMasUsada, 'var(--blanco)')}
       ${renderStatCard('Emoción top', stats.emocionTop, 'var(--blanco)')}
     `;
@@ -4073,33 +4074,36 @@
   }
 
   function calcularStats(ops) {
-    const ganadoras = ops.filter(o => pnlNeto(o) > 0);
-    const perdedoras = ops.filter(o => pnlNeto(o) < 0);
-    const winRate = ops.length ? Math.round(ganadoras.length / ops.length * 100) : 0;
+    const opsBE = ops.filter(o => o.es_breakeven);
+    const opsSinBE = ops.filter(o => !o.es_breakeven);
+    const beCount = opsBE.length;
+    const ganadoras = opsSinBE.filter(o => pnlNeto(o) > 0);
+    const perdedoras = opsSinBE.filter(o => pnlNeto(o) < 0);
+    const winRate = opsSinBE.length ? Math.round(ganadoras.length / opsSinBE.length * 100) : 0;
     const avgGan = ganadoras.length ? ganadoras.reduce((a, o) => a + pnlNeto(o), 0) / ganadoras.length : 0;
     const avgPer = perdedoras.length ? Math.abs(perdedoras.reduce((a, o) => a + pnlNeto(o), 0) / perdedoras.length) : 0;
     const ratio = avgPer > 0 ? (avgGan / avgPer).toFixed(2) : '—';
     const totalGan = ganadoras.reduce((a, o) => a + pnlNeto(o), 0);
     const totalPer = Math.abs(perdedoras.reduce((a, o) => a + pnlNeto(o), 0));
     const pf = totalPer > 0 ? (totalGan / totalPer).toFixed(2) : '—';
-    const wr = ops.length ? ganadoras.length / ops.length : 0;
+    const wr = opsSinBE.length ? ganadoras.length / opsSinBE.length : 0;
     // EV en R: (WR × ratio) - (1-WR)
     const ratioNum = avgPer > 0 ? avgGan / avgPer : 0;
     const evR = avgPer > 0 ? ((wr * ratioNum) - (1 - wr)).toFixed(2) : '—';
-    // Acumulado total
+    // Acumulado total (incluye BE, porque sigue siendo dinero real)
     const acumulado = ops.reduce((a, o) => a + pnlNeto(o), 0);
     let equity = 0, peak = 0, maxDD = 0;
     [...ops].reverse().forEach(o => { equity += pnlNeto(o); if (equity > peak) peak = equity; const dd = peak - equity; if (dd > maxDD) maxDD = dd; });
-    // Racha máx negativa
+    // Racha máx negativa (BE no cuenta como pérdida ni corta la racha)
     let rachaMax = 0, _rAct = 0;
-    [...ops].reverse().forEach(o => { if (pnlNeto(o) < 0) { _rAct++; if (_rAct > rachaMax) rachaMax = _rAct; } else _rAct = 0; });
+    [...opsSinBE].reverse().forEach(o => { if (pnlNeto(o) < 0) { _rAct++; if (_rAct > rachaMax) rachaMax = _rAct; } else _rAct = 0; });
     // Racha actual (puede ser positiva o negativa)
     let rachaActualCount = 0, rachaActualTipo = '';
-    const _opsAsc = [...ops]; // ops ya viene desc, reverse = asc cronológico
-    // Leer desde el más reciente (ops[0]) hacia atrás
-    if (ops.length > 0) {
-      rachaActualTipo = pnlNeto(ops[0]) >= 0 ? 'win' : 'loss';
-      for (const o of ops) {
+    const _opsAsc = [...opsSinBE]; // ops ya viene desc, reverse = asc cronológico
+    // Leer desde el más reciente (opsSinBE[0]) hacia atrás
+    if (opsSinBE.length > 0) {
+      rachaActualTipo = pnlNeto(opsSinBE[0]) >= 0 ? 'win' : 'loss';
+      for (const o of opsSinBE) {
         const esWin = pnlNeto(o) >= 0;
         if ((esWin && rachaActualTipo === 'win') || (!esWin && rachaActualTipo === 'loss')) rachaActualCount++;
         else break;
@@ -4118,7 +4122,7 @@
     const avgPnl = pnls.reduce((a,b) => a+b, 0) / (pnls.length || 1);
     const stdPnl = Math.sqrt(pnls.reduce((a,b) => a + Math.pow(b - avgPnl, 2), 0) / (pnls.length || 1));
     const sharpe = stdPnl > 0 ? (avgPnl / stdPnl).toFixed(2) : '—';
-    return { winRate, ratio, pf, evR, acumulado, maxDD: maxDD.toFixed(2), rachaMax, rachaActualCount, rachaActualTipo, estMasUsada, emocionTop, sharpe };
+    return { winRate, ratio, pf, evR, acumulado, maxDD: maxDD.toFixed(2), rachaMax, rachaActualCount, rachaActualTipo, estMasUsada, emocionTop, sharpe, beCount };
   }
 
   function renderOpFila(o) {
@@ -5323,6 +5327,11 @@
         <label style="font-size:11px;color:var(--gris);display:block;margin-bottom:6px;text-transform:uppercase;letter-spacing:1px">Notas</label>
         <textarea id="editOpNotas" placeholder="Observaciones..." style="width:100%;background:#181818;border:1px solid #2A2A2A;color:var(--blanco);padding:9px 12px;border-radius:7px;font-size:13px;min-height:80px;resize:vertical;outline:none;font-family:'DM Sans',sans-serif;margin-bottom:16px">${escAttr(notasActuales)}</textarea>
 
+        <label style="display:flex;align-items:center;gap:8px;cursor:pointer;margin-bottom:16px;padding:10px 12px;background:#181818;border:1px solid #2A2A2A;border-radius:7px">
+          <input type="checkbox" id="editOpBreakeven" ${op.es_breakeven ? 'checked' : ''} style="width:16px;height:16px;cursor:pointer;accent-color:#FFD700">
+          <span style="font-size:13px;color:var(--blanco)">⚖️ Fue Breakeven (protegida en 1:1, no una ganadora real)</span>
+        </label>
+
         <label style="font-size:11px;color:var(--gris);display:block;margin-bottom:6px;text-transform:uppercase;letter-spacing:1px">PnL (ajustar si incluye comisión)</label>
         <input type="number" id="editOpPnl" step="0.01" value="${pnl.toFixed(2)}"
           style="width:100%;background:#181818;border:1px solid #2A2A2A;color:var(--blanco);padding:9px 12px;border-radius:7px;font-size:13px;margin-bottom:16px;outline:none;font-family:'DM Sans',sans-serif">
@@ -5371,6 +5380,7 @@
     const notas      = document.getElementById('editOpNotas')?.value?.trim() || '';
     const pnlEdit    = parseFloat(document.getElementById('editOpPnl')?.value || '0');
     const cantEdit   = parseInt(document.getElementById('editOpCantidad')?.value || '1') || 1;
+    const esBreakeven = !!document.getElementById('editOpBreakeven')?.checked;
 
     const reglasCumplidas = [];
     const reglasGenerales = [];
@@ -5381,7 +5391,7 @@
       else reglasCumplidas.push(valor);
     });
 
-    const payload = { pnl: pnlEdit, cantidad: cantEdit };
+    const payload = { pnl: pnlEdit, cantidad: cantEdit, es_breakeven: esBreakeven };
     if (estrategia) payload.estrategia = estrategia;
     if (emocion)    payload.emocion    = emocion;
     if (notas)      payload.notas      = notas;
@@ -8743,7 +8753,7 @@
       const x = pad.left + i * (barW + gap);
       const h = Math.max(2, (Math.abs(pnl) / maxAbs) * (midY - pad.top));
       const y = pnl >= 0 ? midY - h : midY;
-      ctx.fillStyle = pnl >= 0 ? '#4CAF50' : '#E57373';
+      ctx.fillStyle = opsRev[i].es_breakeven ? '#FFD700' : (pnl >= 0 ? '#4CAF50' : '#E57373');
       ctx.fillRect(x, y, barW, h);
     });
 
@@ -8763,8 +8773,8 @@
           tooltip.style.display = 'block';
           tooltip.style.left = Math.min(e.clientX - rect.left + 10, W - 160) + 'px';
           tooltip.style.top = (e.clientY - rect.top - 40) + 'px';
-          tooltip.style.color = pnl >= 0 ? '#4CAF50' : '#E57373';
-          tooltip.innerHTML = `${fecha} · ${o.instrumento || ''}<br><strong>${pnl >= 0 ? '+' : ''}$${Math.abs(pnl).toFixed(2)}</strong>`;
+          tooltip.style.color = o.es_breakeven ? '#FFD700' : (pnl >= 0 ? '#4CAF50' : '#E57373');
+          tooltip.innerHTML = `${fecha} · ${o.instrumento || ''}${o.es_breakeven ? ' · ⚖️ BE' : ''}<br><strong>${pnl >= 0 ? '+' : ''}$${Math.abs(pnl).toFixed(2)}</strong>`;
           return;
         }
       }

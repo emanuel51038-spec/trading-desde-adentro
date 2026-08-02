@@ -7,6 +7,7 @@
   <title>Trading desde Adentro</title>
   <link rel="icon" type="image/png" href="logo.png">
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
   <style>
@@ -1551,7 +1552,6 @@
           <div class="account-dropdown-menu">
             <div class="account-dropdown-email" id="accountDropdownEmail"></div>
             <button class="account-dropdown-item" onclick="abrirAjustesCuenta('seguridad')">⚙️ Ajustes de la cuenta</button>
-            <button class="account-dropdown-item" onclick="abrirAjustesCuenta('seguridad')">🔒 Seguridad</button>
             <button class="account-dropdown-item" onclick="logout()">🚪 Cerrar sesión</button>
           </div>
         </div>
@@ -8484,7 +8484,7 @@
     body.innerHTML = `
       <div style="text-align:center">
         <p style="font-size:13px;color:var(--gris);margin-bottom:6px">1. Escaneá este código con Google Authenticator</p>
-        <div class="mfa-qr-box">${_mfaFactorPendiente.totp.qr_code}</div>
+        <div class="mfa-qr-box" id="mfaQrBox"></div>
         <p style="font-size:11px;color:var(--gris);margin-bottom:16px">¿No podés escanear? Ingresá esta clave manualmente:<br><code style="color:var(--blanco);font-size:12px;letter-spacing:1px">${esc(_mfaFactorPendiente.totp.secret)}</code></p>
 
         <p style="font-size:13px;color:var(--gris);margin-bottom:8px">2. Ingresá el código de 6 dígitos que te muestra la app</p>
@@ -8495,6 +8495,20 @@
         </div>
       </div>
     `;
+    // Generamos el QR nosotros desde la URI otpauth:// (más confiable que el SVG que devuelve Supabase)
+    try {
+      new QRCode(document.getElementById('mfaQrBox'), {
+        text: _mfaFactorPendiente.totp.uri,
+        width: 148,
+        height: 148,
+        colorDark: '#000000',
+        colorLight: '#ffffff',
+        correctLevel: QRCode.CorrectLevel.M
+      });
+    } catch (e) {
+      // Fallback: si la librería no cargó, mostramos el SVG original de Supabase
+      document.getElementById('mfaQrBox').innerHTML = _mfaFactorPendiente.totp.qr_code;
+    }
     document.getElementById('mfaCodeInput').focus();
   }
 

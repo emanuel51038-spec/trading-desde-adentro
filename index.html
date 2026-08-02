@@ -503,6 +503,65 @@
       display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 700;
       color: white; flex-shrink: 0;
     }
+    /* Dropdown de cuenta (avatar) */
+    .account-dropdown { position: relative; }
+    .panel-user-badge {
+      cursor: pointer; border: 1px solid transparent; border-radius: 20px; padding: 4px 10px 4px 4px;
+      transition: all 0.2s; user-select: none;
+    }
+    .panel-user-badge:hover { border-color: var(--negro-border); background: #141414; }
+    .account-dropdown-caret { font-size: 9px; color: var(--gris); transition: transform 0.2s; }
+    .account-dropdown.open .account-dropdown-caret { transform: rotate(180deg); }
+    .account-dropdown-menu {
+      display: none; position: absolute; top: 100%; right: 0; margin-top: 8px;
+      background: #141414; border: 1px solid var(--negro-border); border-radius: 10px;
+      min-width: 220px; padding: 6px; box-shadow: 0 14px 32px rgba(0,0,0,0.55); z-index: 60;
+    }
+    .account-dropdown.open .account-dropdown-menu { display: block; animation: navDropIn 0.15s ease both; }
+    .account-dropdown-email {
+      padding: 10px 12px 8px; font-size: 11.5px; color: var(--gris); border-bottom: 1px solid #1E1E1E;
+      margin-bottom: 6px; word-break: break-all;
+    }
+    .account-dropdown-item {
+      display: flex; align-items: center; gap: 8px; width: 100%; text-align: left; padding: 10px 12px; border-radius: 7px;
+      font-size: 13px; font-weight: 600; color: var(--gris); background: none; border: none;
+      cursor: pointer; font-family: 'DM Sans', sans-serif; transition: all 0.15s;
+    }
+    .account-dropdown-item:hover { background: #1E1E1E; color: var(--blanco); }
+
+    /* Ajustes de cuenta / Seguridad */
+    .ajustes-tabs { display: flex; gap: 6px; margin-bottom: 24px; border-bottom: 1px solid var(--negro-border); }
+    .ajustes-tab-btn {
+      padding: 10px 16px; font-size: 13px; font-weight: 600; color: var(--gris);
+      border: none; background: none; cursor: pointer; font-family: 'DM Sans', sans-serif;
+      border-bottom: 2px solid transparent; margin-bottom: -1px; transition: all 0.2s;
+    }
+    .ajustes-tab-btn.active { color: var(--blanco); border-bottom-color: var(--rojo); }
+    .ajustes-tab-btn:hover { color: var(--blanco); }
+    .seguridad-card {
+      background: #141414; border: 1px solid var(--negro-border); border-radius: 12px; padding: 20px; margin-bottom: 16px;
+    }
+    .seguridad-card-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+    .seguridad-estado-badge {
+      font-size: 11px; font-weight: 700; padding: 3px 10px; border-radius: 20px; text-transform: uppercase; letter-spacing: .5px;
+    }
+    .seguridad-estado-badge.on { background: rgba(76,175,80,.12); color: var(--verde); border: 1px solid rgba(76,175,80,.3); }
+    .seguridad-estado-badge.off { background: rgba(255,255,255,.06); color: var(--gris); border: 1px solid var(--negro-border); }
+    .mfa-factor-row {
+      display: flex; align-items: center; justify-content: space-between; gap: 10px;
+      padding: 10px 12px; background: #181818; border: 1px solid #2A2A2A; border-radius: 8px; margin-top: 10px;
+    }
+    .mfa-qr-box {
+      background: #fff; padding: 14px; border-radius: 10px; display: flex; align-items: center; justify-content: center;
+      width: 176px; height: 176px; margin: 16px auto;
+    }
+    .mfa-qr-box svg { width: 100%; height: 100%; }
+    .mfa-code-input {
+      width: 100%; background: #181818; border: 1px solid #2A2A2A; color: var(--blanco); padding: 12px;
+      border-radius: 7px; font-size: 20px; letter-spacing: 6px; text-align: center; outline: none;
+      font-family: 'DM Sans', sans-serif;
+    }
+    .mfa-code-input:focus { border-color: var(--rojo); }
     .panel-logout-btn {
       background: none; border: 1px solid var(--negro-border); border-radius: 8px;
       color: var(--gris); font-family: 'DM Sans', sans-serif; font-size: 12px;
@@ -1392,6 +1451,18 @@
           <button onclick="mostrarRecuperarPass()" style="background:none;border:none;color:var(--gris);font-size:12px;cursor:pointer;text-decoration:underline;font-family:'DM Sans',sans-serif">Olvidé mi contraseña</button>
         </div>
       </div>
+      <!-- VERIFICACIÓN EN DOS PASOS (login) -->
+      <div id="formMFALogin" style="display:none">
+        <p style="font-size:13px;color:var(--gris);margin-bottom:16px;line-height:1.6">Ingresá el código de 6 dígitos de tu app de autenticación.</p>
+        <div class="auth-group">
+          <input type="text" class="auth-input mfa-code-input" id="mfaLoginCodeInput" maxlength="6" inputmode="numeric" placeholder="000000" autocomplete="one-time-code" onkeydown="if(event.key==='Enter')confirmarMFALogin()">
+        </div>
+        <button class="auth-btn" id="mfaLoginBtn" onclick="confirmarMFALogin()">Verificar →</button>
+        <div class="auth-msg" id="mfaLoginMsg" style="display:none"></div>
+        <div style="text-align:center;margin-top:12px">
+          <button onclick="cancelarMFALogin()" style="background:none;border:none;color:var(--gris);font-size:12px;cursor:pointer;text-decoration:underline;font-family:'DM Sans',sans-serif">← Volver</button>
+        </div>
+      </div>
       <!-- RECUPERAR CONTRASEÑA -->
       <div id="formRecuperar" style="display:none">
         <p style="font-size:13px;color:var(--gris);margin-bottom:16px;line-height:1.6">Ingresá tu email y te mandamos un enlace para restablecer tu contraseña.</p>
@@ -1471,11 +1542,19 @@
         <button class="panel-inbox-btn" id="btnInbox" onclick="switchPanelTab('mensajes', this)">
           ✉️ Inbox<span class="nav-badge" id="badgeMensajes" style="display:none">0</span>
         </button>
-        <div class="panel-user-badge">
-          <div class="panel-avatar" id="panelAvatar">?</div>
-          <span id="panelEmail" style="display:none"></span>
+        <div class="account-dropdown" id="navAccount">
+          <div class="panel-user-badge" onclick="toggleAccountDropdown()">
+            <div class="panel-avatar" id="panelAvatar">?</div>
+            <span id="panelEmail" style="display:none"></span>
+            <span class="account-dropdown-caret">▾</span>
+          </div>
+          <div class="account-dropdown-menu">
+            <div class="account-dropdown-email" id="accountDropdownEmail"></div>
+            <button class="account-dropdown-item" onclick="abrirAjustesCuenta('seguridad')">⚙️ Ajustes de la cuenta</button>
+            <button class="account-dropdown-item" onclick="abrirAjustesCuenta('seguridad')">🔒 Seguridad</button>
+            <button class="account-dropdown-item" onclick="logout()">🚪 Cerrar sesión</button>
+          </div>
         </div>
-        <button class="panel-logout-btn" onclick="logout()">Cerrar sesión</button>
       </div>
     </header>
 
@@ -1588,6 +1667,11 @@
         <div id="mensajesContainer">
           <div style="text-align:center;padding:40px;color:var(--gris)"><span class="spinner"></span> Cargando mensajes...</div>
         </div>
+      </div>
+
+      <!-- Sección: Ajustes de la cuenta (Seguridad / 2FA) -->
+      <div class="panel-section" id="sec-ajustesCuenta">
+        <div id="ajustesCuentaContainer"></div>
       </div>
     </div>
 
@@ -1970,12 +2054,22 @@
     if (!wasOpen) target.classList.add('open');
   }
 
+  function toggleAccountDropdown() {
+    const target = document.getElementById('navAccount');
+    const wasOpen = target.classList.contains('open');
+    document.querySelectorAll('.account-dropdown').forEach(d => d.classList.remove('open'));
+    if (!wasOpen) target.classList.add('open');
+  }
+
   document.addEventListener('click', function(e) {
     if (!e.target.closest('.panel-nav-dropdown')) {
       document.querySelectorAll('.panel-nav-dropdown').forEach(d => d.classList.remove('open'));
     }
     if (!e.target.closest('.notif-dropdown')) {
       document.querySelectorAll('.notif-dropdown').forEach(d => d.classList.remove('open'));
+    }
+    if (!e.target.closest('.account-dropdown')) {
+      document.querySelectorAll('.account-dropdown').forEach(d => d.classList.remove('open'));
     }
   });
 
@@ -2178,7 +2272,13 @@
       _loginAttempts = 0;
       sesiónActual = r.data;
       guardarSesion(r.data);
-      irA('panel');
+
+      const factorTotp = (r.data.user?.factors || []).find(f => f.status === 'verified' && f.factor_type === 'totp');
+      if (factorTotp) {
+        mostrarPromptMFALogin(factorTotp.id);
+      } else {
+        irA('panel');
+      }
     } else {
       _loginAttempts++;
       if (_loginAttempts >= 5) {
@@ -2189,6 +2289,65 @@
         const errMsg = r.data?.error_description || r.data?.message || 'Email o contraseña incorrectos.';
         showAuthMsg(msg, traducirError(errMsg), 'err');
       }
+    }
+  }
+
+  let _mfaLoginFactorId = null;
+
+  function mostrarPromptMFALogin(factorId) {
+    _mfaLoginFactorId = factorId;
+    document.getElementById('formLogin').style.display = 'none';
+    document.getElementById('formMFALogin').style.display = 'block';
+    document.getElementById('mfaLoginMsg').style.display = 'none';
+    const input = document.getElementById('mfaLoginCodeInput');
+    input.value = '';
+    input.focus();
+  }
+
+  function cancelarMFALogin() {
+    // No tenía factor verificado en aal2, así que descartamos la sesión por seguridad
+    sesiónActual = null;
+    localStorage.removeItem('tda_session');
+    _mfaLoginFactorId = null;
+    document.getElementById('formMFALogin').style.display = 'none';
+    document.getElementById('formLogin').style.display = 'block';
+  }
+
+  async function confirmarMFALogin() {
+    const codigo = document.getElementById('mfaLoginCodeInput').value.trim();
+    const msg = document.getElementById('mfaLoginMsg');
+    const btn = document.getElementById('mfaLoginBtn');
+    msg.style.display = 'none';
+
+    if (!codigo || codigo.length !== 6) {
+      showAuthMsg(msg, 'Ingresá el código de 6 dígitos.', 'err');
+      return;
+    }
+
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner"></span>Verificando...';
+
+    const rChallenge = await sbFetch('/auth/v1/factors/' + _mfaLoginFactorId + '/challenge', { method: 'POST' }, sesiónActual.access_token);
+    if (!rChallenge.ok) {
+      btn.disabled = false; btn.textContent = 'Verificar →';
+      showAuthMsg(msg, 'No se pudo verificar. Probá de nuevo.', 'err');
+      return;
+    }
+
+    const rVerify = await sbFetch('/auth/v1/factors/' + _mfaLoginFactorId + '/verify', {
+      method: 'POST',
+      body: JSON.stringify({ challenge_id: rChallenge.data.id, code: codigo })
+    }, sesiónActual.access_token);
+
+    btn.disabled = false; btn.textContent = 'Verificar →';
+
+    if (rVerify.ok && rVerify.data.access_token) {
+      sesiónActual.access_token = rVerify.data.access_token;
+      guardarSesion(sesiónActual);
+      _mfaLoginFactorId = null;
+      irA('panel');
+    } else {
+      showAuthMsg(msg, 'Código incorrecto. Probá de nuevo.', 'err');
     }
   }
 
@@ -2457,6 +2616,8 @@
 
     document.getElementById('panelAvatar').textContent = inicial;
     document.getElementById('panelEmail').textContent  = u.email;
+    const accEmailEl = document.getElementById('accountDropdownEmail');
+    if (accEmailEl) accEmailEl.textContent = u.email;
     document.getElementById('panelGreetingTxt').textContent = `Bienvenido, ${nombre.split(' ')[0]}.`;
 
     await cargarHerramientas();
@@ -8233,6 +8394,163 @@
     }
   }
 
+  /* ══════════════════════
+     AJUSTES DE LA CUENTA / SEGURIDAD (2FA - Google Authenticator)
+  ══════════════════════ */
+  let _mfaFactorPendiente = null; // factor recién creado, esperando verificación
+
+  async function abrirAjustesCuenta(tab) {
+    document.querySelectorAll('.account-dropdown').forEach(d => d.classList.remove('open'));
+    _mostrarPanelSeccion('sec-ajustesCuenta', null);
+    _renderAjustesCuentaShell(tab || 'seguridad');
+  }
+
+  function _renderAjustesCuentaShell(tabActiva) {
+    const cont = document.getElementById('ajustesCuentaContainer');
+    cont.innerHTML = `
+      <h2 style="margin-bottom:4px">AJUSTES DE LA CUENTA</h2>
+      <p style="color:var(--gris);font-size:13px;margin-bottom:20px">${esc(sesiónActual.user.email)}</p>
+      <div class="ajustes-tabs">
+        <button class="ajustes-tab-btn ${tabActiva==='seguridad'?'active':''}" onclick="_switchAjustesTab('seguridad')">🔒 Seguridad</button>
+      </div>
+      <div id="ajustesTabContent"></div>
+    `;
+    _switchAjustesTab(tabActiva);
+  }
+
+  function _switchAjustesTab(tab) {
+    document.querySelectorAll('.ajustes-tab-btn').forEach(b => b.classList.remove('active'));
+    const idx = { seguridad: 0 }[tab] ?? 0;
+    const btns = document.querySelectorAll('.ajustes-tab-btn');
+    if (btns[idx]) btns[idx].classList.add('active');
+    if (tab === 'seguridad') cargarSeccionSeguridad();
+  }
+
+  async function cargarSeccionSeguridad() {
+    const cont = document.getElementById('ajustesTabContent');
+    cont.innerHTML = '<div style="text-align:center;padding:40px;color:var(--gris)"><span class="spinner"></span> Cargando...</div>';
+
+    const r = await sbFetch('/auth/v1/user', {}, sesiónActual.access_token);
+    const factores = (r.ok && Array.isArray(r.data?.factors)) ? r.data.factors : [];
+    const verificados = factores.filter(f => f.status === 'verified' && f.factor_type === 'totp');
+    const activo = verificados.length > 0;
+
+    cont.innerHTML = `
+      <div class="seguridad-card">
+        <div class="seguridad-card-head">
+          <div>
+            <div style="font-weight:700;font-size:15px;margin-bottom:4px">Verificación en dos pasos</div>
+            <div style="color:var(--gris);font-size:12.5px;max-width:420px">Protegé tu cuenta con un código de Google Authenticator (o cualquier app TOTP) además de tu contraseña.</div>
+          </div>
+          <span class="seguridad-estado-badge ${activo?'on':'off'}">${activo ? 'Activado' : 'Desactivado'}</span>
+        </div>
+
+        <div id="mfaBody" style="margin-top:16px">
+          ${verificados.map(f => `
+            <div class="mfa-factor-row">
+              <div>
+                <div style="font-size:13px;font-weight:600">📱 ${esc(f.friendly_name || 'Authenticator App')}</div>
+                <div style="font-size:11px;color:var(--gris);margin-top:2px">Agregado ${f.created_at ? new Date(f.created_at).toLocaleDateString('es-AR') : ''}</div>
+              </div>
+              <button class="modal-cancel" style="padding:6px 12px;font-size:12px" onclick="eliminarFactorMFA('${f.id}')">Quitar</button>
+            </div>
+          `).join('')}
+
+          ${activo ? '' : `<button class="modal-confirm" style="margin-top:8px" onclick="iniciarEnrollMFA()">+ Activar Google Authenticator</button>`}
+        </div>
+
+        <div id="mfaMsg" style="display:none;margin-top:12px;font-size:12px;padding:8px 12px;border-radius:6px"></div>
+      </div>
+    `;
+  }
+
+  async function iniciarEnrollMFA() {
+    const msg = document.getElementById('mfaMsg');
+    msg.style.display = 'none';
+
+    const r = await sbFetch('/auth/v1/factors', {
+      method: 'POST',
+      body: JSON.stringify({ friendly_name: 'Google Authenticator', factor_type: 'totp' })
+    }, sesiónActual.access_token);
+
+    if (!r.ok) {
+      msg.style.display = 'block'; msg.style.background = 'rgba(229,115,115,.1)'; msg.style.color = '#E57373'; msg.style.border = '1px solid rgba(229,115,115,.3)';
+      msg.textContent = r.data?.error_description || r.data?.msg || 'No se pudo iniciar la activación. Probá de nuevo.';
+      return;
+    }
+
+    _mfaFactorPendiente = r.data; // { id, type, totp: { qr_code, secret, uri } }
+    const body = document.getElementById('mfaBody');
+    body.innerHTML = `
+      <div style="text-align:center">
+        <p style="font-size:13px;color:var(--gris);margin-bottom:6px">1. Escaneá este código con Google Authenticator</p>
+        <div class="mfa-qr-box">${_mfaFactorPendiente.totp.qr_code}</div>
+        <p style="font-size:11px;color:var(--gris);margin-bottom:16px">¿No podés escanear? Ingresá esta clave manualmente:<br><code style="color:var(--blanco);font-size:12px;letter-spacing:1px">${esc(_mfaFactorPendiente.totp.secret)}</code></p>
+
+        <p style="font-size:13px;color:var(--gris);margin-bottom:8px">2. Ingresá el código de 6 dígitos que te muestra la app</p>
+        <input type="text" id="mfaCodeInput" class="mfa-code-input" maxlength="6" inputmode="numeric" placeholder="000000" autocomplete="one-time-code">
+        <div style="display:flex;gap:8px;margin-top:14px">
+          <button class="modal-cancel" style="flex:1" onclick="cancelarEnrollMFA()">Cancelar</button>
+          <button class="modal-confirm" style="flex:1" onclick="confirmarEnrollMFA()">Verificar y activar</button>
+        </div>
+      </div>
+    `;
+    document.getElementById('mfaCodeInput').focus();
+  }
+
+  function cancelarEnrollMFA() {
+    // Intentamos limpiar el factor sin verificar para no dejar basura
+    if (_mfaFactorPendiente?.id) {
+      sbFetch('/auth/v1/factors/' + _mfaFactorPendiente.id, { method: 'DELETE' }, sesiónActual.access_token).catch(() => {});
+    }
+    _mfaFactorPendiente = null;
+    cargarSeccionSeguridad();
+  }
+
+  async function confirmarEnrollMFA() {
+    const codigo = document.getElementById('mfaCodeInput').value.trim();
+    const msg = document.getElementById('mfaMsg');
+    msg.style.display = 'none';
+
+    if (!codigo || codigo.length !== 6) {
+      msg.style.display = 'block'; msg.style.background = 'rgba(229,115,115,.1)'; msg.style.color = '#E57373'; msg.style.border = '1px solid rgba(229,115,115,.3)';
+      msg.textContent = 'Ingresá el código de 6 dígitos.';
+      return;
+    }
+
+    const rChallenge = await sbFetch('/auth/v1/factors/' + _mfaFactorPendiente.id + '/challenge', { method: 'POST' }, sesiónActual.access_token);
+    if (!rChallenge.ok) {
+      msg.style.display = 'block'; msg.style.background = 'rgba(229,115,115,.1)'; msg.style.color = '#E57373'; msg.style.border = '1px solid rgba(229,115,115,.3)';
+      msg.textContent = 'No se pudo generar el desafío. Probá de nuevo.';
+      return;
+    }
+
+    const rVerify = await sbFetch('/auth/v1/factors/' + _mfaFactorPendiente.id + '/verify', {
+      method: 'POST',
+      body: JSON.stringify({ challenge_id: rChallenge.data.id, code: codigo })
+    }, sesiónActual.access_token);
+
+    if (rVerify.ok && rVerify.data.access_token) {
+      // El verify devuelve una sesión nueva ya en nivel aal2
+      sesiónActual.access_token = rVerify.data.access_token;
+      guardarSesion(sesiónActual);
+      _mfaFactorPendiente = null;
+      cargarSeccionSeguridad();
+    } else {
+      msg.style.display = 'block'; msg.style.background = 'rgba(229,115,115,.1)'; msg.style.color = '#E57373'; msg.style.border = '1px solid rgba(229,115,115,.3)';
+      msg.textContent = rVerify.data?.error_description || rVerify.data?.msg || 'Código incorrecto. Probá de nuevo.';
+    }
+  }
+
+  async function eliminarFactorMFA(factorId) {
+    if (!confirm('¿Quitar este autenticador? Tu cuenta quedará protegida solo con contraseña.')) return;
+    const r = await sbFetch('/auth/v1/factors/' + factorId, { method: 'DELETE' }, sesiónActual.access_token);
+    if (r.ok) {
+      cargarSeccionSeguridad();
+    } else {
+      alert('No se pudo quitar el autenticador. Probá de nuevo.');
+    }
+  }
 
   // ─── NOTIFICACIONES ─────────────────────────────────────────────────────
   async function _crearNotificacion(destinatarioId, tipo, referenciaId, texto) {

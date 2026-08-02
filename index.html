@@ -8778,6 +8778,8 @@
     `;
   }
 
+  let _pwNuevaPendiente = null; // guarda la contraseña nueva mientras se hace el step-up de MFA
+
   async function cambiarPassword() {
     const actual = document.getElementById('pwActual').value;
     const nueva1 = document.getElementById('pwNueva1').value;
@@ -8813,27 +8815,110 @@
       msg.textContent = 'La contraseña actual es incorrecta.'; return;
     }
 
-    // 2. Actualizar a la contraseña nueva (usamos el token recién emitido en el paso 1, siempre fresco)
+    // 2. Actualizar a la contraseña nueva, usando la sesión actual (si ya pasó por el 2FA en este login, va a estar en aal2)
     const rUpd = await sbFetch('/auth/v1/user', {
       method: 'PUT',
       body: JSON.stringify({ password: nueva1 })
-    }, rCheck.data.access_token);
+    }, sesiónActual.access_token);
 
     btn.disabled = false; btn.textContent = 'Actualizar contraseña';
 
     if (rUpd.ok) {
-      // Renovamos el token de sesión con el que devolvió la verificación de contraseña actual
-      sesiónActual.access_token = rCheck.data.access_token;
-      guardarSesion(sesiónActual);
-      document.getElementById('pwActual').value = '';
-      document.getElementById('pwNueva1').value = '';
-      document.getElementById('pwNueva2').value = '';
-      msg.style.display = 'block'; msg.style.background = 'rgba(76,175,80,.1)'; msg.style.color = 'var(--verde)'; msg.style.border = '1px solid rgba(76,175,80,.3)';
-      msg.textContent = '✓ Contraseña actualizada correctamente.';
-    } else {
+      _onPasswordActualizada(msg);
+      return;
+    }
+
+    // Si la cuenta tiene 2FA activado y la sesión todavía está en aal1, Supabase exige
+    // reverificar el código antes de dejar cambiar la contraseña. Se lo pedimos acá mismo.
+    const detalleErr = (rUpd.data?.msg || rUpd.data?.error_description || rUpd.data?.message || '').toLowerCase();
+    if (rUpd.status === 401 && detalleErr.includes('aal2')) {
+      _pwNuevaPendiente = nueva1;
+      await _mostrarStepUpMFAPassword();
+      return;
+    }
+
+    msg.style.display = 'block'; msg.style.background = 'rgba(229,115,115,.1)'; msg.style.color = '#E57373'; msg.style.border = '1px solid rgba(229,115,115,.3)';
+    const detalle = rUpd.data?.msg || rUpd.data?.error_description || rUpd.data?.message || rUpd.data?.error || 'No se pudo actualizar la contraseña.';
+    msg.textContent = `${detalle} (status ${rUpd.status})`;
+  }
+
+  function _onPasswordActualizada(msg) {
+    document.getElementById('pwActual').value = '';
+    document.getElementById('pwNueva1').value = '';
+    document.getElementById('pwNueva2').value = '';
+    msg.style.display = 'block'; msg.style.background = 'rgba(76,175,80,.1)'; msg.style.color = 'var(--verde)'; msg.style.border = '1px solid rgba(76,175,80,.3)';
+    msg.textContent = '✓ Contraseña actualizada correctamente.';
+  }
+
+  async function _mostrarStepUpMFAPassword() {
+    const cont = document.getElementById('ajustesTabContent');
+    cont.innerHTML = `
+      <div class="seguridad-card">
+        <div style="font-weight:700;font-size:15px;margin-bottom:4px">Confirmá tu identidad</div>
+        <div style="color:var(--gris);font-size:12.5px;max-width:420px;margin-bottom:16px">Como tenés la verificación en dos pasos activada, ingresá el código de tu app para confirmar el cambio de contraseña.</div>
+        <input type="text" id="pwStepUpCode" class="mfa-code-input" maxlength="6" inputmode="numeric" placeholder="000000" autocomplete="one-time-code" onkeydown="if(event.key==='Enter')_confirmarStepUpMFAPassword()">
+        <div style="display:flex;gap:8px;margin-top:14px">
+          <button class="modal-cancel" style="flex:1" onclick="_pwNuevaPendiente=null;cargarSeccionPassword()">Cancelar</button>
+          <button class="modal-confirm" style="flex:1" id="pwStepUpBtn" onclick="_confirmarStepUpMFAPassword()">Verificar y continuar</button>
+        </div>
+        <div id="pwStepUpMsg" style="display:none;margin-top:12px;font-size:12px;padding:8px 12px;border-radius:6px"></div>
+      </div>
+    `;
+    document.getElementById('pwStepUpCode').focus();
+  }
+
+  async function _confirmarStepUpMFAPassword() {
+    const codigo = document.getElementById('pwStepUpCode').value.trim();
+    const msg = document.getElementById('pwStepUpMsg');
+    const btn = document.getElementById('pwStepUpBtn');
+    msg.style.display = 'none';
+
+    if (!codigo || codigo.length !== 6) {
       msg.style.display = 'block'; msg.style.background = 'rgba(229,115,115,.1)'; msg.style.color = '#E57373'; msg.style.border = '1px solid rgba(229,115,115,.3)';
-      const detalle = rUpd.data?.msg || rUpd.data?.error_description || rUpd.data?.message || rUpd.data?.error || 'No se pudo actualizar la contraseña.';
-      msg.textContent = `${detalle} (status ${rUpd.status})`;
+      msg.textContent = 'Ingresá el código de 6 dígitos.'; return;
+    }
+
+    btn.disabled = true; btn.innerHTML = '<span class="spinner"></span>Verificando...';
+
+    const rUser = await sbFetch('/auth/v1/user', {}, sesiónActual.access_token);
+    const factor = (rUser.data?.factors || []).find(f => f.status === 'verified' && f.factor_type === 'totp');
+    if (!factor) {
+      btn.disabled = false; btn.textContent = 'Verificar y continuar';
+      msg.style.display = 'block'; msg.style.background = 'rgba(229,115,115,.1)'; msg.style.color = '#E57373'; msg.style.border = '1px solid rgba(229,115,115,.3)';
+      msg.textContent = 'No se encontró un autenticador activo.'; return;
+    }
+
+    const rChallenge = await sbFetch('/auth/v1/factors/' + factor.id + '/challenge', { method: 'POST' }, sesiónActual.access_token);
+    const rVerify = rChallenge.ok ? await sbFetch('/auth/v1/factors/' + factor.id + '/verify', {
+      method: 'POST',
+      body: JSON.stringify({ challenge_id: rChallenge.data.id, code: codigo })
+    }, sesiónActual.access_token) : { ok: false };
+
+    if (!rVerify.ok || !rVerify.data?.access_token) {
+      btn.disabled = false; btn.textContent = 'Verificar y continuar';
+      msg.style.display = 'block'; msg.style.background = 'rgba(229,115,115,.1)'; msg.style.color = '#E57373'; msg.style.border = '1px solid rgba(229,115,115,.3)';
+      msg.textContent = 'Código incorrecto. Probá de nuevo.'; return;
+    }
+
+    // Sesión ya en aal2: guardamos el token y reintentamos el cambio de contraseña
+    sesiónActual.access_token = rVerify.data.access_token;
+    guardarSesion(sesiónActual);
+
+    const rUpd = await sbFetch('/auth/v1/user', {
+      method: 'PUT',
+      body: JSON.stringify({ password: _pwNuevaPendiente })
+    }, sesiónActual.access_token);
+
+    _pwNuevaPendiente = null;
+
+    if (rUpd.ok) {
+      cargarSeccionPassword();
+      const pwMsg = document.getElementById('pwMsg');
+      _onPasswordActualizada(pwMsg);
+    } else {
+      btn.disabled = false; btn.textContent = 'Verificar y continuar';
+      msg.style.display = 'block'; msg.style.background = 'rgba(229,115,115,.1)'; msg.style.color = '#E57373'; msg.style.border = '1px solid rgba(229,115,115,.3)';
+      msg.textContent = 'Se verificó el código pero no se pudo actualizar la contraseña. Probá de nuevo.';
     }
   }
 

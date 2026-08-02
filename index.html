@@ -2280,12 +2280,15 @@
     if (r.ok && r.data.access_token) {
       _loginAttempts = 0;
       sesiónActual = r.data;
-      guardarSesion(r.data);
 
       const factorTotp = (r.data.user?.factors || []).find(f => f.status === 'verified' && f.factor_type === 'totp');
       if (factorTotp) {
+        // IMPORTANTE: no persistimos la sesión todavía. Si persistimos acá y el usuario
+        // refresca la página antes de ingresar el código, cargarSesionGuardada() lo dejaría
+        // entrar sin pedir el 2FA. Recién se guarda en confirmarMFALogin/_confirmarBackupCodeLogin.
         mostrarPromptMFALogin(factorTotp.id);
       } else {
+        guardarSesion(r.data);
         irA('panel');
       }
     } else {
@@ -8810,11 +8813,11 @@
       msg.textContent = 'La contraseña actual es incorrecta.'; return;
     }
 
-    // 2. Actualizar a la contraseña nueva
+    // 2. Actualizar a la contraseña nueva (usamos el token recién emitido en el paso 1, siempre fresco)
     const rUpd = await sbFetch('/auth/v1/user', {
       method: 'PUT',
       body: JSON.stringify({ password: nueva1 })
-    }, sesiónActual.access_token);
+    }, rCheck.data.access_token);
 
     btn.disabled = false; btn.textContent = 'Actualizar contraseña';
 
@@ -8829,7 +8832,8 @@
       msg.textContent = '✓ Contraseña actualizada correctamente.';
     } else {
       msg.style.display = 'block'; msg.style.background = 'rgba(229,115,115,.1)'; msg.style.color = '#E57373'; msg.style.border = '1px solid rgba(229,115,115,.3)';
-      msg.textContent = rUpd.data?.msg || rUpd.data?.error_description || 'No se pudo actualizar la contraseña.';
+      const detalle = rUpd.data?.msg || rUpd.data?.error_description || rUpd.data?.message || rUpd.data?.error || 'No se pudo actualizar la contraseña.';
+      msg.textContent = `${detalle} (status ${rUpd.status})`;
     }
   }
 

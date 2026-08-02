@@ -8766,7 +8766,8 @@
         </div>
         <div class="auth-group">
           <label class="auth-label">Contraseña nueva</label>
-          <input type="password" class="auth-input" id="pwNueva1" placeholder="Mínimo 6 caracteres">
+          <input type="password" class="auth-input" id="pwNueva1" placeholder="Mínimo 8 caracteres">
+          <div style="font-size:11px;color:var(--gris);margin-top:6px">Mínimo 8 caracteres, con al menos una mayúscula, una minúscula y un número.</div>
         </div>
         <div class="auth-group">
           <label class="auth-label">Confirmar contraseña nueva</label>
@@ -8778,7 +8779,15 @@
     `;
   }
 
-  let _pwNuevaPendiente = null; // guarda la contraseña nueva mientras se hace el step-up de MFA
+  let _pwPendiente = null; // { actual, nueva1 } — se usa si hace falta el step-up de MFA
+
+  function _validarFuerzaPassword(pw) {
+    if (pw.length < 8) return 'La contraseña nueva debe tener al menos 8 caracteres.';
+    if (!/[a-z]/.test(pw)) return 'La contraseña nueva debe incluir al menos una minúscula.';
+    if (!/[A-Z]/.test(pw)) return 'La contraseña nueva debe incluir al menos una mayúscula.';
+    if (!/[0-9]/.test(pw)) return 'La contraseña nueva debe incluir al menos un número.';
+    return null;
+  }
 
   async function cambiarPassword() {
     const actual = document.getElementById('pwActual').value;
@@ -8792,33 +8801,21 @@
       msg.style.display = 'block'; msg.style.background = 'rgba(229,115,115,.1)'; msg.style.color = '#E57373'; msg.style.border = '1px solid rgba(229,115,115,.3)';
       msg.textContent = 'Completá los tres campos.'; return;
     }
-    if (nueva1.length < 6) {
+    const errorFuerza = _validarFuerzaPassword(nueva1);
+    if (errorFuerza) {
       msg.style.display = 'block'; msg.style.background = 'rgba(229,115,115,.1)'; msg.style.color = '#E57373'; msg.style.border = '1px solid rgba(229,115,115,.3)';
-      msg.textContent = 'La contraseña nueva debe tener al menos 6 caracteres.'; return;
+      msg.textContent = errorFuerza; return;
     }
     if (nueva1 !== nueva2) {
       msg.style.display = 'block'; msg.style.background = 'rgba(229,115,115,.1)'; msg.style.color = '#E57373'; msg.style.border = '1px solid rgba(229,115,115,.3)';
       msg.textContent = 'Las contraseñas nuevas no coinciden.'; return;
     }
 
-    btn.disabled = true; btn.innerHTML = '<span class="spinner"></span>Verificando...';
+    btn.disabled = true; btn.innerHTML = '<span class="spinner"></span>Actualizando...';
 
-    // 1. Confirmar que la contraseña actual es correcta
-    const rCheck = await sbFetch('/auth/v1/token?grant_type=password', {
-      method: 'POST',
-      body: JSON.stringify({ email: sesiónActual.user.email, password: actual })
-    });
-
-    if (!rCheck.ok) {
-      btn.disabled = false; btn.textContent = 'Actualizar contraseña';
-      msg.style.display = 'block'; msg.style.background = 'rgba(229,115,115,.1)'; msg.style.color = '#E57373'; msg.style.border = '1px solid rgba(229,115,115,.3)';
-      msg.textContent = 'La contraseña actual es incorrecta.'; return;
-    }
-
-    // 2. Actualizar a la contraseña nueva, usando la sesión actual (si ya pasó por el 2FA en este login, va a estar en aal2)
     const rUpd = await sbFetch('/auth/v1/user', {
       method: 'PUT',
-      body: JSON.stringify({ password: nueva1 })
+      body: JSON.stringify({ password: nueva1, current_password: actual })
     }, sesiónActual.access_token);
 
     btn.disabled = false; btn.textContent = 'Actualizar contraseña';
@@ -8828,13 +8825,19 @@
       return;
     }
 
-    // Si la cuenta tiene 2FA activado y la sesión todavía está en aal1, Supabase exige
-    // reverificar el código antes de dejar cambiar la contraseña. Se lo pedimos acá mismo.
     const detalleErr = (rUpd.data?.msg || rUpd.data?.error_description || rUpd.data?.message || '').toLowerCase();
+
+    // Cuenta con 2FA activado y la sesión todavía en aal1: Supabase pide reverificar el código.
     if (rUpd.status === 401 && detalleErr.includes('aal2')) {
-      _pwNuevaPendiente = nueva1;
+      _pwPendiente = { actual, nueva1 };
       await _mostrarStepUpMFAPassword();
       return;
+    }
+
+    // Contraseña actual incorrecta
+    if (rUpd.status === 400 && detalleErr.includes('current password')) {
+      msg.style.display = 'block'; msg.style.background = 'rgba(229,115,115,.1)'; msg.style.color = '#E57373'; msg.style.border = '1px solid rgba(229,115,115,.3)';
+      msg.textContent = 'La contraseña actual es incorrecta.'; return;
     }
 
     msg.style.display = 'block'; msg.style.background = 'rgba(229,115,115,.1)'; msg.style.color = '#E57373'; msg.style.border = '1px solid rgba(229,115,115,.3)';
@@ -8858,7 +8861,7 @@
         <div style="color:var(--gris);font-size:12.5px;max-width:420px;margin-bottom:16px">Como tenés la verificación en dos pasos activada, ingresá el código de tu app para confirmar el cambio de contraseña.</div>
         <input type="text" id="pwStepUpCode" class="mfa-code-input" maxlength="6" inputmode="numeric" placeholder="000000" autocomplete="one-time-code" onkeydown="if(event.key==='Enter')_confirmarStepUpMFAPassword()">
         <div style="display:flex;gap:8px;margin-top:14px">
-          <button class="modal-cancel" style="flex:1" onclick="_pwNuevaPendiente=null;cargarSeccionPassword()">Cancelar</button>
+          <button class="modal-cancel" style="flex:1" onclick="_pwPendiente=null;cargarSeccionPassword()">Cancelar</button>
           <button class="modal-confirm" style="flex:1" id="pwStepUpBtn" onclick="_confirmarStepUpMFAPassword()">Verificar y continuar</button>
         </div>
         <div id="pwStepUpMsg" style="display:none;margin-top:12px;font-size:12px;padding:8px 12px;border-radius:6px"></div>
@@ -8906,10 +8909,10 @@
 
     const rUpd = await sbFetch('/auth/v1/user', {
       method: 'PUT',
-      body: JSON.stringify({ password: _pwNuevaPendiente })
+      body: JSON.stringify({ password: _pwPendiente.nueva1, current_password: _pwPendiente.actual })
     }, sesiónActual.access_token);
 
-    _pwNuevaPendiente = null;
+    _pwPendiente = null;
 
     if (rUpd.ok) {
       cargarSeccionPassword();

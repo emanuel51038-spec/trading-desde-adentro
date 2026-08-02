@@ -8692,6 +8692,7 @@
 
     // Generar 10 códigos en texto plano (solo se muestran ahora, nunca se guardan en claro)
     const codigos = Array.from({ length: 10 }, () => _generarCodigoLegible());
+    _codigosRecuperacionActuales = codigos;
     const hashes = await Promise.all(codigos.map(c => _sha256Hex(c)));
 
     // Borrar códigos anteriores y subir los nuevos hasheados
@@ -8716,16 +8717,19 @@
         ${codigos.map(c => `<code>${c}</code>`).join('')}
       </div>
       <div style="display:flex;gap:8px">
-        <button class="modal-cancel" style="flex:1" onclick="_descargarCodigosRecuperacion(${JSON.stringify(codigos)})">⬇ Descargar .txt</button>
+        <button class="modal-cancel" style="flex:1" onclick="_descargarCodigosRecuperacion()">⬇ Descargar .txt</button>
         <button class="modal-confirm" style="flex:1" onclick="cargarSeccionSeguridad()">Listo, ya los guardé</button>
       </div>
     `;
   }
 
-  function _descargarCodigosRecuperacion(codigos) {
+  let _codigosRecuperacionActuales = null;
+
+  function _descargarCodigosRecuperacion() {
+    if (!_codigosRecuperacionActuales) return;
     const contenido = 'Códigos de recuperación — Trading desde Adentro\n' +
       'Cuenta: ' + sesiónActual.user.email + '\n' +
-      'Cada código sirve una sola vez.\n\n' + codigos.join('\n');
+      'Cada código sirve una sola vez.\n\n' + _codigosRecuperacionActuales.join('\n');
     const blob = new Blob([contenido], { type: 'text/plain' });
     const a = document.createElement('a');
     a.href = URL.createObjectURL(blob);

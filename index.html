@@ -563,6 +563,14 @@
       font-family: 'DM Sans', sans-serif;
     }
     .mfa-code-input:focus { border-color: var(--rojo); }
+    .backup-codes-grid {
+      display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin: 16px 0;
+      background: #181818; border: 1px solid #2A2A2A; border-radius: 8px; padding: 14px;
+    }
+    .backup-codes-grid code {
+      font-size: 14px; color: var(--blanco); letter-spacing: 1px; font-family: 'DM Sans', monospace;
+    }
+    .backup-code-used { text-decoration: line-through; color: var(--gris) !important; }
     .panel-logout-btn {
       background: none; border: 1px solid var(--negro-border); border-radius: 8px;
       color: var(--gris); font-family: 'DM Sans', sans-serif; font-size: 12px;
@@ -1454,13 +1462,14 @@
       </div>
       <!-- VERIFICACIÓN EN DOS PASOS (login) -->
       <div id="formMFALogin" style="display:none">
-        <p style="font-size:13px;color:var(--gris);margin-bottom:16px;line-height:1.6">Ingresá el código de 6 dígitos de tu app de autenticación.</p>
+        <p style="font-size:13px;color:var(--gris);margin-bottom:16px;line-height:1.6" id="mfaLoginTexto">Ingresá el código de 6 dígitos de tu app de autenticación.</p>
         <div class="auth-group">
           <input type="text" class="auth-input mfa-code-input" id="mfaLoginCodeInput" maxlength="6" inputmode="numeric" placeholder="000000" autocomplete="one-time-code" onkeydown="if(event.key==='Enter')confirmarMFALogin()">
         </div>
         <button class="auth-btn" id="mfaLoginBtn" onclick="confirmarMFALogin()">Verificar →</button>
         <div class="auth-msg" id="mfaLoginMsg" style="display:none"></div>
-        <div style="text-align:center;margin-top:12px">
+        <div style="text-align:center;margin-top:12px;display:flex;flex-direction:column;gap:8px">
+          <button onclick="toggleMFALoginModo()" id="mfaLoginToggleBtn" style="background:none;border:none;color:var(--gris);font-size:12px;cursor:pointer;text-decoration:underline;font-family:'DM Sans',sans-serif">¿Perdiste el acceso a tu app? Usar código de recuperación</button>
           <button onclick="cancelarMFALogin()" style="background:none;border:none;color:var(--gris);font-size:12px;cursor:pointer;text-decoration:underline;font-family:'DM Sans',sans-serif">← Volver</button>
         </div>
       </div>
@@ -2293,15 +2302,47 @@
   }
 
   let _mfaLoginFactorId = null;
+  let _mfaLoginModo = 'totp'; // 'totp' | 'backup'
 
   function mostrarPromptMFALogin(factorId) {
     _mfaLoginFactorId = factorId;
+    _mfaLoginModo = 'totp';
     document.getElementById('formLogin').style.display = 'none';
     document.getElementById('formMFALogin').style.display = 'block';
     document.getElementById('mfaLoginMsg').style.display = 'none';
+    _actualizarUIModoMFALogin();
     const input = document.getElementById('mfaLoginCodeInput');
     input.value = '';
     input.focus();
+  }
+
+  function toggleMFALoginModo() {
+    _mfaLoginModo = _mfaLoginModo === 'totp' ? 'backup' : 'totp';
+    document.getElementById('mfaLoginMsg').style.display = 'none';
+    document.getElementById('mfaLoginCodeInput').value = '';
+    _actualizarUIModoMFALogin();
+    document.getElementById('mfaLoginCodeInput').focus();
+  }
+
+  function _actualizarUIModoMFALogin() {
+    const input = document.getElementById('mfaLoginCodeInput');
+    const texto = document.getElementById('mfaLoginTexto');
+    const toggleBtn = document.getElementById('mfaLoginToggleBtn');
+    if (_mfaLoginModo === 'backup') {
+      texto.textContent = 'Ingresá uno de tus códigos de recuperación (formato XXXX-XXXX).';
+      input.maxLength = 9;
+      input.style.letterSpacing = '3px';
+      input.style.fontSize = '18px';
+      input.placeholder = 'XXXX-XXXX';
+      toggleBtn.textContent = '← Usar código de la app en su lugar';
+    } else {
+      texto.textContent = 'Ingresá el código de 6 dígitos de tu app de autenticación.';
+      input.maxLength = 6;
+      input.style.letterSpacing = '6px';
+      input.style.fontSize = '20px';
+      input.placeholder = '000000';
+      toggleBtn.textContent = '¿Perdiste el acceso a tu app? Usar código de recuperación';
+    }
   }
 
   function cancelarMFALogin() {
@@ -2309,11 +2350,14 @@
     sesiónActual = null;
     localStorage.removeItem('tda_session');
     _mfaLoginFactorId = null;
+    _mfaLoginModo = 'totp';
     document.getElementById('formMFALogin').style.display = 'none';
     document.getElementById('formLogin').style.display = 'block';
   }
 
   async function confirmarMFALogin() {
+    if (_mfaLoginModo === 'backup') return _confirmarBackupCodeLogin();
+
     const codigo = document.getElementById('mfaLoginCodeInput').value.trim();
     const msg = document.getElementById('mfaLoginMsg');
     const btn = document.getElementById('mfaLoginBtn');
@@ -2348,6 +2392,33 @@
       irA('panel');
     } else {
       showAuthMsg(msg, 'Código incorrecto. Probá de nuevo.', 'err');
+    }
+  }
+
+  async function _confirmarBackupCodeLogin() {
+    const codigo = document.getElementById('mfaLoginCodeInput').value.trim();
+    const msg = document.getElementById('mfaLoginMsg');
+    const btn = document.getElementById('mfaLoginBtn');
+    msg.style.display = 'none';
+
+    if (!codigo) {
+      showAuthMsg(msg, 'Ingresá un código de recuperación.', 'err');
+      return;
+    }
+
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner"></span>Verificando...';
+
+    const valido = await _consumirCodigoRecuperacion(sesiónActual.user.id, codigo, sesiónActual.access_token);
+
+    btn.disabled = false; btn.textContent = 'Verificar →';
+
+    if (valido) {
+      guardarSesion(sesiónActual);
+      _mfaLoginFactorId = null;
+      irA('panel');
+    } else {
+      showAuthMsg(msg, 'Código inválido o ya usado.', 'err');
     }
   }
 
@@ -8412,6 +8483,7 @@
       <p style="color:var(--gris);font-size:13px;margin-bottom:20px">${esc(sesiónActual.user.email)}</p>
       <div class="ajustes-tabs">
         <button class="ajustes-tab-btn ${tabActiva==='seguridad'?'active':''}" onclick="_switchAjustesTab('seguridad')">🔒 Seguridad</button>
+        <button class="ajustes-tab-btn ${tabActiva==='password'?'active':''}" onclick="_switchAjustesTab('password')">🔑 Contraseña</button>
       </div>
       <div id="ajustesTabContent"></div>
     `;
@@ -8420,10 +8492,11 @@
 
   function _switchAjustesTab(tab) {
     document.querySelectorAll('.ajustes-tab-btn').forEach(b => b.classList.remove('active'));
-    const idx = { seguridad: 0 }[tab] ?? 0;
+    const idx = { seguridad: 0, password: 1 }[tab] ?? 0;
     const btns = document.querySelectorAll('.ajustes-tab-btn');
     if (btns[idx]) btns[idx].classList.add('active');
     if (tab === 'seguridad') cargarSeccionSeguridad();
+    if (tab === 'password') cargarSeccionPassword();
   }
 
   async function cargarSeccionSeguridad() {
@@ -8434,6 +8507,15 @@
     const factores = (r.ok && Array.isArray(r.data?.factors)) ? r.data.factors : [];
     const verificados = factores.filter(f => f.status === 'verified' && f.factor_type === 'totp');
     const activo = verificados.length > 0;
+
+    let codigosRestantes = 0;
+    if (activo) {
+      const rCod = await sbFetch(
+        '/rest/v1/mfa_backup_codes?user_id=eq.' + sesiónActual.user.id + '&used=eq.false&select=id',
+        {}, sesiónActual.access_token
+      );
+      codigosRestantes = (rCod.ok && Array.isArray(rCod.data)) ? rCod.data.length : 0;
+    }
 
     cont.innerHTML = `
       <div class="seguridad-card">
@@ -8461,6 +8543,23 @@
 
         <div id="mfaMsg" style="display:none;margin-top:12px;font-size:12px;padding:8px 12px;border-radius:6px"></div>
       </div>
+
+      ${activo ? `
+      <div class="seguridad-card">
+        <div class="seguridad-card-head">
+          <div>
+            <div style="font-weight:700;font-size:15px;margin-bottom:4px">Códigos de recuperación</div>
+            <div style="color:var(--gris);font-size:12.5px;max-width:420px">Usalos para entrar si perdés el acceso a tu app de autenticación. Cada código sirve una sola vez.</div>
+          </div>
+          <span class="seguridad-estado-badge ${codigosRestantes > 0 ? 'on' : 'off'}">${codigosRestantes > 0 ? codigosRestantes + ' disponibles' : 'Sin generar'}</span>
+        </div>
+        <div id="backupBody" style="margin-top:16px">
+          <button class="modal-confirm" onclick="generarCodigosRecuperacion()">${codigosRestantes > 0 ? '↻ Regenerar códigos' : '+ Generar códigos de recuperación'}</button>
+          ${codigosRestantes > 0 ? '<p style="font-size:11px;color:var(--gris);margin-top:8px">Regenerar invalida los códigos anteriores.</p>' : ''}
+        </div>
+        <div id="backupMsg" style="display:none;margin-top:12px;font-size:12px;padding:8px 12px;border-radius:6px"></div>
+      </div>
+      ` : ''}
     `;
   }
 
@@ -8563,6 +8662,174 @@
       cargarSeccionSeguridad();
     } else {
       alert('No se pudo quitar el autenticador. Probá de nuevo.');
+    }
+  }
+
+  /* ── Códigos de recuperación ── */
+  async function _sha256Hex(texto) {
+    const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(texto));
+    return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2, '0')).join('');
+  }
+
+  function _generarCodigoLegible() {
+    const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; // sin caracteres ambiguos (0/O, 1/I, etc.)
+    let s = '';
+    const rnd = new Uint32Array(8);
+    crypto.getRandomValues(rnd);
+    for (let i = 0; i < 8; i++) s += chars[rnd[i] % chars.length];
+    return s.slice(0, 4) + '-' + s.slice(4);
+  }
+
+  async function generarCodigosRecuperacion() {
+    const yaExisten = document.querySelector('#backupBody button').textContent.includes('Regenerar');
+    if (yaExisten && !confirm('Esto invalida cualquier código de recuperación anterior. ¿Continuar?')) return;
+    const msg = document.getElementById('backupMsg');
+    const body = document.getElementById('backupBody');
+    body.innerHTML = '<div style="text-align:center;padding:20px"><span class="spinner"></span></div>';
+
+    // Generar 10 códigos en texto plano (solo se muestran ahora, nunca se guardan en claro)
+    const codigos = Array.from({ length: 10 }, () => _generarCodigoLegible());
+    const hashes = await Promise.all(codigos.map(c => _sha256Hex(c)));
+
+    // Borrar códigos anteriores y subir los nuevos hasheados
+    await sbFetch('/rest/v1/mfa_backup_codes?user_id=eq.' + sesiónActual.user.id, { method: 'DELETE' }, sesiónActual.access_token);
+    const payload = hashes.map(h => ({ user_id: sesiónActual.user.id, code_hash: h }));
+    const rIns = await sbFetch('/rest/v1/mfa_backup_codes', {
+      method: 'POST',
+      body: JSON.stringify(payload),
+      headers: { 'Prefer': 'return=minimal' }
+    }, sesiónActual.access_token);
+
+    if (!rIns.ok) {
+      msg.style.display = 'block'; msg.style.background = 'rgba(229,115,115,.1)'; msg.style.color = '#E57373'; msg.style.border = '1px solid rgba(229,115,115,.3)';
+      msg.textContent = 'No se pudieron generar los códigos. Verificá que exista la tabla mfa_backup_codes.';
+      cargarSeccionSeguridad();
+      return;
+    }
+
+    body.innerHTML = `
+      <p style="font-size:12.5px;color:var(--gris);margin-bottom:10px">Guardalos en un lugar seguro. Cada uno funciona una sola vez y no se van a volver a mostrar.</p>
+      <div class="backup-codes-grid">
+        ${codigos.map(c => `<code>${c}</code>`).join('')}
+      </div>
+      <div style="display:flex;gap:8px">
+        <button class="modal-cancel" style="flex:1" onclick="_descargarCodigosRecuperacion(${JSON.stringify(codigos)})">⬇ Descargar .txt</button>
+        <button class="modal-confirm" style="flex:1" onclick="cargarSeccionSeguridad()">Listo, ya los guardé</button>
+      </div>
+    `;
+  }
+
+  function _descargarCodigosRecuperacion(codigos) {
+    const contenido = 'Códigos de recuperación — Trading desde Adentro\n' +
+      'Cuenta: ' + sesiónActual.user.email + '\n' +
+      'Cada código sirve una sola vez.\n\n' + codigos.join('\n');
+    const blob = new Blob([contenido], { type: 'text/plain' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = 'codigos-recuperacion-tda.txt';
+    a.click();
+    URL.revokeObjectURL(a.href);
+  }
+
+  // Valida un código de recuperación ingresado en el login. Devuelve true si era válido (y lo consume).
+  async function _consumirCodigoRecuperacion(userId, codigoIngresado, token) {
+    const codigoNorm = codigoIngresado.trim().toUpperCase();
+    const hash = await _sha256Hex(codigoNorm);
+    const r = await sbFetch(
+      '/rest/v1/mfa_backup_codes?user_id=eq.' + userId + '&used=eq.false&code_hash=eq.' + hash + '&select=id',
+      {}, token
+    );
+    if (!r.ok || !Array.isArray(r.data) || r.data.length === 0) return false;
+    const id = r.data[0].id;
+    await sbFetch('/rest/v1/mfa_backup_codes?id=eq.' + id, {
+      method: 'PATCH',
+      body: JSON.stringify({ used: true, used_at: new Date().toISOString() }),
+      headers: { 'Prefer': 'return=minimal' }
+    }, token);
+    return true;
+  }
+
+  /* ── Cambiar contraseña ── */
+  function cargarSeccionPassword() {
+    const cont = document.getElementById('ajustesTabContent');
+    cont.innerHTML = `
+      <div class="seguridad-card">
+        <div style="font-weight:700;font-size:15px;margin-bottom:4px">Cambiar contraseña</div>
+        <div style="color:var(--gris);font-size:12.5px;max-width:420px;margin-bottom:16px">Por seguridad, te pedimos tu contraseña actual antes de cambiarla.</div>
+
+        <div class="auth-group">
+          <label class="auth-label">Contraseña actual</label>
+          <input type="password" class="auth-input" id="pwActual" placeholder="••••••••">
+        </div>
+        <div class="auth-group">
+          <label class="auth-label">Contraseña nueva</label>
+          <input type="password" class="auth-input" id="pwNueva1" placeholder="Mínimo 6 caracteres">
+        </div>
+        <div class="auth-group">
+          <label class="auth-label">Confirmar contraseña nueva</label>
+          <input type="password" class="auth-input" id="pwNueva2" placeholder="Repetí la contraseña nueva" onkeydown="if(event.key==='Enter')cambiarPassword()">
+        </div>
+        <button class="modal-confirm" onclick="cambiarPassword()" id="pwBtn">Actualizar contraseña</button>
+        <div id="pwMsg" style="display:none;margin-top:12px;font-size:12px;padding:8px 12px;border-radius:6px"></div>
+      </div>
+    `;
+  }
+
+  async function cambiarPassword() {
+    const actual = document.getElementById('pwActual').value;
+    const nueva1 = document.getElementById('pwNueva1').value;
+    const nueva2 = document.getElementById('pwNueva2').value;
+    const msg = document.getElementById('pwMsg');
+    const btn = document.getElementById('pwBtn');
+    msg.style.display = 'none';
+
+    if (!actual || !nueva1 || !nueva2) {
+      msg.style.display = 'block'; msg.style.background = 'rgba(229,115,115,.1)'; msg.style.color = '#E57373'; msg.style.border = '1px solid rgba(229,115,115,.3)';
+      msg.textContent = 'Completá los tres campos.'; return;
+    }
+    if (nueva1.length < 6) {
+      msg.style.display = 'block'; msg.style.background = 'rgba(229,115,115,.1)'; msg.style.color = '#E57373'; msg.style.border = '1px solid rgba(229,115,115,.3)';
+      msg.textContent = 'La contraseña nueva debe tener al menos 6 caracteres.'; return;
+    }
+    if (nueva1 !== nueva2) {
+      msg.style.display = 'block'; msg.style.background = 'rgba(229,115,115,.1)'; msg.style.color = '#E57373'; msg.style.border = '1px solid rgba(229,115,115,.3)';
+      msg.textContent = 'Las contraseñas nuevas no coinciden.'; return;
+    }
+
+    btn.disabled = true; btn.innerHTML = '<span class="spinner"></span>Verificando...';
+
+    // 1. Confirmar que la contraseña actual es correcta
+    const rCheck = await sbFetch('/auth/v1/token?grant_type=password', {
+      method: 'POST',
+      body: JSON.stringify({ email: sesiónActual.user.email, password: actual })
+    });
+
+    if (!rCheck.ok) {
+      btn.disabled = false; btn.textContent = 'Actualizar contraseña';
+      msg.style.display = 'block'; msg.style.background = 'rgba(229,115,115,.1)'; msg.style.color = '#E57373'; msg.style.border = '1px solid rgba(229,115,115,.3)';
+      msg.textContent = 'La contraseña actual es incorrecta.'; return;
+    }
+
+    // 2. Actualizar a la contraseña nueva
+    const rUpd = await sbFetch('/auth/v1/user', {
+      method: 'PUT',
+      body: JSON.stringify({ password: nueva1 })
+    }, sesiónActual.access_token);
+
+    btn.disabled = false; btn.textContent = 'Actualizar contraseña';
+
+    if (rUpd.ok) {
+      // Renovamos el token de sesión con el que devolvió la verificación de contraseña actual
+      sesiónActual.access_token = rCheck.data.access_token;
+      guardarSesion(sesiónActual);
+      document.getElementById('pwActual').value = '';
+      document.getElementById('pwNueva1').value = '';
+      document.getElementById('pwNueva2').value = '';
+      msg.style.display = 'block'; msg.style.background = 'rgba(76,175,80,.1)'; msg.style.color = 'var(--verde)'; msg.style.border = '1px solid rgba(76,175,80,.3)';
+      msg.textContent = '✓ Contraseña actualizada correctamente.';
+    } else {
+      msg.style.display = 'block'; msg.style.background = 'rgba(229,115,115,.1)'; msg.style.color = '#E57373'; msg.style.border = '1px solid rgba(229,115,115,.3)';
+      msg.textContent = rUpd.data?.msg || rUpd.data?.error_description || 'No se pudo actualizar la contraseña.';
     }
   }
 

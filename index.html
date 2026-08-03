@@ -2590,9 +2590,236 @@
         <p style="font-size:14px;color:var(--gris)">Herramientas gratuitas de Trading desde Adentro. Descargalas sin costo.</p>
       </div>
       ${cards}
-      <div style="background:rgba(76,175,80,0.08);border:1px solid rgba(76,175,80,0.2);border-radius:12px;padding:16px 20px;margin-top:8px">
-        <p style="font-size:13px;color:#4CAF50">🎁 Proximamente: Bitacora de trading en Excel — gratis para todos los usuarios registrados.</p>
+      ${renderMonedaWidgetHTML()}`;
+
+    initMonedaWidget();
+  }
+
+  function renderMonedaWidgetHTML() {
+    return `
+      <div class="licencia-card" style="margin-top:8px;overflow:hidden">
+        <div style="padding:24px 24px 4px">
+          <div style="display:inline-block;background:rgba(192,57,43,0.12);border:1px solid rgba(192,57,43,0.3);border-radius:20px;padding:4px 12px;font-size:11px;color:#E57373;text-transform:uppercase;letter-spacing:1px;margin-bottom:10px">
+            Simulador de probabilidades
+          </div>
+          <div style="font-family:'Bebas Neue',sans-serif;font-size:26px;letter-spacing:0.5px;color:var(--gris-claro,#D0D0D0);line-height:1.2;margin-bottom:6px">
+            Ganá confianza en las probabilidades, <span style="color:#E57373">respetando la pérdida</span>
+          </div>
+          <p style="font-size:13px;color:var(--gris);line-height:1.6;margin-bottom:18px;max-width:520px">
+            Configurá tu ratio riesgo/beneficio y tirá la moneda las veces que quieras. Vas a ver en carne propia por qué respetar el stop importa tanto como buscar el objetivo — así funciona la ley de los grandes números aplicada a tu operativa.
+          </p>
+        </div>
+        <div id="mw-root" style="padding:0 24px 24px">
+          <div style="background:#0D0D0D;border:1px solid var(--negro-border,#1E1E1E);border-radius:14px;padding:22px;max-width:420px">
+
+            <div style="display:flex;gap:10px;margin-bottom:16px">
+              <div style="flex:1;background:#111;border:1px solid var(--negro-border,#1E1E1E);border-radius:10px;padding:8px 12px;text-align:left">
+                <div style="font-size:10px;color:var(--gris);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:4px">Cara (+)</div>
+                <input type="number" id="mwWin" step="0.1" value="2" style="width:100%;background:transparent;border:none;color:#4CAF50;font-size:18px;font-weight:700;padding:0;outline:none">
+              </div>
+              <div style="flex:1;background:#111;border:1px solid var(--negro-border,#1E1E1E);border-radius:10px;padding:8px 12px;text-align:left">
+                <div style="font-size:10px;color:var(--gris);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:4px">Seca (−)</div>
+                <input type="number" id="mwLoss" step="0.1" value="1" style="width:100%;background:transparent;border:none;color:#E57373;font-size:18px;font-weight:700;padding:0;outline:none">
+              </div>
+            </div>
+
+            <div style="display:flex;flex-direction:column;align-items:center;margin-bottom:16px">
+              <div id="mwCoin" style="width:100px;height:100px;border-radius:50%;background:radial-gradient(circle at 35% 30%, #fde68a, #C0392B 70%, #6b1414);display:flex;align-items:center;justify-content:center;font-size:1.6rem;font-weight:800;color:#2a0a0a;box-shadow:0 8px 20px rgba(0,0,0,0.5), inset 0 0 0 5px rgba(255,255,255,0.12);margin-bottom:10px;transition:transform 0.15s linear">?</div>
+              <div id="mwResultLabel" style="font-size:13px;color:var(--gris);min-height:1.2em">Tocá "Tirar" para empezar</div>
+            </div>
+
+            <div style="display:flex;gap:8px;margin-bottom:14px">
+              <div style="flex:1;background:#111;border:1px solid var(--negro-border,#1E1E1E);border-radius:10px;padding:10px 4px;text-align:center">
+                <div id="mwScoreNum" style="font-size:1.15rem;font-weight:700;color:#4CAF50">0</div>
+                <div style="font-size:0.62rem;color:var(--gris);text-transform:uppercase;letter-spacing:0.5px">Acumulado</div>
+              </div>
+              <div style="flex:1;background:#111;border:1px solid var(--negro-border,#1E1E1E);border-radius:10px;padding:10px 4px;text-align:center">
+                <div id="mwCarasNum" style="font-size:1.15rem;font-weight:700;color:#fbbf24">0</div>
+                <div style="font-size:0.62rem;color:var(--gris);text-transform:uppercase;letter-spacing:0.5px">Caras</div>
+              </div>
+              <div style="flex:1;background:#111;border:1px solid var(--negro-border,#1E1E1E);border-radius:10px;padding:10px 4px;text-align:center">
+                <div id="mwSecasNum" style="font-size:1.15rem;font-weight:700;color:#E57373">0</div>
+                <div style="font-size:0.62rem;color:var(--gris);text-transform:uppercase;letter-spacing:0.5px">Secas</div>
+              </div>
+              <div style="flex:1;background:#111;border:1px solid var(--negro-border,#1E1E1E);border-radius:10px;padding:10px 4px;text-align:center">
+                <div id="mwWinrateNum" style="font-size:1.15rem;font-weight:700;color:#60a5fa">0%</div>
+                <div style="font-size:0.62rem;color:var(--gris);text-transform:uppercase;letter-spacing:0.5px">Winrate</div>
+              </div>
+            </div>
+
+            <button id="mwFlipBtn" style="width:100%;padding:12px;border:none;border-radius:10px;font-size:14px;font-weight:600;cursor:pointer;margin-bottom:8px;background:var(--rojo,#8B1A1A);color:#fff">Tirar una vez</button>
+
+            <div style="display:flex;gap:8px;margin-bottom:8px">
+              <input type="number" id="mwAutoCount" min="1" value="10" style="width:70px;padding:10px;border-radius:10px;border:1px solid var(--negro-border,#1E1E1E);background:#111;color:var(--gris-claro,#D0D0D0);text-align:center;font-size:14px">
+              <button id="mwAutoBtn" style="flex:1;padding:12px;border:none;border-radius:10px;font-size:14px;font-weight:600;cursor:pointer;background:#1a1a1a;border:1px solid var(--negro-border,#1E1E1E);color:var(--gris-claro,#D0D0D0)">Tirar automático</button>
+            </div>
+            <button id="mwResetBtn" style="width:100%;padding:10px;border-radius:10px;font-size:13px;cursor:pointer;background:transparent;color:var(--gris);border:1px solid var(--negro-border,#1E1E1E)">Reiniciar contador</button>
+
+            <div style="margin-top:18px;text-align:left">
+              <div style="font-size:10px;color:var(--gris);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:8px">Curva de crecimiento</div>
+              <svg id="mwChart" viewBox="0 0 300 130" preserveAspectRatio="none" style="width:100%;height:130px;background:#111;border:1px solid var(--negro-border,#1E1E1E);border-radius:10px"></svg>
+            </div>
+
+          </div>
+        </div>
       </div>`;
+  }
+
+  function initMonedaWidget() {
+    const coin = document.getElementById('mwCoin');
+    const resultLabel = document.getElementById('mwResultLabel');
+    const scoreNum = document.getElementById('mwScoreNum');
+    const carasNum = document.getElementById('mwCarasNum');
+    const secasNum = document.getElementById('mwSecasNum');
+    const winrateNum = document.getElementById('mwWinrateNum');
+    const flipBtn = document.getElementById('mwFlipBtn');
+    const autoBtn = document.getElementById('mwAutoBtn');
+    const autoCount = document.getElementById('mwAutoCount');
+    const resetBtn = document.getElementById('mwResetBtn');
+    const winPointsInput = document.getElementById('mwWin');
+    const lossPointsInput = document.getElementById('mwLoss');
+    const chart = document.getElementById('mwChart');
+    if (!coin || !flipBtn) return;
+
+    let score = 0, caras = 0, secas = 0, busy = false;
+    let history = [0];
+    const CHART_W = 300, CHART_H = 130, PAD = 10;
+
+    function updateStats() {
+      scoreNum.textContent = (Math.round(score * 100) / 100);
+      carasNum.textContent = caras;
+      secasNum.textContent = secas;
+      const total = caras + secas;
+      const wr = total === 0 ? 0 : (caras / total) * 100;
+      winrateNum.textContent = wr.toFixed(1) + '%';
+    }
+
+    function drawChart() {
+      chart.innerHTML = '';
+      if (history.length < 2) {
+        const txt = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+        txt.setAttribute('x', CHART_W / 2);
+        txt.setAttribute('y', CHART_H / 2);
+        txt.setAttribute('text-anchor', 'middle');
+        txt.setAttribute('fill', '#475569');
+        txt.setAttribute('font-size', '12');
+        txt.textContent = 'Todavía no hay tiradas';
+        chart.appendChild(txt);
+        return;
+      }
+      const min = Math.min(...history, 0);
+      const max = Math.max(...history, 0);
+      const range = (max - min) || 1;
+      const xStep = (CHART_W - PAD * 2) / (history.length - 1);
+      const yFor = v => CHART_H - PAD - ((v - min) / range) * (CHART_H - PAD * 2);
+
+      const zeroY = yFor(0);
+      const zeroLine = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+      zeroLine.setAttribute('x1', PAD); zeroLine.setAttribute('x2', CHART_W - PAD);
+      zeroLine.setAttribute('y1', zeroY); zeroLine.setAttribute('y2', zeroY);
+      zeroLine.setAttribute('stroke', '#333'); zeroLine.setAttribute('stroke-dasharray', '4 4');
+      chart.appendChild(zeroLine);
+
+      let d = '';
+      history.forEach((v, i) => {
+        const x = PAD + i * xStep;
+        const y = yFor(v);
+        d += (i === 0 ? 'M' : 'L') + x.toFixed(1) + ',' + y.toFixed(1) + ' ';
+      });
+
+      const areaD = d + `L${(PAD + (history.length - 1) * xStep).toFixed(1)},${(CHART_H - PAD)} L${PAD},${(CHART_H - PAD)} Z`;
+      const area = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+      area.setAttribute('d', areaD);
+      area.setAttribute('fill', 'rgba(192,57,43,0.15)');
+      chart.appendChild(area);
+
+      const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+      path.setAttribute('d', d.trim());
+      path.setAttribute('fill', 'none');
+      path.setAttribute('stroke', '#E57373');
+      path.setAttribute('stroke-width', '2');
+      path.setAttribute('stroke-linejoin', 'round');
+      path.setAttribute('stroke-linecap', 'round');
+      chart.appendChild(path);
+
+      const lastX = PAD + (history.length - 1) * xStep;
+      const lastY = yFor(history[history.length - 1]);
+      const dot = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+      dot.setAttribute('cx', lastX); dot.setAttribute('cy', lastY); dot.setAttribute('r', 3.5);
+      dot.setAttribute('fill', '#E57373');
+      chart.appendChild(dot);
+    }
+
+    function setDisabled(disabled) {
+      flipBtn.disabled = disabled;
+      autoBtn.disabled = disabled;
+      autoCount.disabled = disabled;
+      resetBtn.disabled = disabled;
+      winPointsInput.disabled = disabled;
+      lossPointsInput.disabled = disabled;
+      flipBtn.style.opacity = autoBtn.style.opacity = disabled ? 0.5 : 1;
+    }
+
+    function flipOnce() {
+      return new Promise(resolve => {
+        resultLabel.textContent = 'Girando...';
+        coin.style.transform = 'rotateY(180deg)';
+        setTimeout(() => {
+          const esCara = Math.random() < 0.5;
+          coin.style.transform = 'rotateY(0deg)';
+          const winPts = parseFloat(winPointsInput.value) || 0;
+          const lossPts = parseFloat(lossPointsInput.value) || 0;
+          if (esCara) {
+            coin.textContent = 'CARA';
+            score += winPts;
+            caras++;
+            resultLabel.textContent = `¡Cara! +${winPts} puntos`;
+          } else {
+            coin.textContent = 'SECA';
+            score -= lossPts;
+            secas++;
+            resultLabel.textContent = `Seca. -${lossPts} puntos`;
+          }
+          history.push(score);
+          updateStats();
+          drawChart();
+          resolve();
+        }, 350);
+      });
+    }
+
+    flipBtn.addEventListener('click', async () => {
+      if (busy) return;
+      busy = true; setDisabled(true);
+      await flipOnce();
+      setDisabled(false); busy = false;
+    });
+
+    autoBtn.addEventListener('click', async () => {
+      if (busy) return;
+      let n = parseInt(autoCount.value, 10);
+      if (!n || n < 1) n = 1;
+      if (n > 500) n = 500;
+      busy = true; setDisabled(true);
+      for (let i = 0; i < n; i++) {
+        resultLabel.textContent = `Tirada ${i + 1} de ${n}...`;
+        await flipOnce();
+        await new Promise(r => setTimeout(r, 90));
+      }
+      resultLabel.textContent = `Listo: ${n} tiradas completadas`;
+      setDisabled(false); busy = false;
+    });
+
+    resetBtn.addEventListener('click', () => {
+      if (busy) return;
+      score = 0; caras = 0; secas = 0; history = [0];
+      updateStats(); drawChart();
+      coin.textContent = '?';
+      resultLabel.textContent = 'Contador reiniciado';
+    });
+
+    updateStats();
+    drawChart();
   }
 
   function irATiendaProducto(producto) {

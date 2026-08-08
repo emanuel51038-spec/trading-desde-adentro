@@ -63,6 +63,12 @@
       font-size: 16px; color: var(--gris); text-align: center;
       max-width: 480px; line-height: 1.6; margin-bottom: 48px; position: relative; z-index: 1;
     }
+    .landing-image {
+      display: block; width: 100%; max-width: 900px; margin: -20px auto 40px;
+      border-radius: 16px; border: 1px solid var(--negro-border);
+      box-shadow: 0 24px 60px rgba(0,0,0,.55);
+      position: relative; z-index: 1;
+    }
     .price-box {
       background: var(--negro-card); border: 1px solid var(--negro-border);
       border-radius: 16px; padding: 32px 40px; text-align: center;
@@ -1055,6 +1061,7 @@
     <div class="badge" id="landingBadge">NinjaTrader 8 · Add-On Profesional</div>
     <h1 id="landingTitle">DAILY LOSS<br><span>LIMITER</span></h1>
     <p class="subtitle" id="landingSubtitle">Protegé tu capital con un bloqueador automático de pérdidas diarias. Inviolable, persistente y con licencia por equipo.</p>
+    <img id="landingImage" class="landing-image" src="captura_DailyLossLimiter.jpeg" alt="Daily Loss Limiter">
     <div class="price-box">
       <div class="price"><span>USD</span> 30</div>
       <div class="price-desc">Pago único · Licencia permanente · 1 equipo</div>
@@ -1314,7 +1321,7 @@
         <img src="captura_TDARiskReward.png" alt="TDA Risk/Reward">
         <div class="screenshot-card-body">
           <div class="screenshot-card-title">TDA Risk/Reward</div>
-          <div class="screenshot-card-desc">Herramienta profesional de Risk/Reward para NinjaTrader 8. Dibujo en 2 clicks, ratio en tiempo real, regla de multiplos de R, calculo automatico de contratos y linea BreakEven por comisiones.</div>
+          <div class="screenshot-card-desc">Herramienta profesional de Risk/Reward para NinjaTrader 8. Dibujo en 2 clicks, ratio en tiempo real, riesgo máximo en USD con contratos automáticos, auto-extensión de R y línea BreakEven por comisiones.</div>
         </div>
       </div>
       <div class="screenshot-card">
@@ -2837,6 +2844,23 @@
     const title    = document.getElementById('landingTitle');
     const subtitle = document.getElementById('landingSubtitle');
     const formTitle = document.getElementById('landingFormTitle');
+    const landingImg = document.getElementById('landingImage');
+
+    if (landingImg) {
+      const IMAGENES = {
+        'TDA_RiskReward':       { src: 'captura_TDARiskReward.png',    alt: 'TDA Risk/Reward' },
+        'ManualBacktestAnalyzer': { src: 'ManualBacktestAnalyzer.png', alt: 'Manual Backtest Analyzer' },
+        'DailyLossLimiter':     { src: 'captura_DailyLossLimiter.jpeg', alt: 'Daily Loss Limiter' }
+      };
+      const img = IMAGENES[productoSeleccionado];
+      if (img) {
+        landingImg.src = img.src;
+        landingImg.alt = img.alt;
+        landingImg.style.display = 'block';
+      } else {
+        landingImg.style.display = 'none';
+      }
+    }
 
     if (badge) {
       badge.textContent = esRR  ? 'NinjaTrader 8 · Drawing Tool'
@@ -2850,7 +2874,7 @@
     }
     if (subtitle) {
       subtitle.textContent = esRR
-        ? 'Herramienta profesional de Risk/Reward para NinjaTrader 8. Dibujá tu entrada y stop con 2 clicks, ajustá el R:R en tiempo real, visualizá múltiplos de R y calculá automáticamente monto USD, contratos y break-even por comisiones.'
+        ? 'Herramienta profesional de Risk/Reward para NinjaTrader 8. Dibujá tu entrada y stop con 2 clicks, ajustá el R:R en tiempo real, definí un riesgo máximo en USD y dejá que la herramienta calcule los contratos por vos, con auto-extensión de R a medida que el precio avanza.'
         : esMBA
         ? 'Realizá backtests a libro abierto de forma rápida y sencilla. Dibujá tus Risk/Reward en el gráfico, obtené estadísticas completas en tiempo real y enviá las operaciones al Trading Journal con un solo click.'
         : 'Protegé tu capital con un bloqueador automático de pérdidas diarias. Inviolable, persistente y con licencia por equipo.';
@@ -2868,6 +2892,8 @@
         fg.innerHTML =
           '<div class="feature-card"><div class="feature-icon">📐</div><h3>Dibujo en 2 clicks</h3><p>Primer click para la entrada, segundo click para el stop. El target se calcula automáticamente en 2R (configurable) y listo para operar.</p></div>'
         + '<div class="feature-card"><div class="feature-icon">⚡</div><h3>Ratio en tiempo real</h3><p>Arrastrá el stop y el target se reposiciona automáticamente manteniendo el ratio que elegiste. Invertí de long a short sin reconfigurar nada.</p></div>'
+        + '<div class="feature-card"><div class="feature-icon">💵</div><h3>Riesgo máximo en USD</h3><p>Definí cuánto estás dispuesto a arriesgar en dólares y la herramienta calcula sola cuántos contratos usar según el stop, ajustándose en vivo mientras lo movés — con sincronización automática de la cantidad en el ChartTrader.</p></div>'
+        + '<div class="feature-card"><div class="feature-icon">🚀</div><h3>Auto-extensión de R</h3><p>Cuando el precio alcanza el ratio actual, la herramienta suma automáticamente un R más, mostrándote en tiempo real hasta dónde debería moverse el precio para el próximo nivel.</p></div>'
         + '<div class="feature-card"><div class="feature-icon">💰</div><h3>Cálculo automático de contratos</h3><p>La herramienta lee la cantidad del ChartTrader y recalcula el monto USD en vivo. Ves exactamente cuánto arriesgás y cuánto ganás con los contratos configurados.</p></div>'
         + '<div class="feature-card"><div class="feature-icon">📏</div><h3>Regla de R múltiples</h3><p>Visualizá líneas guía en 1R, 2R, 3R, 4R, 5R... mientras arrastrás el target. Cada múltiplo muestra el monto USD, los puntos y el ratio correspondiente.</p></div>'
         + '<div class="feature-card"><div class="feature-icon">🎯</div><h3>Línea BreakEven opcional</h3><p>Configurá tu comisión por lado y la herramienta te dibuja una línea sutil donde tenés que mover el stop para cubrir costos. Ideal para cuentas de prop firms.</p></div>'

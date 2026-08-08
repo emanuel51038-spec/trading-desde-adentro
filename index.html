@@ -70,6 +70,13 @@
       position: relative; z-index: 1;
       aspect-ratio: 16/9; object-fit: cover; object-position: top;
     }
+    .video-section { padding: 20px 20px 60px; text-align: center; }
+    .video-wrap {
+      max-width: 860px; margin: 24px auto 0; aspect-ratio: 16/9;
+      border-radius: 16px; overflow: hidden; border: 1px solid var(--negro-border);
+      box-shadow: 0 24px 60px rgba(0,0,0,.55); background: var(--negro-card);
+    }
+    .video-wrap iframe { width: 100%; height: 100%; display: block; border: 0; }
     .price-box {
       background: var(--negro-card); border: 1px solid var(--negro-border);
       border-radius: 16px; padding: 32px 40px; text-align: center;
@@ -1080,6 +1087,15 @@
       <div class="feature-card"><div class="feature-icon">💾</div><h3>Persistente al reinicio</h3><p>El estado se guarda en disco. Si reiniciás NT8 con cuentas bloqueadas, siguen bloqueadas.</p></div>
       <div class="feature-card"><div class="feature-icon">🔄</div><h3>Desbloqueo inteligente</h3><p>Se desbloquea automáticamente cuando el P&L vuelve a $0. Sin intervención manual.</p></div>
       <div class="feature-card"><div class="feature-icon">🛡️</div><h3>Licencia por equipo</h3><p>Licencia vinculada a tu MAC Address. No se puede compartir ni usar en otra PC.</p></div>
+    </div>
+  </section>
+
+  <section class="video-section" id="videoSection" style="display:none">
+    <h2 class="section-title">Mirala en acción</h2>
+    <div class="video-wrap">
+      <iframe id="landingVideoFrame" src="" title="Video demo" loading="lazy"
+        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+        allowfullscreen></iframe>
     </div>
   </section>
 
@@ -2860,6 +2876,20 @@
         landingImg.style.display = 'block';
       } else {
         landingImg.style.display = 'none';
+      }
+    }
+
+    const videoSection = document.getElementById('videoSection');
+    const videoFrame = document.getElementById('landingVideoFrame');
+    if (videoSection && videoFrame) {
+      const VIDEOS = { 'TDA_RiskReward': 'PsBWp7Nma84' };
+      const videoId = VIDEOS[productoSeleccionado];
+      if (videoId) {
+        videoFrame.src = 'https://www.youtube.com/embed/' + videoId;
+        videoSection.style.display = 'block';
+      } else {
+        videoFrame.src = '';
+        videoSection.style.display = 'none';
       }
     }
 

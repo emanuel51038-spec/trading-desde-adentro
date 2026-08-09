@@ -68,7 +68,7 @@
       border-radius: 16px; border: 1px solid var(--negro-border);
       box-shadow: 0 24px 60px rgba(0,0,0,.55);
       position: relative; z-index: 1;
-      aspect-ratio: 16/9; object-fit: cover; object-position: top;
+      aspect-ratio: 16/10; object-fit: contain; background: #0a0a0a;
     }
     .video-section { padding: 20px 20px 60px; text-align: center; }
     .video-wrap {
@@ -2882,7 +2882,7 @@
     const videoSection = document.getElementById('videoSection');
     const videoFrame = document.getElementById('landingVideoFrame');
     if (videoSection && videoFrame) {
-      const VIDEOS = { 'TDA_RiskReward': 'PsBWp7Nma84' };
+      const VIDEOS = { 'TDA_RiskReward': 'PsBWp7Nma84', 'DailyLossLimiter': '6EIDsro37-4' };
       const videoId = VIDEOS[productoSeleccionado];
       if (videoId) {
         videoFrame.src = 'https://www.youtube.com/embed/' + videoId;

@@ -4641,7 +4641,7 @@
     const avgPnl = pnls.reduce((a,b) => a+b, 0) / (pnls.length || 1);
     const stdPnl = Math.sqrt(pnls.reduce((a,b) => a + Math.pow(b - avgPnl, 2), 0) / (pnls.length || 1));
     const sharpe = stdPnl > 0 ? (avgPnl / stdPnl).toFixed(2) : '—';
-    return { winRate, ratio, pf, evR, acumulado, maxDD: maxDD.toFixed(2), rachaMax, rachaActualCount, rachaActualTipo, estMasUsada, emocionTop, sharpe, beCount };
+    return { winRate, ratio, pf, evR, acumulado, maxDD: maxDD.toFixed(2), rachaMax, rachaActualCount, rachaActualTipo, estMasUsada, emocionTop, sharpe, beCount, avgGan, avgPer };
   }
 
   function renderOpFila(o) {
@@ -5262,11 +5262,11 @@
      EVALUACIÓN DE FONDEOS
   ══════════════════════ */
   function renderEvalFondeo(stats, ops) {
-    const winRate = ops.length > 0 ? (ops.filter(o => o.pnl > 0).length / ops.length * 100) : 0;
-    const ganadoras = ops.filter(o => o.pnl > 0);
-    const perdedoras = ops.filter(o => o.pnl < 0);
-    const avgGan = ganadoras.length ? ganadoras.reduce((a, o) => a + o.pnl, 0) / ganadoras.length : 0;
-    const avgPer = perdedoras.length ? Math.abs(perdedoras.reduce((a, o) => a + o.pnl, 0) / perdedoras.length) : 0;
+    // Reutiliza los mismos números que ya calculó calcularStats() (pnl neto, sin breakeven)
+    // para que esta tabla no muestre valores distintos a los del resto del dashboard.
+    const winRate = stats.winRate;
+    const avgGan = stats.avgGan || 0;
+    const avgPer = stats.avgPer || 0;
     const ratioRB = avgPer > 0 ? (avgGan / avgPer) : 0;
     const gananciaPromedio = avgPer > 0 ? ratioRB * avgPer : 0;
     const ev = avgPer > 0 ? ((winRate / 100 * ratioRB) - (1 - winRate / 100)) * avgPer : 0;

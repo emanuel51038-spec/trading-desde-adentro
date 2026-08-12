@@ -8428,18 +8428,32 @@
     document.getElementById('modalImagenAmpliada').classList.add('active');
   }
 
-  function _statsJournalHTML(ops, mostrarJournal) {
+  function _statsJournalHTML(ops, mostrarJournal, comisiones) {
     if (mostrarJournal && ops.length > 0) {
-      const pnls = ops.map(o => parseFloat(o.pnl || 0));
-      const ganadoras = pnls.filter(p => p > 0).length;
-      const perdedoras = pnls.filter(p => p < 0).length;
-      const pnlTotal = pnls.reduce((a,b) => a+b, 0);
-      const pnlProm = pnlTotal / pnls.length;
-      const winRate = (ganadoras / pnls.length) * 100;
+      const com = comisiones || {};
+      // Misma lógica que pnlNeto() del journal principal: resta comisión por contrato (ida y vuelta)
+      const pnlNetoPerfil = (o) => {
+        const bruto = Number(o.pnl);
+        const qty = o.cantidad || 1;
+        const c = com[o.instrumento] ? com[o.instrumento] : 0;
+        return bruto - (c * 2 * qty);
+      };
 
+      // Igual que calcularStats: las operaciones marcadas breakeven no cuentan como ganadora/perdedora
+      const opsSinBE = ops.filter(o => !o.es_breakeven);
+      const pnlsSinBE = opsSinBE.map(pnlNetoPerfil);
+      const ganadoras = pnlsSinBE.filter(p => p > 0).length;
+      const perdedoras = pnlsSinBE.filter(p => p < 0).length;
+      const winRate = opsSinBE.length ? (ganadoras / opsSinBE.length) * 100 : 0;
+
+      // El PnL total sí incluye las BE, porque sigue siendo dinero real
+      const pnlTotal = ops.reduce((a, o) => a + pnlNetoPerfil(o), 0);
+      const pnlProm = pnlTotal / ops.length;
+
+      // Racha actual sobre opsSinBE (BE no corta ni cuenta racha), mismo criterio que el journal
       let rachaCurr = 0, rachaDir = '';
-      for (const p of pnls) {
-        const d = p > 0 ? 'win' : 'loss';
+      for (const o of opsSinBE) {
+        const d = pnlNetoPerfil(o) >= 0 ? 'win' : 'loss';
         if (!rachaDir) { rachaDir = d; rachaCurr = 1; }
         else if (d === rachaDir) rachaCurr++;
         else break;
@@ -8448,7 +8462,7 @@
       const porDia = {};
       ops.forEach(o => {
         const d = o.fecha ? o.fecha.substring(0,10) : '?';
-        porDia[d] = (porDia[d] || 0) + parseFloat(o.pnl || 0);
+        porDia[d] = (porDia[d] || 0) + pnlNetoPerfil(o);
       });
       const peorDia = Math.min(...Object.values(porDia));
 
@@ -8458,7 +8472,7 @@
 
       const statItems = [
         { val: `${winRate.toFixed(1)}%`, lbl: 'Win Rate', color: 'var(--verde)' },
-        { val: `${pnls.length}`, lbl: 'Operaciones', color: 'var(--blanco)' },
+        { val: `${ops.length}`, lbl: 'Operaciones', color: 'var(--blanco)' },
         { val: `${pnlTotal>=0?'+':''}$${Math.abs(pnlTotal).toFixed(2)}`, lbl: 'PnL Total', color: pnlTotal>=0?'var(--verde)':'#E57373' },
         { val: `${pnlProm>=0?'+':''}$${Math.abs(pnlProm).toFixed(2)}`, lbl: 'PnL Promedio', color: pnlProm>=0?'var(--verde)':'#E57373' },
         { val: `${ganadoras}W / ${perdedoras}L`, lbl: 'Ganadoras / Perdedoras', color: 'var(--blanco)' },
@@ -8483,7 +8497,7 @@
           <div style="font-size:11px;color:var(--gris);text-transform:uppercase;letter-spacing:1px;margin-bottom:10px">📅 Últimas operaciones</div>
           <div style="background:#111;border:1px solid #1E1E1E;border-radius:10px;overflow:hidden">
             ${ops.slice(0,8).map((o,i) => {
-              const pnl = parseFloat(o.pnl||0);
+              const pnl = pnlNetoPerfil(o);
               const pnlColor = pnl>=0?'var(--verde)':'#E57373';
               const fecha = o.fecha ? new Date(o.fecha).toLocaleDateString('es-AR',{day:'2-digit',month:'short'}) : '';
               return `<div style="display:flex;align-items:center;gap:12px;padding:10px 14px;${i<ops.slice(0,8).length-1?'border-bottom:1px solid #1A1A1A':''}">
@@ -8505,11 +8519,11 @@
 
   async function _fetchOpsPerfil(userId, perfil) {
     const pCuenta = perfil?.cuenta_compartir || '';
-    let url = `/rest/v1/operaciones_journal?user_id=eq.${userId}&select=fecha,pnl,instrumento,direccion,estrategia,cuenta,origen&order=fecha.desc`;
+    let url = `/rest/v1/operaciones_journal?user_id=eq.${userId}&select=fecha,pnl,instrumento,direccion,estrategia,cuenta,origen,cantidad,es_breakeven&order=fecha.desc`;
     if (pCuenta) url += `&cuenta=eq.${encodeURIComponent(pCuenta)}`;
     const r = await sbFetch(url, {}, sesiónActual.access_token);
     if (r.ok && Array.isArray(r.data)) return { ok: true, data: r.data.filter(o => o.origen !== 'manual') };
-    let url2 = `/rest/v1/operaciones_journal?user_id=eq.${userId}&select=fecha,pnl,instrumento,direccion,estrategia,cuenta&order=fecha.desc`;
+    let url2 = `/rest/v1/operaciones_journal?user_id=eq.${userId}&select=fecha,pnl,instrumento,direccion,estrategia,cuenta,cantidad,es_breakeven&order=fecha.desc`;
     if (pCuenta) url2 += `&cuenta=eq.${encodeURIComponent(pCuenta)}`;
     return sbFetch(url2, {}, sesiónActual.access_token);
   }
@@ -8550,17 +8564,20 @@
     const perfil = (rPerfil.ok && rPerfil.data?.length > 0) ? rPerfil.data[0] : null;
     const nombre = nombresMap[userId] || perfil?.nombre || 'Trader';
 
-    const [rPosts, rOps] = await Promise.all([
+    const [rPosts, rOps, rCom] = await Promise.all([
       sbFetch(`/rest/v1/posts_comunidad?user_id=eq.${userId}&select=*&order=created_at.desc&limit=${_perfilCompletoLimit}&offset=0`, {}, sesiónActual.access_token),
-      _fetchOpsPerfil(userId, perfil)
+      _fetchOpsPerfil(userId, perfil),
+      sbFetch(`/rest/v1/comisiones_journal?select=instrumento,comision_por_contrato&user_id=eq.${userId}`, {}, sesiónActual.access_token).catch(() => ({ ok: false }))
     ]);
 
     const posts = (rPosts.ok && Array.isArray(rPosts.data)) ? rPosts.data : [];
     _perfilCompletoOffset = posts.length;
     const mostrarJournal = perfil?.mostrar_journal || esMiPerfil;
     const ops = (mostrarJournal && rOps.ok && Array.isArray(rOps.data)) ? rOps.data : [];
+    const comisionesPerfil = {};
+    if (rCom.ok && Array.isArray(rCom.data)) rCom.data.forEach(c => { comisionesPerfil[c.instrumento] = Number(c.comision_por_contrato); });
 
-    const statsHTML = _statsJournalHTML(ops, mostrarJournal);
+    const statsHTML = _statsJournalHTML(ops, mostrarJournal, comisionesPerfil);
 
     const anioActual = new Date().getFullYear();
     let antiguedadHTML = '';

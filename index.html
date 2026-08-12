@@ -8016,12 +8016,7 @@
       </div>
     </div>`;
 
-    const btnPublicar = _tieneLicencia
-      ? `<button class="com-btn-nuevo" onclick="abrirNuevoPost()">✏️ Publicar</button>`
-      : `<div style="display:flex;align-items:center;gap:8px;background:rgba(255,255,255,0.04);border:1px solid #2A2A2A;border-radius:8px;padding:8px 14px">
-           <span style="font-size:13px">🔒</span>
-           <span style="font-size:12px;color:var(--gris)">Necesitás una <span style="color:var(--blanco);font-weight:600">licencia activa</span> para publicar.</span>
-         </div>`;
+    const btnPublicar = `<button class="com-btn-nuevo" onclick="abrirNuevoPost()">✏️ Publicar</button>`;
 
     return `
     <div>${perfilToggle}</div>

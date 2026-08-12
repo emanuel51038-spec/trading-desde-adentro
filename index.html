@@ -8448,7 +8448,9 @@
 
       // El PnL total sí incluye las BE, porque sigue siendo dinero real
       const pnlTotal = ops.reduce((a, o) => a + pnlNetoPerfil(o), 0);
-      const pnlProm = pnlTotal / ops.length;
+      // El promedio por operación excluye las BE (numerador y denominador), igual que el win rate
+      const pnlTotalSinBE = pnlsSinBE.reduce((a, b) => a + b, 0);
+      const pnlProm = opsSinBE.length ? pnlTotalSinBE / opsSinBE.length : 0;
 
       // Racha actual sobre opsSinBE (BE no corta ni cuenta racha), mismo criterio que el journal
       let rachaCurr = 0, rachaDir = '';

@@ -10230,13 +10230,14 @@
     const cont = document.getElementById('adminContainer');
     cont.innerHTML = '<div style="text-align:center;padding:40px;color:var(--gris)"><span class="spinner"></span></div>';
 
-    // Fetch en paralelo: usuarios auth, licencias, posts
-    const [rLics, rPosts, rUsuarios, rTotalUsers, rAllUsers] = await Promise.all([
+    // Fetch en paralelo: usuarios auth, licencias, posts, actividad journal
+    const [rLics, rPosts, rUsuarios, rTotalUsers, rAllUsers, rJournalStats] = await Promise.all([
       sbFetch('/rest/v1/licencias?select=estado,producto', {}, sesiónActual.access_token),
       sbFetch('/rest/v1/posts_comunidad?select=id', {}, sesiónActual.access_token),
       sbFetch('/rest/v1/licencias?select=nombre,email,producto,estado,created_at&order=created_at.desc', {}, sesiónActual.access_token),
       sbFetch('/rest/v1/rpc/get_total_users', { method: 'POST', body: '{}' }, sesiónActual.access_token).catch(() => ({ ok: false })),
-      sbFetch('/rest/v1/rpc/get_all_user_emails', { method: 'POST', body: '{}' }, sesiónActual.access_token).catch(() => ({ ok: false }))
+      sbFetch('/rest/v1/rpc/get_all_user_emails', { method: 'POST', body: '{}' }, sesiónActual.access_token).catch(() => ({ ok: false })),
+      sbFetch('/rest/v1/rpc/get_admin_journal_stats', { method: 'POST', body: '{}' }, sesiónActual.access_token).catch(() => ({ ok: false }))
     ]);
 
     const lics = (rLics.ok && Array.isArray(rLics.data)) ? rLics.data : [];
@@ -10261,6 +10262,41 @@
       : emailsUnicos;   // fallback
 
     const totalUsers = (rTotalUsers.ok && typeof rTotalUsers.data === 'number') ? rTotalUsers.data : emailsUnicos.length;
+
+    // Estadísticas de uso del journal
+    const journalStats = (rJournalStats.ok && rJournalStats.data) ? rJournalStats.data : null;
+    const journalError = !rJournalStats.ok || !rJournalStats.data;
+    const ranking = journalStats?.ranking || [];
+    const usuariosConOps = journalStats?.usuarios_con_operaciones ?? ranking.length;
+    const usuariosActivos30d = journalStats?.usuarios_activos_30d ?? 0;
+    const operacionesTotales = journalStats?.operaciones_totales ?? 0;
+    const emailsConOps = new Set(ranking.map(r => r.email));
+    const sinJournal = todosLosUsuarios.filter(u => !emailsConOps.has(u.email));
+
+    // Tabla de usuarios fusionada (todos los registrados + su licencia si tienen)
+    const licenciasPorEmail = new Map();
+    usuarios.forEach(u => {
+      if (!licenciasPorEmail.has(u.email)) licenciasPorEmail.set(u.email, []);
+      licenciasPorEmail.get(u.email).push(u);
+    });
+    const filasUsuarios = [];
+    const emailsProcesados = new Set();
+    todosLosUsuarios.forEach(u => {
+      const lics2 = licenciasPorEmail.get(u.email);
+      emailsProcesados.add(u.email);
+      if (lics2 && lics2.length) {
+        lics2.forEach(l => filasUsuarios.push({ nombre: l.nombre || u.nombre, email: u.email, producto: l.producto, estado: l.estado, created_at: l.created_at }));
+      } else {
+        filasUsuarios.push({ nombre: u.nombre || '—', email: u.email, producto: null, estado: 'sin_licencia', created_at: null });
+      }
+    });
+    // Por si alguna licencia tiene un email que no vino en todosLosUsuarios
+    usuarios.forEach(l => {
+      if (!emailsProcesados.has(l.email)) {
+        filasUsuarios.push({ nombre: l.nombre, email: l.email, producto: l.producto, estado: l.estado, created_at: l.created_at });
+        emailsProcesados.add(l.email);
+      }
+    });
 
     cont.innerHTML = `
       <div style="margin-bottom:24px">
@@ -10290,6 +10326,7 @@
       <div class="padmin-tabs">
         <button class="padmin-tab active" onclick="switchPanelAdminTab('email', this)">📧 Email masivo</button>
         <button class="padmin-tab" onclick="switchPanelAdminTab('usuarios', this)">👥 Usuarios</button>
+        <button class="padmin-tab" onclick="switchPanelAdminTab('journal', this)">📊 Actividad Journal</button>
         <button class="padmin-tab" onclick="switchPanelAdminTab('cupones', this)">🎟️ Cupones</button>
       </div>
 
@@ -10344,22 +10381,85 @@
       <div class="padmin-section" id="padmin-usuarios">
         <div class="padmin-card">
           <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:8px">
-            <h3 style="font-size:15px;font-weight:700">Usuarios con licencia (${emailsUnicos.length})</h3>
-            <input type="text" placeholder="🔍 Buscar..." class="padmin-input" style="max-width:240px;margin:0" oninput="_filtrarUsuariosAdmin(this.value)">
+            <h3 style="font-size:15px;font-weight:700" id="adminUsersCount">Usuarios (${filasUsuarios.length})</h3>
+            <div style="display:flex;gap:8px;flex-wrap:wrap">
+              <select id="adminUsersFiltro" class="padmin-select" style="margin:0;width:auto" onchange="_renderAdminUsersTable()">
+                <option value="todos">Todos los registrados</option>
+                <option value="con_licencia">Con licencia (cualquiera)</option>
+                <option value="sin_licencia">Sin licencia</option>
+                <option value="DailyLossLimiter">Daily Loss Limiter</option>
+                <option value="ManualBacktestAnalyzer">Manual Backtest Analyzer</option>
+                <option value="TDA_RiskReward">TDA Risk/Reward</option>
+              </select>
+              <input type="text" id="adminUsersBuscar" placeholder="🔍 Buscar..." class="padmin-input" style="max-width:200px;margin:0" oninput="_renderAdminUsersTable()">
+            </div>
           </div>
           <div style="overflow-x:auto">
             <table class="padmin-table" id="adminUsersTable">
               <thead><tr>
                 <th>Nombre</th><th>Email</th><th>Producto</th><th>Estado</th><th>Fecha</th>
               </tr></thead>
+              <tbody></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- ACTIVIDAD JOURNAL -->
+      <div class="padmin-section" id="padmin-journal">
+        <div class="padmin-grid" style="margin-bottom:20px">
+          <div class="padmin-stat">
+            <div class="padmin-stat-val">${usuariosConOps}</div>
+            <div class="padmin-stat-lbl">Usuarios con operaciones</div>
+          </div>
+          <div class="padmin-stat">
+            <div class="padmin-stat-val" style="color:var(--verde)">${usuariosActivos30d}</div>
+            <div class="padmin-stat-lbl">Activos últimos 30 días</div>
+          </div>
+          <div class="padmin-stat">
+            <div class="padmin-stat-val" style="color:#FFC107">${operacionesTotales}</div>
+            <div class="padmin-stat-lbl">Operaciones totales</div>
+          </div>
+          <div class="padmin-stat">
+            <div class="padmin-stat-val" style="color:#E57373">${sinJournal.length}</div>
+            <div class="padmin-stat-lbl">Registrados sin usar journal</div>
+          </div>
+        </div>
+
+        ${journalError ? `<div class="padmin-card" style="border-color:rgba(255,193,7,.3)">
+          <p style="font-size:12px;color:#FFC107">⚠️ No se pudo cargar la actividad del journal. Falta crear la función <code>get_admin_journal_stats</code> en Supabase (te paso el SQL aparte).</p>
+        </div>` : ''}
+
+        <div class="padmin-card">
+          <h3 style="font-size:15px;font-weight:700;margin-bottom:16px">Ranking de actividad</h3>
+          <div style="overflow-x:auto">
+            <table class="padmin-table">
+              <thead><tr>
+                <th>Usuario</th><th>Email</th><th>Operaciones</th><th>Primera op.</th><th>Última op.</th>
+              </tr></thead>
               <tbody>
-                ${usuarios.map(u => `<tr>
+                ${ranking.length ? ranking.map(r => `<tr>
+                  <td>${esc(r.nombre||'—')}</td>
+                  <td style="color:var(--gris)">${esc(r.email||'—')}</td>
+                  <td style="font-weight:700">${r.cantidad_operaciones}</td>
+                  <td style="color:var(--gris);font-size:11px">${r.primera_operacion?new Date(r.primera_operacion).toLocaleDateString('es-AR'):'—'}</td>
+                  <td style="color:var(--gris);font-size:11px">${r.ultima_operacion?new Date(r.ultima_operacion).toLocaleDateString('es-AR'):'—'}</td>
+                </tr>`).join('') : `<tr><td colspan="5" style="text-align:center;color:var(--gris);padding:20px">Sin datos</td></tr>`}
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <div class="padmin-card">
+          <h3 style="font-size:15px;font-weight:700;margin-bottom:16px">Registrados que nunca usaron el journal (${sinJournal.length})</h3>
+          <div style="overflow-x:auto">
+            <table class="padmin-table">
+              <thead><tr><th>Nombre</th><th>Email</th></tr></thead>
+              <tbody>
+                ${sinJournal.length ? sinJournal.map(u => `<tr>
                   <td>${esc(u.nombre||'—')}</td>
                   <td style="color:var(--gris)">${esc(u.email||'—')}</td>
-                  <td style="font-size:11px">${esc(u.producto||'—')}</td>
-                  <td><span style="color:${u.estado==='activa'?'var(--verde)':'#E57373'};font-size:11px;font-weight:600">${u.estado||'—'}</span></td>
-                  <td style="color:var(--gris);font-size:11px">${u.created_at?new Date(u.created_at).toLocaleDateString('es-AR'):'—'}</td>
-                </tr>`).join('')}
+                </tr>`).join('') : `<tr><td colspan="2" style="text-align:center;color:var(--gris);padding:20px">Todos los registrados usaron el journal 🎉</td></tr>`}
               </tbody>
             </table>
           </div>
@@ -10412,7 +10512,9 @@
     window._adminEmailsActivos   = emailsActivos;
     window._adminTodosUsuarios   = todosLosUsuarios;
     window._adminEmailsPorProd   = emailsPorProducto;
+    window._adminFilasUsuarios   = filasUsuarios;
     _actualizarContAdmin();
+    _renderAdminUsersTable();
     _cargarCuponesAdmin();
 
     // Mostrar tab admin en nav si no está visible
@@ -10606,11 +10708,29 @@
     _cargarCuponesAdmin();
   }
 
-  function _filtrarUsuariosAdmin(q) {
-    q = q.toLowerCase();
-    document.querySelectorAll('#adminUsersTable tbody tr').forEach(tr => {
-      tr.style.display = tr.textContent.toLowerCase().includes(q) ? '' : 'none';
-    });
+  function _renderAdminUsersTable() {
+    const filtro = document.getElementById('adminUsersFiltro')?.value || 'todos';
+    const q = (document.getElementById('adminUsersBuscar')?.value || '').toLowerCase().trim();
+    let filas = window._adminFilasUsuarios || [];
+
+    if (filtro === 'con_licencia')      filas = filas.filter(f => f.estado !== 'sin_licencia');
+    else if (filtro === 'sin_licencia') filas = filas.filter(f => f.estado === 'sin_licencia');
+    else if (filtro !== 'todos')        filas = filas.filter(f => f.producto === filtro);
+
+    if (q) filas = filas.filter(f => (f.nombre||'').toLowerCase().includes(q) || (f.email||'').toLowerCase().includes(q));
+
+    const tbody = document.querySelector('#adminUsersTable tbody');
+    if (tbody) {
+      tbody.innerHTML = filas.length ? filas.map(u => `<tr>
+        <td>${esc(u.nombre||'—')}</td>
+        <td style="color:var(--gris)">${esc(u.email||'—')}</td>
+        <td style="font-size:11px">${u.producto ? esc(u.producto) : '<span style="color:#555">Sin licencia</span>'}</td>
+        <td><span style="color:${u.estado==='activa'?'var(--verde)':u.estado==='sin_licencia'?'#555':'#E57373'};font-size:11px;font-weight:600">${u.estado==='sin_licencia'?'—':(u.estado||'—')}</span></td>
+        <td style="color:var(--gris);font-size:11px">${u.created_at?new Date(u.created_at).toLocaleDateString('es-AR'):'—'}</td>
+      </tr>`).join('') : `<tr><td colspan="5" style="text-align:center;color:var(--gris);padding:20px">Sin resultados</td></tr>`;
+    }
+    const h3 = document.getElementById('adminUsersCount');
+    if (h3) h3.textContent = `Usuarios (${filas.length})`;
   }
 
   (function init() {

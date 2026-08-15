@@ -1750,11 +1750,18 @@
     <textarea id="postTexto" placeholder="¿Qué salió bien? ¿Qué aprendiste? Compartilo con la comunidad..."
       style="width:100%;background:#181818;border:1px solid #2A2A2A;color:var(--blanco);padding:12px;border-radius:7px;font-size:13px;min-height:100px;resize:vertical;outline:none;font-family:'DM Sans',sans-serif;line-height:1.5;margin-bottom:16px"></textarea>
 
-    <label class="afil-label">Imagen / Captura de pantalla (opcional)</label>
+    <label class="afil-label">Imagen de contexto (opcional)</label>
     <input type="file" id="postImagen" accept="image/*"
       style="width:100%;background:#181818;border:1px dashed #444;border-radius:8px;padding:12px;color:var(--gris);font-family:'DM Sans',sans-serif;cursor:pointer;margin-bottom:8px">
     <div id="postImagenPreview" style="display:none;margin-bottom:16px">
       <img id="postImagenPreviewImg" style="width:100%;max-height:200px;object-fit:cover;border-radius:8px;border:1px solid #2A2A2A">
+    </div>
+
+    <label class="afil-label">Imagen de gráfico operativo (opcional)</label>
+    <input type="file" id="postImagen2" accept="image/*"
+      style="width:100%;background:#181818;border:1px dashed #444;border-radius:8px;padding:12px;color:var(--gris);font-family:'DM Sans',sans-serif;cursor:pointer;margin-bottom:8px">
+    <div id="postImagen2Preview" style="display:none;margin-bottom:16px">
+      <img id="postImagen2PreviewImg" style="width:100%;max-height:200px;object-fit:cover;border-radius:8px;border:1px solid #2A2A2A">
     </div>
 
     <div id="postMsg" style="display:none;margin-bottom:12px;font-size:12px;padding:8px 12px;border-radius:6px"></div>
@@ -7996,6 +8003,19 @@
         } else if (prev) { prev.style.display = 'none'; }
       });
     }
+    const imgInput2 = document.getElementById('postImagen2');
+    if (imgInput2 && !imgInput2._listenerAdded) {
+      imgInput2._listenerAdded = true;
+      imgInput2.addEventListener('change', function() {
+        const file = this.files[0];
+        const prev = document.getElementById('postImagen2Preview');
+        const img  = document.getElementById('postImagen2PreviewImg');
+        if (file && prev && img) {
+          img.src = URL.createObjectURL(file);
+          prev.style.display = 'block';
+        } else if (prev) { prev.style.display = 'none'; }
+      });
+    }
   }
 
   function _renderComunidadHTML(posts, misReacMap, perfil) {
@@ -8070,7 +8090,11 @@
           ${p.estrategia ? `<span class="com-badge-sep">|</span><span class="com-badge-item" style="color:var(--gris)">${esc(p.estrategia)}</span>` : ''}
         </div>`}
         ${p.texto ? `<div class="com-post-texto">${esc(p.texto)}</div>` : ''}
-        ${p.imagen_url ? `<img class="com-post-img" src="${p.imagen_url}" onclick="ampliarImagen('${p.imagen_url}')" loading="lazy">` : ''}
+        ${(p.imagen_url || p.imagen_url_grafico) ? `
+        <div class="com-post-imgs" style="display:grid;grid-template-columns:${(p.imagen_url && p.imagen_url_grafico) ? '1fr 1fr' : '1fr'};gap:8px">
+          ${p.imagen_url ? `<div><img class="com-post-img" src="${p.imagen_url}" onclick="ampliarImagen('${p.imagen_url}')" loading="lazy">${p.imagen_url_grafico ? '<div style="font-size:11px;color:var(--gris);text-align:center;margin-top:4px">Contexto</div>' : ''}</div>` : ''}
+          ${p.imagen_url_grafico ? `<div><img class="com-post-img" src="${p.imagen_url_grafico}" onclick="ampliarImagen('${p.imagen_url_grafico}')" loading="lazy">${p.imagen_url ? '<div style="font-size:11px;color:var(--gris);text-align:center;margin-top:4px">Gráfico operativo</div>' : ''}</div>` : ''}
+        </div>` : ''}
         <div class="com-reacciones">${reacHTML}</div>
       </div>`;
     }).join('');
@@ -8094,6 +8118,8 @@
     document.getElementById('postTexto').value = '';
     document.getElementById('postImagen').value = '';
     document.getElementById('postImagenPreview').style.display = 'none';
+    document.getElementById('postImagen2').value = '';
+    document.getElementById('postImagen2Preview').style.display = 'none';
     const msg = document.getElementById('postMsg');
     if (msg) msg.style.display = 'none';
     setTipoPost('trade');
@@ -8130,6 +8156,30 @@
     }
   }
 
+  async function _subirImagenComunidad(imgFile) {
+    if (!imgFile) return null;
+    const ext = imgFile.name.split('.').pop();
+    const fileName = `${sesiónActual.user.id}_${Date.now()}_${Math.random().toString(36).slice(2,7)}.${ext}`;
+    try {
+      let resImg = await fetch(`${SUPABASE_URL}/storage/v1/object/comunidad-imagenes/${encodeURIComponent(fileName)}`, {
+        method: 'POST',
+        headers: { 'apikey': SUPABASE_ANON, 'Authorization': 'Bearer ' + sesiónActual.access_token, 'Content-Type': imgFile.type, 'x-upsert': 'true' },
+        body: imgFile
+      });
+      if (!resImg.ok) {
+        // Intentar PUT si POST falla
+        resImg = await fetch(`${SUPABASE_URL}/storage/v1/object/comunidad-imagenes/${encodeURIComponent(fileName)}`, {
+          method: 'PUT',
+          headers: { 'apikey': SUPABASE_ANON, 'Authorization': 'Bearer ' + sesiónActual.access_token, 'Content-Type': imgFile.type, 'x-upsert': 'true' },
+          body: imgFile
+        });
+      }
+      if (resImg.ok) return `${SUPABASE_URL}/storage/v1/object/public/comunidad-imagenes/${encodeURIComponent(fileName)}`;
+      console.warn('Imagen no se pudo subir. Status:', resImg.status);
+      return null;
+    } catch(e) { console.warn('Error al subir imagen:', e); return null; }
+  }
+
   async function publicarPost() {
     const tipoPost    = document.getElementById('modalNuevoPost').dataset.tipoPost || 'trade';
     const instrumento = document.getElementById('postInstrumento').value.trim().toUpperCase();
@@ -8137,6 +8187,7 @@
     const pnlVal      = parseFloat(document.getElementById('postPnl').value || '0');
     const texto       = document.getElementById('postTexto').value.trim();
     const imgFile     = document.getElementById('postImagen').files[0];
+    const imgFile2    = document.getElementById('postImagen2').files[0];
     const msg         = document.getElementById('postMsg');
     const btn         = document.getElementById('btnPublicarPost');
 
@@ -8158,34 +8209,15 @@
 
     btn.disabled = true; btn.textContent = 'Publicando...';
 
-    let imagen_url = null;
-    if (imgFile) {
-      const ext = imgFile.name.split('.').pop();
-      const fileName = `${sesiónActual.user.id}_${Date.now()}.${ext}`;
-      try {
-        let resImg = await fetch(`${SUPABASE_URL}/storage/v1/object/comunidad-imagenes/${encodeURIComponent(fileName)}`, {
-          method: 'POST',
-          headers: { 'apikey': SUPABASE_ANON, 'Authorization': 'Bearer ' + sesiónActual.access_token, 'Content-Type': imgFile.type, 'x-upsert': 'true' },
-          body: imgFile
-        });
-        if (!resImg.ok) {
-          // Intentar PUT si POST falla
-          resImg = await fetch(`${SUPABASE_URL}/storage/v1/object/comunidad-imagenes/${encodeURIComponent(fileName)}`, {
-            method: 'PUT',
-            headers: { 'apikey': SUPABASE_ANON, 'Authorization': 'Bearer ' + sesiónActual.access_token, 'Content-Type': imgFile.type, 'x-upsert': 'true' },
-            body: imgFile
-          });
-        }
-        if (resImg.ok) imagen_url = `${SUPABASE_URL}/storage/v1/object/public/comunidad-imagenes/${encodeURIComponent(fileName)}`;
-        else console.warn('Imagen no se pudo subir, publicando sin imagen. Status:', resImg.status);
-      } catch(e) { console.warn('Error al subir imagen:', e); }
-    }
+    const imagen_url = await _subirImagenComunidad(imgFile);
+    const imagen_url_grafico = await _subirImagenComunidad(imgFile2);
 
     const nombre = sesiónActual.user.user_metadata?.nombre || sesiónActual.user.email.split('@')[0];
     const payload = tipoPost === 'trade'
       ? { user_id: sesiónActual.user.id, nombre_usuario: nombre, tipo_post: 'trade', instrumento, direccion, pnl: pnlVal, texto, reacciones: {} }
       : { user_id: sesiónActual.user.id, nombre_usuario: nombre, tipo_post: 'reflexion', instrumento: null, direccion: null, pnl: null, texto, reacciones: {} };
     if (imagen_url) payload.imagen_url = imagen_url;
+    if (imagen_url_grafico) payload.imagen_url_grafico = imagen_url_grafico;
 
     const r = await sbFetch('/rest/v1/posts_comunidad', {
       method: 'POST', body: JSON.stringify(payload), headers: { 'Prefer': 'return=minimal' }

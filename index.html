@@ -10298,6 +10298,27 @@
       }
     });
 
+    // Usuarios únicos (1 fila por persona), agrupando sus licencias — para vistas "Todos"/"Con licencia"/"Sin licencia"
+    const usuariosUnicosMap = new Map();
+    filasUsuarios.forEach(f => {
+      if (!usuariosUnicosMap.has(f.email)) {
+        usuariosUnicosMap.set(f.email, { nombre: f.nombre, email: f.email, productos: [], estados: [], fechas: [] });
+      }
+      const acc = usuariosUnicosMap.get(f.email);
+      if (f.producto) {
+        acc.productos.push(f.producto);
+        acc.estados.push(f.estado);
+        if (f.created_at) acc.fechas.push(f.created_at);
+      }
+    });
+    const usuariosUnicos = [...usuariosUnicosMap.values()].map(u => ({
+      nombre: u.nombre,
+      email: u.email,
+      productos: u.productos,
+      estado: u.productos.length ? (u.estados.includes('activa') ? 'activa' : u.estados[0]) : 'sin_licencia',
+      created_at: u.fechas.length ? u.fechas.sort().slice(-1)[0] : null
+    }));
+
     cont.innerHTML = `
       <div style="margin-bottom:24px">
         <h2 style="font-size:22px;font-weight:700;margin-bottom:4px">⚙️ Panel del Administrador</h2>
@@ -10381,7 +10402,7 @@
       <div class="padmin-section" id="padmin-usuarios">
         <div class="padmin-card">
           <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:8px">
-            <h3 style="font-size:15px;font-weight:700" id="adminUsersCount">Usuarios (${filasUsuarios.length})</h3>
+            <h3 style="font-size:15px;font-weight:700" id="adminUsersCount">Usuarios (${usuariosUnicos.length})</h3>
             <div style="display:flex;gap:8px;flex-wrap:wrap">
               <select id="adminUsersFiltro" class="padmin-select" style="margin:0;width:auto" onchange="_renderAdminUsersTable()">
                 <option value="todos">Todos los registrados</option>
@@ -10513,6 +10534,7 @@
     window._adminTodosUsuarios   = todosLosUsuarios;
     window._adminEmailsPorProd   = emailsPorProducto;
     window._adminFilasUsuarios   = filasUsuarios;
+    window._adminUsuariosUnicos  = usuariosUnicos;
     _actualizarContAdmin();
     _renderAdminUsersTable();
     _cargarCuponesAdmin();
@@ -10711,23 +10733,46 @@
   function _renderAdminUsersTable() {
     const filtro = document.getElementById('adminUsersFiltro')?.value || 'todos';
     const q = (document.getElementById('adminUsersBuscar')?.value || '').toLowerCase().trim();
-    let filas = window._adminFilasUsuarios || [];
 
-    if (filtro === 'con_licencia')      filas = filas.filter(f => f.estado !== 'sin_licencia');
-    else if (filtro === 'sin_licencia') filas = filas.filter(f => f.estado === 'sin_licencia');
-    else if (filtro !== 'todos')        filas = filas.filter(f => f.producto === filtro);
+    // "todos" / "con_licencia" / "sin_licencia" → 1 fila por usuario (licencias agrupadas)
+    // producto específico → 1 fila por licencia de ese producto
+    let filas, agrupado;
+    if (filtro === 'todos') {
+      filas = window._adminUsuariosUnicos || [];
+      agrupado = true;
+    } else if (filtro === 'con_licencia') {
+      filas = (window._adminUsuariosUnicos || []).filter(f => f.estado !== 'sin_licencia');
+      agrupado = true;
+    } else if (filtro === 'sin_licencia') {
+      filas = (window._adminUsuariosUnicos || []).filter(f => f.estado === 'sin_licencia');
+      agrupado = true;
+    } else {
+      filas = (window._adminFilasUsuarios || []).filter(f => f.producto === filtro);
+      agrupado = false;
+    }
 
     if (q) filas = filas.filter(f => (f.nombre||'').toLowerCase().includes(q) || (f.email||'').toLowerCase().includes(q));
 
     const tbody = document.querySelector('#adminUsersTable tbody');
     if (tbody) {
-      tbody.innerHTML = filas.length ? filas.map(u => `<tr>
-        <td>${esc(u.nombre||'—')}</td>
-        <td style="color:var(--gris)">${esc(u.email||'—')}</td>
-        <td style="font-size:11px">${u.producto ? esc(u.producto) : '<span style="color:#555">Sin licencia</span>'}</td>
-        <td><span style="color:${u.estado==='activa'?'var(--verde)':u.estado==='sin_licencia'?'#555':'#E57373'};font-size:11px;font-weight:600">${u.estado==='sin_licencia'?'—':(u.estado||'—')}</span></td>
-        <td style="color:var(--gris);font-size:11px">${u.created_at?new Date(u.created_at).toLocaleDateString('es-AR'):'—'}</td>
-      </tr>`).join('') : `<tr><td colspan="5" style="text-align:center;color:var(--gris);padding:20px">Sin resultados</td></tr>`;
+      tbody.innerHTML = filas.length ? filas.map(u => {
+        let productoHtml;
+        if (agrupado) {
+          const prods = u.productos || [];
+          if (!prods.length) productoHtml = '<span style="color:#555">Sin licencia</span>';
+          else if (prods.length === 1) productoHtml = esc(prods[0]);
+          else productoHtml = `<span title="${escAttr(prods.join(', '))}">${prods.length} licencias</span>`;
+        } else {
+          productoHtml = u.producto ? esc(u.producto) : '<span style="color:#555">Sin licencia</span>';
+        }
+        return `<tr>
+          <td>${esc(u.nombre||'—')}</td>
+          <td style="color:var(--gris)">${esc(u.email||'—')}</td>
+          <td style="font-size:11px">${productoHtml}</td>
+          <td><span style="color:${u.estado==='activa'?'var(--verde)':u.estado==='sin_licencia'?'#555':'#E57373'};font-size:11px;font-weight:600">${u.estado==='sin_licencia'?'—':(u.estado||'—')}</span></td>
+          <td style="color:var(--gris);font-size:11px">${u.created_at?new Date(u.created_at).toLocaleDateString('es-AR'):'—'}</td>
+        </tr>`;
+      }).join('') : `<tr><td colspan="5" style="text-align:center;color:var(--gris);padding:20px">Sin resultados</td></tr>`;
     }
     const h3 = document.getElementById('adminUsersCount');
     if (h3) h3.textContent = `Usuarios (${filas.length})`;

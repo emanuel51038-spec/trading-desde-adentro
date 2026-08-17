@@ -4635,10 +4635,10 @@
         else break;
       }
     }
-    // Estrategia más usada
-    const estConteo = {};
-    ops.forEach(o => { if (o.estrategia) estConteo[o.estrategia] = (estConteo[o.estrategia] || 0) + 1; });
-    const estMasUsada = Object.keys(estConteo).sort((a,b) => estConteo[b]-estConteo[a])[0] || '—';
+    // Estrategia top (por PnL acumulado, no por cantidad de operaciones)
+    const estPnl = {};
+    ops.forEach(o => { if (o.estrategia) estPnl[o.estrategia] = (estPnl[o.estrategia] || 0) + pnlNeto(o); });
+    const estMasUsada = Object.keys(estPnl).sort((a,b) => estPnl[b]-estPnl[a])[0] || '—';
     // Emoción predominante
     const emConteo = {};
     ops.forEach(o => { if (o.emocion && !o.emocion.startsWith('__')) emConteo[o.emocion] = (emConteo[o.emocion] || 0) + 1; });

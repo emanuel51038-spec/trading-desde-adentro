@@ -2695,22 +2695,26 @@
               <div id="mwResultLabel" style="font-size:13px;color:var(--gris);min-height:1.2em">Tocá "Tirar" para empezar</div>
             </div>
 
-            <div style="display:flex;gap:8px;margin-bottom:14px">
-              <div style="flex:1;background:#111;border:1px solid var(--negro-border,#1E1E1E);border-radius:10px;padding:10px 4px;text-align:center">
+            <div style="display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap">
+              <div style="flex:1;min-width:70px;background:#111;border:1px solid var(--negro-border,#1E1E1E);border-radius:10px;padding:10px 4px;text-align:center">
                 <div id="mwScoreNum" style="font-size:1.15rem;font-weight:700;color:#4CAF50">0</div>
                 <div style="font-size:0.62rem;color:var(--gris);text-transform:uppercase;letter-spacing:0.5px">Acumulado</div>
               </div>
-              <div style="flex:1;background:#111;border:1px solid var(--negro-border,#1E1E1E);border-radius:10px;padding:10px 4px;text-align:center">
+              <div style="flex:1;min-width:70px;background:#111;border:1px solid var(--negro-border,#1E1E1E);border-radius:10px;padding:10px 4px;text-align:center">
                 <div id="mwCarasNum" style="font-size:1.15rem;font-weight:700;color:#fbbf24">0</div>
                 <div style="font-size:0.62rem;color:var(--gris);text-transform:uppercase;letter-spacing:0.5px">Caras</div>
               </div>
-              <div style="flex:1;background:#111;border:1px solid var(--negro-border,#1E1E1E);border-radius:10px;padding:10px 4px;text-align:center">
+              <div style="flex:1;min-width:70px;background:#111;border:1px solid var(--negro-border,#1E1E1E);border-radius:10px;padding:10px 4px;text-align:center">
                 <div id="mwSecasNum" style="font-size:1.15rem;font-weight:700;color:#E57373">0</div>
                 <div style="font-size:0.62rem;color:var(--gris);text-transform:uppercase;letter-spacing:0.5px">Secas</div>
               </div>
-              <div style="flex:1;background:#111;border:1px solid var(--negro-border,#1E1E1E);border-radius:10px;padding:10px 4px;text-align:center">
+              <div style="flex:1;min-width:70px;background:#111;border:1px solid var(--negro-border,#1E1E1E);border-radius:10px;padding:10px 4px;text-align:center">
                 <div id="mwWinrateNum" style="font-size:1.15rem;font-weight:700;color:#60a5fa">0%</div>
                 <div style="font-size:0.62rem;color:var(--gris);text-transform:uppercase;letter-spacing:0.5px">Winrate</div>
+              </div>
+              <div style="flex:1;min-width:70px;background:#111;border:1px solid var(--negro-border,#1E1E1E);border-radius:10px;padding:10px 4px;text-align:center">
+                <div id="mwMaxDDNum" style="font-size:1.15rem;font-weight:700;color:#f87171">0</div>
+                <div style="font-size:0.62rem;color:var(--gris);text-transform:uppercase;letter-spacing:0.5px">Max DD</div>
               </div>
             </div>
 
@@ -2739,6 +2743,7 @@
     const carasNum = document.getElementById('mwCarasNum');
     const secasNum = document.getElementById('mwSecasNum');
     const winrateNum = document.getElementById('mwWinrateNum');
+    const maxDDNum = document.getElementById('mwMaxDDNum');
     const flipBtn = document.getElementById('mwFlipBtn');
     const autoBtn = document.getElementById('mwAutoBtn');
     const autoCount = document.getElementById('mwAutoCount');
@@ -2749,6 +2754,7 @@
     if (!coin || !flipBtn) return;
 
     let score = 0, caras = 0, secas = 0, busy = false;
+    let peak = 0, maxDD = 0;
     let history = [0];
     const CHART_W = 300, CHART_H = 130, PAD = 10;
 
@@ -2759,6 +2765,7 @@
       const total = caras + secas;
       const wr = total === 0 ? 0 : (caras / total) * 100;
       winrateNum.textContent = wr.toFixed(1) + '%';
+      maxDDNum.textContent = '-' + (Math.round(maxDD * 100) / 100);
     }
 
     function drawChart() {
@@ -2848,6 +2855,9 @@
             resultLabel.textContent = `Seca. -${lossPts} puntos`;
           }
           history.push(score);
+          if (score > peak) peak = score;
+          const dd = peak - score;
+          if (dd > maxDD) maxDD = dd;
           updateStats();
           drawChart();
           resolve();
@@ -2880,6 +2890,7 @@
     resetBtn.addEventListener('click', () => {
       if (busy) return;
       score = 0; caras = 0; secas = 0; history = [0];
+      peak = 0; maxDD = 0;
       updateStats(); drawChart();
       coin.textContent = '?';
       resultLabel.textContent = 'Contador reiniciado';

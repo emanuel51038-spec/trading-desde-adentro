@@ -4810,7 +4810,7 @@
         <input type="text" id="invNombre" placeholder="Ej: Apple Inc." value="${esc(t?.nombre || '')}" style="width:100%;background:#181818;border:1px solid #2A2A2A;color:var(--blanco);padding:9px 12px;border-radius:7px;font-size:13px;margin-bottom:14px;outline:none;font-family:'DM Sans',sans-serif">
 
         <label style="font-size:11px;color:var(--gris);display:block;margin-bottom:5px;text-transform:uppercase;letter-spacing:1px">Tipo de activo</label>
-        <select id="invTipoActivo" style="width:100%;background:#181818;border:1px solid #2A2A2A;color:var(--blanco);padding:9px 12px;border-radius:7px;font-size:13px;margin-bottom:14px;outline:none;font-family:'DM Sans',sans-serif">
+        <select id="invTipoActivo" onchange="sugerirMonedaInv()" style="width:100%;background:#181818;border:1px solid #2A2A2A;color:var(--blanco);padding:9px 12px;border-radius:7px;font-size:13px;margin-bottom:14px;outline:none;font-family:'DM Sans',sans-serif">
           <option value="accion" ${!t || t.tipo_activo === 'accion' ? 'selected' : ''}>Acción</option>
           <option value="cedear" ${t?.tipo_activo === 'cedear' ? 'selected' : ''}>CEDEAR</option>
           <option value="etf_indice" ${t?.tipo_activo === 'etf_indice' ? 'selected' : ''}>ETF / Índice (ej: QQQ, SPY)</option>
@@ -4827,8 +4827,15 @@
         <label style="font-size:11px;color:var(--gris);display:block;margin-bottom:5px;text-transform:uppercase;letter-spacing:1px">Fecha</label>
         <input type="date" id="invFecha" value="${t?.fecha || new Date().toISOString().slice(0,10)}" style="width:100%;background:#181818;border:1px solid #2A2A2A;color:var(--blanco);padding:9px 12px;border-radius:7px;font-size:13px;margin-bottom:14px;outline:none;font-family:'DM Sans',sans-serif">
 
-        <label style="font-size:11px;color:var(--gris);display:block;margin-bottom:5px;text-transform:uppercase;letter-spacing:1px">Cantidad ${!t || t.mercado === 'bcba' ? '<span style="color:#666">(podés poner decimales, ej: 0.5 para CEDEARs fraccionados)</span>' : ''}</label>
+        <label style="font-size:11px;color:var(--gris);display:block;margin-bottom:5px;text-transform:uppercase;letter-spacing:1px">Cantidad <span style="color:#666">(podés poner decimales, ej: 0.5 para fracciones de CEDEAR)</span></label>
         <input type="number" id="invCantidad" step="any" min="0" placeholder="0" value="${t?.cantidad || ''}" style="width:100%;background:#181818;border:1px solid #2A2A2A;color:var(--blanco);padding:9px 12px;border-radius:7px;font-size:13px;margin-bottom:14px;outline:none;font-family:'DM Sans',sans-serif">
+
+        <label style="font-size:11px;color:var(--gris);display:block;margin-bottom:5px;text-transform:uppercase;letter-spacing:1px">Moneda de la operación</label>
+        <select id="invMoneda" onchange="this.dataset.tocado='1';toggleInvMoneda()" style="width:100%;background:#181818;border:1px solid #2A2A2A;color:var(--blanco);padding:9px 12px;border-radius:7px;font-size:13px;margin-bottom:14px;outline:none;font-family:'DM Sans',sans-serif">
+          <option value="USD" ${(t ? t.moneda === 'USD' : true) ? 'selected' : ''}>USD — dólares</option>
+          <option value="ARS" ${t?.moneda === 'ARS' ? 'selected' : ''}>ARS — pesos argentinos</option>
+        </select>
+        <div style="font-size:11px;color:#666;margin:-10px 0 14px">Elegí en qué moneda pagaste. Para CEDEARs suele ser ARS; para acciones o ETFs comprados en un broker en dólares, USD.</div>
 
         <label id="invPrecioLabel" style="font-size:11px;color:var(--gris);display:block;margin-bottom:5px;text-transform:uppercase;letter-spacing:1px">Precio por unidad</label>
         <input type="number" id="invPrecio" step="any" min="0" placeholder="0.00" value="${t?.precio || ''}" style="width:100%;background:#181818;border:1px solid #2A2A2A;color:var(--blanco);padding:9px 12px;border-radius:7px;font-size:13px;margin-bottom:14px;outline:none;font-family:'DM Sans',sans-serif">
@@ -4849,17 +4856,34 @@
         </div>
       </div>`;
     modal.classList.add('active');
+    if (t) {
+      // En edición no queremos que tocar "Tipo de activo" pise la moneda ya guardada.
+      const monedaSel = document.getElementById('invMoneda');
+      if (monedaSel) monedaSel.dataset.tocado = '1';
+    }
+    toggleInvMoneda();
+  }
+
+  function sugerirMonedaInv() {
+    // Solo sugiere el default al elegir el tipo de activo en una transacción NUEVA;
+    // si el usuario ya tocó el selector de moneda, no lo pisamos.
+    const monedaSel = document.getElementById('invMoneda');
+    if (!monedaSel || monedaSel.dataset.tocado === '1') return;
+    const tipo = document.getElementById('invTipoActivo')?.value;
+    monedaSel.value = tipo === 'cedear' ? 'ARS' : 'USD';
     toggleInvMoneda();
   }
 
   function toggleInvMoneda() {
-    const mercado = document.getElementById('invMercado')?.value;
-    const esBcba = mercado === 'bcba';
+    const monedaSel = document.getElementById('invMoneda');
+    const moneda = monedaSel?.value || 'USD';
+    const esArs = moneda === 'ARS';
     const cclWrap = document.getElementById('invCclWrap');
     const precioLabel = document.getElementById('invPrecioLabel');
-    if (cclWrap) cclWrap.style.display = esBcba ? 'block' : 'none';
-    if (precioLabel) precioLabel.textContent = 'Precio por unidad (' + (esBcba ? 'ARS' : 'USD') + ')';
+    if (cclWrap) cclWrap.style.display = esArs ? 'block' : 'none';
+    if (precioLabel) precioLabel.textContent = 'Precio por unidad (' + moneda + ')';
   }
+
 
   async function guardarInversion(id) {
     const msg = document.getElementById('invMsg');
@@ -4871,8 +4895,8 @@
     const fecha = document.getElementById('invFecha')?.value;
     const cantidad = parseFloat(document.getElementById('invCantidad')?.value || '0');
     const precio = parseFloat(document.getElementById('invPrecio')?.value || '0');
-    const moneda = mercado === 'bcba' ? 'ARS' : 'USD';
-    const ccl_al_momento = mercado === 'bcba' ? parseFloat(document.getElementById('invCcl')?.value || '0') || null : null;
+    const moneda = document.getElementById('invMoneda')?.value || 'USD';
+    const ccl_al_momento = moneda === 'ARS' ? parseFloat(document.getElementById('invCcl')?.value || '0') || null : null;
     const notas = document.getElementById('invNotas')?.value?.trim() || null;
 
     const mostrarError = (texto) => {
@@ -4883,7 +4907,7 @@
     if (!simbolo || !fecha || !cantidad || cantidad <= 0 || !precio || precio <= 0) {
       mostrarError('Completá símbolo, fecha, cantidad y precio.'); return;
     }
-    if (mercado === 'bcba' && !ccl_al_momento) {
+    if (moneda === 'ARS' && !ccl_al_momento) {
       mostrarError('Ingresá el dólar CCL al momento de la operación.'); return;
     }
 

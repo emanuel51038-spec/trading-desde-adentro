@@ -4113,19 +4113,14 @@
   ══════════════════════════════════════════════════════ */
 
   let _fondeosFiltrados = [];
-  let _planCategorias = [];
 
   async function cargarFondeos() {
     const cont = document.getElementById('fondeosContainer');
     cont.innerHTML = '<div style="text-align:center;padding:40px;color:var(--gris)"><span class="spinner"></span> Cargando fondeos...</div>';
 
-    const [r, rCat] = await Promise.all([
-      sbFetch('/rest/v1/fondeos?select=*&user_id=eq.' + sesiónActual.user.id + '&order=fecha.desc', {}, sesiónActual.access_token),
-      sbFetch('/rest/v1/plan_capital_categorias?select=*&user_id=eq.' + sesiónActual.user.id + '&order=orden.asc', {}, sesiónActual.access_token)
-    ]);
+    const r = await sbFetch('/rest/v1/fondeos?select=*&user_id=eq.' + sesiónActual.user.id + '&order=fecha.desc', {}, sesiónActual.access_token);
     const fondeos = r.ok && Array.isArray(r.data) ? r.data : [];
     _fondeosFiltrados = fondeos;
-    _planCategorias = rCat.ok && Array.isArray(rCat.data) ? rCat.data : [];
     renderFondeos(fondeos);
   }
 
@@ -4184,24 +4179,6 @@
       <div style="background:var(--negro-card);border:1px solid var(--negro-border);border-radius:16px;padding:20px;margin-bottom:24px">
         <div style="font-size:11px;font-weight:600;letter-spacing:1px;text-transform:uppercase;color:var(--gris);margin-bottom:12px">Ganancia vs Gastos en el tiempo</div>
         <canvas id="fondeosLineCanvas" style="width:100%;max-height:220px"></canvas>
-      </div>
-
-      <!-- Plan de distribución de retiros -->
-      <div style="background:var(--negro-card);border:1px solid var(--negro-border);border-radius:16px;padding:20px;margin-bottom:24px">
-        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;flex-wrap:wrap;gap:8px">
-          <div>
-            <div style="font-size:11px;font-weight:600;letter-spacing:1px;text-transform:uppercase;color:var(--gris)">Plan de distribución de retiros</div>
-            <div style="font-size:12px;color:#666;margin-top:2px">A qué destino planeás mandar tus retiros vs a dónde los mandaste realmente</div>
-          </div>
-          <button onclick="abrirModalCategoriasCapital()" style="background:#1E1E1E;border:1px solid #2A2A2A;color:var(--blanco);padding:8px 14px;border-radius:8px;cursor:pointer;font-size:12px;font-weight:600">⚙ Gestionar categorías</button>
-        </div>
-        ${_planCategorias.length === 0 ? `
-          <div style="text-align:center;padding:32px;color:var(--gris);font-size:13px">
-            Todavía no definiste categorías de destino. Hacé clic en <strong>⚙ Gestionar categorías</strong> para crear las tuyas (ej: Evaluaciones, CFDs, CEDEARs, Liquidez) y asignarles un % objetivo.
-          </div>` : `
-          <canvas id="planCapitalCanvas" style="width:100%;max-height:220px"></canvas>
-          ${renderPlanCapitalResumen(fondeos)}
-        `}
       </div>
 
       <!-- Filtros -->
@@ -4263,7 +4240,6 @@
     // Dibujar gráficos
     setTimeout(() => {
       dibujarGraficosFondeos(fondeos);
-      if (_planCategorias.length > 0) dibujarGraficoPlanCapital(fondeos);
     }, 100);
   }
 
@@ -4406,198 +4382,6 @@
     }
   }
 
-  /* ══════════════════════
-     PLAN DE DISTRIBUCIÓN DE RETIROS
-  ══════════════════════ */
-
-  // Devuelve, por categoría, cuánto se retiró (solo tipo=Retiro con esa categoría asignada).
-  function calcularDistribucionCapital(fondeos) {
-    const retiros = fondeos.filter(f => f.tipo === 'Retiro');
-    const totalRetirado = retiros.reduce((a, f) => a + Number(f.monto), 0);
-    const porCategoria = _planCategorias.map(cat => {
-      const monto = retiros.filter(f => f.categoria_destino_id === cat.id).reduce((a, f) => a + Number(f.monto), 0);
-      return { categoria: cat, monto, pctReal: totalRetirado > 0 ? (monto / totalRetirado * 100) : 0 };
-    });
-    const montoSinAsignar = retiros.filter(f => !f.categoria_destino_id).reduce((a, f) => a + Number(f.monto), 0);
-    return { porCategoria, montoSinAsignar, totalRetirado };
-  }
-
-  function dibujarGraficoPlanCapital(fondeos) {
-    const canvas = document.getElementById('planCapitalCanvas');
-    if (!canvas) return;
-    const { porCategoria } = calcularDistribucionCapital(fondeos);
-    const labels = porCategoria.map(d => d.categoria.nombre);
-    const metas = porCategoria.map(d => Number(d.categoria.meta_pct));
-    const reales = porCategoria.map(d => Math.round(d.pctReal * 10) / 10);
-
-    if (window._planCapitalChart) window._planCapitalChart.destroy();
-    window._planCapitalChart = new Chart(canvas.getContext('2d'), {
-      type: 'bar',
-      data: {
-        labels,
-        datasets: [
-          { label: 'Meta %', data: metas, backgroundColor: 'rgba(255,215,0,0.55)', borderRadius: 4 },
-          { label: 'Real %', data: reales, backgroundColor: 'rgba(139,26,26,0.75)', borderRadius: 4 }
-        ]
-      },
-      options: {
-        responsive: true, maintainAspectRatio: false,
-        plugins: { legend: { labels: { color: '#9E9E9E', font: { size: 11 } } } },
-        scales: {
-          x: { ticks: { color: '#666' }, grid: { color: 'rgba(255,255,255,0.05)' } },
-          y: { ticks: { color: '#666', callback: v => v + '%' }, grid: { color: 'rgba(255,255,255,0.05)' } }
-        }
-      }
-    });
-  }
-
-  function renderPlanCapitalResumen(fondeos) {
-    const { porCategoria, montoSinAsignar, totalRetirado } = calcularDistribucionCapital(fondeos);
-    const pctSinAsignar = totalRetirado > 0 ? (montoSinAsignar / totalRetirado * 100) : 0;
-
-    const filasCategorias = porCategoria.map(d => {
-      const diff = d.pctReal - Number(d.categoria.meta_pct);
-      const colorDiff = Math.abs(diff) < 5 ? 'var(--gris)' : (diff < 0 ? '#FFD700' : 'var(--verde)');
-      return `<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid #1A1A1A;font-size:13px">
-        <span>${esc(d.categoria.nombre)}</span>
-        <span style="color:var(--gris)">$${d.monto.toFixed(2)} · ${d.pctReal.toFixed(1)}% <span style="color:${colorDiff}">(meta ${Number(d.categoria.meta_pct).toFixed(0)}%)</span></span>
-      </div>`;
-    }).join('');
-
-    // Puente con Mis Inversiones: para categorías vinculadas, comparo lo etiquetado
-    // como destinado a inversión contra lo realmente cargado como compras.
-    const vinculadas = _planCategorias.filter(c => c.vincular_inversiones);
-    let bridgeHtml = '';
-    if (vinculadas.length > 0) {
-      const montoEtiquetado = porCategoria.filter(d => d.categoria.vincular_inversiones).reduce((a, d) => a + d.monto, 0);
-      const totalInvertidoUsd = _invTransacciones && _invTransacciones.length > 0
-        ? _invTransacciones.filter(t => t.tipo_operacion === 'compra').reduce((a, t) => a + invMontoUsd(t), 0)
-        : null;
-      bridgeHtml = `<div style="margin-top:14px;padding-top:14px;border-top:1px solid #1A1A1A;font-size:12px;color:var(--gris)">
-        Etiquetado para inversión: <strong style="color:var(--blanco)">$${montoEtiquetado.toFixed(2)}</strong>
-        ${totalInvertidoUsd != null
-          ? ` · Cargado en Mis Inversiones: <strong style="color:var(--blanco)">US$${totalInvertidoUsd.toFixed(2)}</strong>`
-          : ' · Cargá compras en Mis Inversiones para comparar.'}
-      </div>`;
-    }
-
-    return `<div style="margin-top:16px">
-      ${filasCategorias}
-      ${montoSinAsignar > 0 ? `<div style="display:flex;justify-content:space-between;padding:8px 0;font-size:13px;color:#666"><span>Sin asignar</span><span>$${montoSinAsignar.toFixed(2)} · ${pctSinAsignar.toFixed(1)}%</span></div>` : ''}
-      ${bridgeHtml}
-    </div>`;
-  }
-
-  function abrirModalCategoriasCapital() {
-    let modal = document.getElementById('modalCategoriasCapital');
-    if (!modal) {
-      modal = document.createElement('div');
-      modal.id = 'modalCategoriasCapital';
-      modal.className = 'modal-overlay';
-      document.body.appendChild(modal);
-    }
-    modal.innerHTML = `
-      <div class="modal" style="max-width:480px;max-height:90vh;overflow-y:auto">
-        <button class="modal-close" onclick="cerrarModal('modalCategoriasCapital')">✕</button>
-        <h3 style="margin-bottom:16px">Categorías de destino</h3>
-        <div id="listaCategoriasCapital">${renderListaCategoriasCapital()}</div>
-        <button onclick="abrirModalCategoriaCapitalForm()" style="width:100%;background:#1E1E1E;border:1px solid #2A2A2A;color:var(--blanco);padding:10px;border-radius:8px;cursor:pointer;font-size:13px;font-weight:600;margin-top:12px">+ Nueva categoría</button>
-      </div>`;
-    modal.classList.add('active');
-  }
-
-  function renderListaCategoriasCapital() {
-    if (_planCategorias.length === 0) return `<div style="color:var(--gris);font-size:13px;padding:12px 0">Todavía no creaste ninguna.</div>`;
-    const sumaMetas = _planCategorias.reduce((a, c) => a + Number(c.meta_pct), 0);
-    return `
-      ${sumaMetas !== 100 ? `<div style="font-size:12px;color:#FFD700;margin-bottom:10px">⚠ Las metas suman ${sumaMetas.toFixed(0)}%, no 100%.</div>` : ''}
-      ${_planCategorias.map(c => `
-      <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid #1A1A1A">
-        <div>
-          <div style="font-weight:600;font-size:13px">${esc(c.nombre)} ${c.vincular_inversiones ? '<span style="color:#64B5F6;font-size:10px">· vinculada a inversiones</span>' : ''}</div>
-          <div style="font-size:12px;color:var(--gris)">Meta: ${Number(c.meta_pct).toFixed(0)}%</div>
-        </div>
-        <div>
-          <button onclick="abrirModalCategoriaCapitalForm('${escAttr(c.id)}')" style="background:none;border:1px solid #2A2A2A;color:#666;padding:4px 9px;border-radius:5px;cursor:pointer;font-size:11px;margin-right:4px">✏️</button>
-          <button onclick="eliminarCategoriaCapital('${escAttr(c.id)}')" style="background:none;border:1px solid rgba(139,26,26,0.3);color:#E57373;padding:4px 9px;border-radius:5px;cursor:pointer;font-size:11px">✕</button>
-        </div>
-      </div>`).join('')}`;
-  }
-
-  function abrirModalCategoriaCapitalForm(id) {
-    const cat = id ? _planCategorias.find(c => c.id === id) : null;
-    let modal = document.getElementById('modalCategoriaCapitalForm');
-    if (!modal) {
-      modal = document.createElement('div');
-      modal.id = 'modalCategoriaCapitalForm';
-      modal.className = 'modal-overlay';
-      document.body.appendChild(modal);
-    }
-    modal.innerHTML = `
-      <div class="modal" style="max-width:400px">
-        <button class="modal-close" onclick="cerrarModal('modalCategoriaCapitalForm')">✕</button>
-        <h3 style="margin-bottom:16px">${cat ? 'Editar categoría' : 'Nueva categoría'}</h3>
-
-        <label style="font-size:11px;color:var(--gris);display:block;margin-bottom:5px;text-transform:uppercase;letter-spacing:1px">Nombre</label>
-        <input type="text" id="catCapNombre" placeholder="Ej: CEDEARs, Liquidez..." value="${esc(cat?.nombre || '')}" style="width:100%;background:#181818;border:1px solid #2A2A2A;color:var(--blanco);padding:9px 12px;border-radius:7px;font-size:13px;margin-bottom:14px;outline:none;font-family:'DM Sans',sans-serif">
-
-        <label style="font-size:11px;color:var(--gris);display:block;margin-bottom:5px;text-transform:uppercase;letter-spacing:1px">Meta (%)</label>
-        <input type="number" id="catCapMeta" min="0" max="100" step="1" placeholder="0" value="${cat?.meta_pct ?? ''}" style="width:100%;background:#181818;border:1px solid #2A2A2A;color:var(--blanco);padding:9px 12px;border-radius:7px;font-size:13px;margin-bottom:14px;outline:none;font-family:'DM Sans',sans-serif">
-
-        <label style="display:flex;align-items:center;gap:8px;cursor:pointer;margin-bottom:16px;font-size:13px;color:var(--blanco)">
-          <input type="checkbox" id="catCapVincular" ${cat?.vincular_inversiones ? 'checked' : ''} style="width:16px;height:16px;cursor:pointer">
-          Vincular con "Mis Inversiones" (compara lo etiquetado acá con lo cargado como compras)
-        </label>
-
-        <div id="catCapMsg" style="display:none;margin-bottom:12px;font-size:12px;padding:8px 12px;border-radius:6px"></div>
-        <div style="display:flex;gap:8px">
-          <button onclick="guardarCategoriaCapital('${escAttr(cat?.id || '')}')" class="modal-confirm" style="flex:1">Guardar</button>
-          <button onclick="cerrarModal('modalCategoriaCapitalForm')" style="background:#1E1E1E;border:1px solid #2A2A2A;color:var(--gris);padding:12px 18px;border-radius:8px;cursor:pointer;font-size:13px;font-weight:600">Cancelar</button>
-        </div>
-      </div>`;
-    modal.classList.add('active');
-  }
-
-  async function guardarCategoriaCapital(id) {
-    const msg = document.getElementById('catCapMsg');
-    const nombre = document.getElementById('catCapNombre')?.value?.trim();
-    const meta_pct = parseFloat(document.getElementById('catCapMeta')?.value || '0');
-    const vincular_inversiones = !!document.getElementById('catCapVincular')?.checked;
-
-    if (!nombre) {
-      msg.style.display = 'block'; msg.style.background = 'rgba(229,115,115,0.1)'; msg.style.color = '#E57373'; msg.style.border = '1px solid rgba(229,115,115,0.3)';
-      msg.textContent = 'Ingresá un nombre.'; return;
-    }
-
-    const payload = { user_id: sesiónActual.user.id, nombre, meta_pct, vincular_inversiones, orden: _planCategorias.length };
-    const r = id
-      ? await sbFetch('/rest/v1/plan_capital_categorias?id=eq.' + id, { method: 'PATCH', body: JSON.stringify({ nombre, meta_pct, vincular_inversiones }) }, sesiónActual.access_token)
-      : await sbFetch('/rest/v1/plan_capital_categorias', { method: 'POST', body: JSON.stringify(payload), headers: { 'Prefer': 'return=minimal' } }, sesiónActual.access_token);
-
-    if (r.ok || r.status === 201) {
-      cerrarModal('modalCategoriaCapitalForm');
-      await recargarCategoriasCapital();
-      abrirModalCategoriasCapital();
-      renderFondeos(_fondeosFiltrados);
-    } else {
-      msg.style.display = 'block'; msg.style.background = 'rgba(229,115,115,0.1)'; msg.style.color = '#E57373'; msg.style.border = '1px solid rgba(229,115,115,0.3)';
-      msg.textContent = 'Error al guardar.';
-    }
-  }
-
-  async function eliminarCategoriaCapital(id) {
-    if (!confirm('¿Eliminar esta categoría? Los retiros que la tenían asignada quedarán "sin asignar".')) return;
-    await sbFetch('/rest/v1/plan_capital_categorias?id=eq.' + id, { method: 'DELETE' }, sesiónActual.access_token);
-    await recargarCategoriasCapital();
-    abrirModalCategoriasCapital();
-    renderFondeos(_fondeosFiltrados);
-  }
-
-  async function recargarCategoriasCapital() {
-    const rCat = await sbFetch('/rest/v1/plan_capital_categorias?select=*&user_id=eq.' + sesiónActual.user.id + '&order=orden.asc', {}, sesiónActual.access_token);
-    _planCategorias = rCat.ok && Array.isArray(rCat.data) ? rCat.data : [];
-  }
-
   function filtrarFondeos() {
     const empresa = document.getElementById('filtroFondeoEmpresa')?.value || '';
     const tipo    = document.getElementById('filtroFondeoTipo')?.value || '';
@@ -4681,15 +4465,6 @@
           </div>
         </div>
 
-        <div id="fondeoDestinoWrap">
-          <label style="font-size:11px;color:var(--gris);display:block;margin-bottom:5px;text-transform:uppercase;letter-spacing:1px">Destino de este retiro (opcional)</label>
-          <select id="fondeoCategoriaDestino" style="width:100%;background:#181818;border:1px solid #2A2A2A;color:var(--blanco);padding:9px 12px;border-radius:7px;font-size:13px;margin-bottom:14px;outline:none;font-family:'DM Sans',sans-serif">
-            <option value="">Sin asignar</option>
-            ${_planCategorias.map(c => `<option value="${escAttr(c.id)}" ${fondeo?.categoria_destino_id === c.id ? 'selected' : ''}>${esc(c.nombre)}</option>`).join('')}
-          </select>
-          ${_planCategorias.length === 0 ? `<div style="font-size:11px;color:#666;margin:-10px 0 14px">Todavía no creaste categorías — gestionalas desde el panel "Plan de distribución de retiros".</div>` : ''}
-        </div>
-
         <label style="font-size:11px;color:var(--gris);display:block;margin-bottom:5px;text-transform:uppercase;letter-spacing:1px">Monto (USD)</label>
         <input type="number" id="fondeoMonto" step="0.01" min="0" placeholder="0.00" value="${fondeo?.monto || ''}"
           style="width:100%;background:#181818;border:1px solid #2A2A2A;color:var(--blanco);padding:9px 12px;border-radius:7px;font-size:13px;margin-bottom:14px;outline:none;font-family:'DM Sans',sans-serif">
@@ -4713,8 +4488,6 @@
     const tipo = document.getElementById('fondeoTipo')?.value;
     const wrap = document.getElementById('fondeoEvalWrap');
     if (wrap) wrap.style.display = tipo === 'Retiro' ? 'none' : 'block';
-    const wrapDestino = document.getElementById('fondeoDestinoWrap');
-    if (wrapDestino) wrapDestino.style.display = tipo === 'Retiro' ? 'block' : 'none';
   }
 
   function toggleFondeoQuemadaLuegoWrap() {
@@ -4745,16 +4518,15 @@
       : null;
     const monto   = parseFloat(document.getElementById('fondeoMonto')?.value || '0');
     const notas   = document.getElementById('fondeoNotas')?.value?.trim() || null;
-    const categoria_destino_id = (tipo === 'Retiro' ? document.getElementById('fondeoCategoriaDestino')?.value : '') || null;
 
     if (!fecha || !empresa || !monto || monto <= 0) {
       msg.style.display = 'block'; msg.style.background = 'rgba(229,115,115,0.1)'; msg.style.color = '#E57373'; msg.style.border = '1px solid rgba(229,115,115,0.3)';
       msg.textContent = 'Completá fecha, empresa y monto.'; return;
     }
 
-    const payload = { user_id: sesiónActual.user.id, fecha, empresa, tipo, motivo, resultado, cuenta_quemada_luego: cuentaQuemadaLuego, fecha_cuenta_quemada: fechaCuentaQuemada, monto, notas, categoria_destino_id };
+    const payload = { user_id: sesiónActual.user.id, fecha, empresa, tipo, motivo, resultado, cuenta_quemada_luego: cuentaQuemadaLuego, fecha_cuenta_quemada: fechaCuentaQuemada, monto, notas };
     const r = id
-      ? await sbFetch('/rest/v1/fondeos?id=eq.' + id, { method: 'PATCH', body: JSON.stringify({ fecha, empresa, tipo, motivo, resultado, cuenta_quemada_luego: cuentaQuemadaLuego, fecha_cuenta_quemada: fechaCuentaQuemada, monto, notas, categoria_destino_id }) }, sesiónActual.access_token)
+      ? await sbFetch('/rest/v1/fondeos?id=eq.' + id, { method: 'PATCH', body: JSON.stringify({ fecha, empresa, tipo, motivo, resultado, cuenta_quemada_luego: cuentaQuemadaLuego, fecha_cuenta_quemada: fechaCuentaQuemada, monto, notas }) }, sesiónActual.access_token)
       : await sbFetch('/rest/v1/fondeos', { method: 'POST', body: JSON.stringify(payload), headers: { 'Prefer': 'return=minimal' } }, sesiónActual.access_token);
 
     if (r.ok || r.status === 201) {

@@ -4668,9 +4668,9 @@
 
       <!-- Métricas -->
       <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px;margin-bottom:24px">
-        ${renderFondeoCard('INVERTIDO (posiciones abiertas)', '$' + totalInvertido.toFixed(2), 'var(--blanco)')}
-        ${renderFondeoCard('VALOR ACTUAL', '$' + totalActual.toFixed(2), 'var(--blanco)')}
-        ${renderFondeoCard('RENDIMIENTO', (rendimientoUsd >= 0 ? '+' : '') + '$' + rendimientoUsd.toFixed(2), rendimientoUsd >= 0 ? 'var(--verde)' : '#E57373')}
+        ${renderFondeoCard('INVERTIDO EN USD (posiciones abiertas)', 'US$' + totalInvertido.toFixed(2), 'var(--blanco)')}
+        ${renderFondeoCard('VALOR ACTUAL EN USD', 'US$' + totalActual.toFixed(2), 'var(--blanco)')}
+        ${renderFondeoCard('RENDIMIENTO EN USD', (rendimientoUsd >= 0 ? '+' : '') + 'US$' + rendimientoUsd.toFixed(2), rendimientoUsd >= 0 ? 'var(--verde)' : '#E57373')}
         ${renderFondeoCard('RENDIMIENTO %', (rendimientoPct >= 0 ? '+' : '') + rendimientoPct.toFixed(2) + '%', rendimientoPct >= 0 ? 'var(--verde)' : '#E57373')}
         ${renderFondeoCard('ACTIVOS EN CARTERA', String(holdings.length), 'var(--blanco)')}
       </div>

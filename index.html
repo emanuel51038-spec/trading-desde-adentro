@@ -2007,6 +2007,7 @@
   ══════════════════════ */
   const SUPABASE_URL  = 'https://pjrwdseaomijkgytbglh.supabase.co';
   const EDGE_URL      = 'https://pjrwdseaomijkgytbglh.supabase.co/functions/v1/send-email';
+  const EDGE_URL_COTIZACIONES = 'https://pjrwdseaomijkgytbglh.supabase.co/functions/v1/get-cotizacion';
 
   async function sendEmail(tipo, datos, to) {
     try {
@@ -4570,26 +4571,18 @@
 
     const holdings = calcularHoldingsInversiones(_invTransacciones);
     _invCotizaciones = {};
-    // Mismo mecanismo que usa el ticker de la home (Yahoo Finance vía allorigins,
-    // sin API key). Para BCBA usamos el sufijo .BA, que Yahoo ya soporta para
-    // acciones argentinas y CEDEARs (ej: GGAL.BA, AAPL.BA) — cotiza directo en ARS.
-    for (const h of holdings) {
+    // Cotizaciones vía Edge Function propia (Yahoo Finance, llamado desde el
+    // servidor — evita depender de proxies públicos de CORS poco confiables).
+    if (holdings.length > 0) {
       try {
-        const ySymbol = h.mercado === 'bcba' ? h.simbolo + '.BA' : h.simbolo;
-        const url = `https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(ySymbol)}?interval=1d&range=2d`;
-        const proxy = `https://api.allorigins.win/get?url=${encodeURIComponent(url)}`;
-        const res = await fetch(proxy);
-        const outer = await res.json();
-        const data = JSON.parse(outer.contents);
-        const meta = data?.chart?.result?.[0]?.meta;
-        if (meta && meta.regularMarketPrice) {
-          _invCotizaciones[h.simbolo + '_' + h.mercado] = {
-            precio: meta.regularMarketPrice,
-            moneda: meta.currency || (h.mercado === 'bcba' ? 'ARS' : 'USD'),
-            fecha: null
-          };
-        }
-      } catch (e) { /* símbolo sin cotización disponible */ }
+        const activos = holdings.map(h => ({ mercado: h.mercado, simbolo: h.simbolo }));
+        const res = await fetch(EDGE_URL_COTIZACIONES, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'apikey': SUPABASE_ANON, 'Authorization': 'Bearer ' + sesiónActual.access_token },
+          body: JSON.stringify({ activos })
+        });
+        _invCotizaciones = res.ok ? await res.json() : {};
+      } catch (e) { _invCotizaciones = {}; }
     }
 
     renderInversiones();

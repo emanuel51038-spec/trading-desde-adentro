@@ -4579,8 +4579,36 @@
   let _invTransacciones = [];
   let _invCotizaciones = {};
   let _invCclRate = null;
-  const INV_NOMBRE_MERCADO = { bcba: 'BCBA (CEDEARs/Arg.)', nasdaq: 'Nasdaq', nyse: 'NYSE' };
-  const INV_NOMBRE_TIPO = { accion: 'Acción', cedear: 'CEDEAR', etf_indice: 'ETF / Índice', bono: 'Bono', otro: 'Otro' };
+  const INV_NOMBRE_MERCADO = { bcba: 'BCBA (CEDEARs/Arg.)', nasdaq: 'Nasdaq', nyse: 'NYSE', cripto: 'Cripto (spot)' };
+  const INV_NOMBRE_TIPO = { accion: 'Acción', cedear: 'CEDEAR', etf_indice: 'ETF / Índice', bono: 'Bono', cripto: 'Criptomoneda', otro: 'Otro' };
+
+  // Mapeo de símbolos comunes a su id en CoinGecko (los ids no siempre coinciden
+  // con el ticker). Si un símbolo no está acá, se resuelve dinámicamente con
+  // el buscador de CoinGecko y se cachea en _invCoinGeckoIds.
+  const CRIPTO_IDS_COMUNES = {
+    BTC: 'bitcoin', ETH: 'ethereum', USDT: 'tether', USDC: 'usd-coin', BNB: 'binancecoin',
+    SOL: 'solana', XRP: 'ripple', ADA: 'cardano', DOGE: 'dogecoin', TRX: 'tron',
+    TON: 'the-open-network', DOT: 'polkadot', MATIC: 'matic-network', POL: 'polygon-ecosystem-token',
+    AVAX: 'avalanche-2', LINK: 'chainlink', LTC: 'litecoin', SHIB: 'shiba-inu', BCH: 'bitcoin-cash',
+    ATOM: 'cosmos', UNI: 'uniswap', ETC: 'ethereum-classic', XLM: 'stellar', FIL: 'filecoin',
+    APT: 'aptos', ARB: 'arbitrum', OP: 'optimism', NEAR: 'near', ICP: 'internet-computer',
+    HBAR: 'hedera-hashgraph', VET: 'vechain', ALGO: 'algorand', SUI: 'sui', PEPE: 'pepe',
+    XMR: 'monero', AAVE: 'aave', MKR: 'maker', GRT: 'the-graph', RENDER: 'render-token', INJ: 'injective-protocol'
+  };
+  let _invCoinGeckoIds = {};
+
+  async function resolverCoinGeckoId(simbolo) {
+    const s = simbolo.toUpperCase();
+    if (CRIPTO_IDS_COMUNES[s]) return CRIPTO_IDS_COMUNES[s];
+    if (_invCoinGeckoIds[s]) return _invCoinGeckoIds[s];
+    try {
+      const res = await fetch(`https://api.coingecko.com/api/v3/search?query=${encodeURIComponent(s)}`);
+      const data = await res.json();
+      const match = (data.coins || []).find(c => c.symbol?.toUpperCase() === s) || data.coins?.[0];
+      if (match) { _invCoinGeckoIds[s] = match.id; return match.id; }
+    } catch (e) { /* sin resultado */ }
+    return null;
+  }
 
   async function fetchCclActual() {
     try {
@@ -4629,6 +4657,34 @@
     }).filter(g => g.cantidadNeta > 0.0000001);
   }
 
+  // Para cada venta, calcula el P&L realizado usando el costo promedio ponderado
+  // vigente en ese momento (mismo criterio que usa calcularHoldingsInversiones:
+  // el costo promedio solo cambia con nuevas compras, no con ventas).
+  // Devuelve { pnlPorId: {transaccion_id: pnlUsd}, totalRealizado: number }
+  function calcularPnlRealizado(transacciones) {
+    const grupos = {};
+    const pnlPorId = {};
+    let totalRealizado = 0;
+    const ordenadas = [...transacciones].sort((a, b) => new Date(a.fecha) - new Date(b.fecha));
+    ordenadas.forEach(t => {
+      const key = t.mercado + '_' + t.simbolo;
+      if (!grupos[key]) grupos[key] = { cantidadCompradaAcum: 0, invertidoUsdAcum: 0 };
+      const g = grupos[key];
+      if (t.tipo_operacion === 'compra') {
+        g.cantidadCompradaAcum += Number(t.cantidad);
+        g.invertidoUsdAcum += invMontoUsd(t);
+      } else {
+        const avgCostUsd = g.cantidadCompradaAcum > 0 ? g.invertidoUsdAcum / g.cantidadCompradaAcum : 0;
+        const costoVendidoUsd = avgCostUsd * Number(t.cantidad);
+        const montoVentaUsd = invMontoUsd(t);
+        const pnl = montoVentaUsd - costoVendidoUsd;
+        pnlPorId[t.id] = pnl;
+        totalRealizado += pnl;
+      }
+    });
+    return { pnlPorId, totalRealizado };
+  }
+
   async function cargarInversiones() {
     const cont = document.getElementById('inversionesContainer');
     cont.innerHTML = '<div style="text-align:center;padding:40px;color:var(--gris)"><span class="spinner"></span> Cargando tu cartera...</div>';
@@ -4640,18 +4696,46 @@
 
     const holdings = calcularHoldingsInversiones(_invTransacciones);
     _invCotizaciones = {};
-    // Cotizaciones vía Edge Function propia (Yahoo Finance, llamado desde el
-    // servidor — evita depender de proxies públicos de CORS poco confiables).
-    if (holdings.length > 0) {
+
+    const holdingsCripto = holdings.filter(h => h.mercado === 'cripto');
+    const holdingsMercado = holdings.filter(h => h.mercado !== 'cripto');
+
+    // Cotizaciones de acciones/CEDEARs/ETFs vía Edge Function propia (Yahoo Finance,
+    // llamado desde el servidor — evita depender de proxies públicos de CORS).
+    if (holdingsMercado.length > 0) {
       try {
-        const activos = holdings.map(h => ({ mercado: h.mercado, simbolo: h.simbolo }));
+        const activos = holdingsMercado.map(h => ({ mercado: h.mercado, simbolo: h.simbolo }));
         const res = await fetch(EDGE_URL_COTIZACIONES, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json', 'apikey': SUPABASE_ANON, 'Authorization': 'Bearer ' + sesiónActual.access_token },
           body: JSON.stringify({ activos })
         });
-        _invCotizaciones = res.ok ? await res.json() : {};
-      } catch (e) { _invCotizaciones = {}; }
+        const data = res.ok ? await res.json() : {};
+        Object.assign(_invCotizaciones, data);
+      } catch (e) { /* símbolos sin cotizar */ }
+    }
+
+    // Cotizaciones de cripto directo desde CoinGecko (API pública con CORS habilitado,
+    // no requiere API key ni proxy).
+    if (holdingsCripto.length > 0) {
+      try {
+        const ids = [];
+        const idPorSimbolo = {};
+        for (const h of holdingsCripto) {
+          const id = await resolverCoinGeckoId(h.simbolo);
+          if (id) { ids.push(id); idPorSimbolo[id] = h.simbolo; }
+        }
+        if (ids.length > 0) {
+          const res = await fetch(`https://api.coingecko.com/api/v3/simple/price?ids=${ids.join(',')}&vs_currencies=usd`);
+          const data = res.ok ? await res.json() : {};
+          Object.entries(data).forEach(([id, val]) => {
+            const simbolo = idPorSimbolo[id];
+            if (simbolo && val.usd != null) {
+              _invCotizaciones[simbolo + '_cripto'] = { precio: val.usd, moneda: 'USD' };
+            }
+          });
+        }
+      } catch (e) { /* símbolos sin cotizar */ }
     }
 
     renderInversiones();
@@ -4679,12 +4763,15 @@
     const rendimientoUsd = totalActual - totalConCotizacion;
     const rendimientoPct = totalConCotizacion > 0 ? (rendimientoUsd / totalConCotizacion * 100) : 0;
 
+    const { pnlPorId, totalRealizado } = calcularPnlRealizado(_invTransacciones);
+    const hayVentas = Object.keys(pnlPorId).length > 0;
+
     cont.innerHTML = `
       <!-- Header -->
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:24px;flex-wrap:wrap;gap:12px">
         <div>
           <h2 style="font-family:'Bebas Neue',sans-serif;font-size:28px;letter-spacing:2px;margin-bottom:4px">MIS INVERSIONES</h2>
-          <p style="font-size:13px;color:var(--gris)">Control de cartera a largo plazo: acciones, CEDEARs, ETFs de índices y bonos.${_invCclRate ? ` <span style="color:#666">· Dólar CCL: $${_invCclRate.toFixed(2)}</span>` : ''}</p>
+          <p style="font-size:13px;color:var(--gris)">Control de cartera a largo plazo: acciones, CEDEARs, ETFs de índices, bonos y criptomonedas.${_invCclRate ? ` <span style="color:#666">· Dólar CCL: $${_invCclRate.toFixed(2)}</span>` : ''}</p>
         </div>
         <button onclick="abrirModalInversion()" style="background:var(--rojo);color:white;border:none;padding:10px 18px;border-radius:8px;cursor:pointer;font-size:13px;font-weight:600">+ Nueva transacción</button>
       </div>
@@ -4696,6 +4783,7 @@
         ${renderFondeoCard('RENDIMIENTO EN USD', (rendimientoUsd >= 0 ? '+' : '') + 'US$' + rendimientoUsd.toFixed(2), rendimientoUsd >= 0 ? 'var(--verde)' : '#E57373')}
         ${renderFondeoCard('RENDIMIENTO %', (rendimientoPct >= 0 ? '+' : '') + rendimientoPct.toFixed(2) + '%', rendimientoPct >= 0 ? 'var(--verde)' : '#E57373')}
         ${renderFondeoCard('ACTIVOS EN CARTERA', String(holdings.length), 'var(--blanco)')}
+        ${hayVentas ? renderFondeoCard('P&L REALIZADO (ventas)', (totalRealizado >= 0 ? '+' : '') + 'US$' + totalRealizado.toFixed(2), totalRealizado >= 0 ? 'var(--verde)' : '#E57373') : ''}
       </div>
       ${sinCotizar > 0 ? `<div style="font-size:12px;color:#FFD700;margin:-14px 0 20px">⚠ ${sinCotizar} activo(s) sin cotización disponible en este momento — no se incluyen en el rendimiento total.</div>` : ''}
 
@@ -4744,7 +4832,7 @@
         ${_invTransacciones.length === 0 ? `
           <div style="text-align:center;padding:32px;color:var(--gris);font-size:13px">Sin transacciones registradas.</div>` : `
         <div style="overflow-x:auto">
-        <table style="width:100%;min-width:900px;border-collapse:collapse">
+        <table style="width:100%;min-width:1050px;border-collapse:collapse">
           <thead>
             <tr style="border-bottom:1px solid #1E1E1E;color:var(--gris)">
               <th style="padding:12px 16px;font-weight:600;text-align:left;font-size:11px;text-transform:uppercase;letter-spacing:1px">Fecha</th>
@@ -4753,10 +4841,11 @@
               <th style="padding:12px 16px;font-weight:600;text-align:right;font-size:11px;text-transform:uppercase;letter-spacing:1px">Cantidad</th>
               <th style="padding:12px 16px;font-weight:600;text-align:right;font-size:11px;text-transform:uppercase;letter-spacing:1px">Precio</th>
               <th style="padding:12px 16px;font-weight:600;text-align:right;font-size:11px;text-transform:uppercase;letter-spacing:1px">Monto USD</th>
+              <th style="padding:12px 16px;font-weight:600;text-align:right;font-size:11px;text-transform:uppercase;letter-spacing:1px">P&L realizado</th>
               <th style="padding:12px 16px;font-weight:600;text-align:left;font-size:11px;text-transform:uppercase;letter-spacing:1px;position:sticky;right:0;background:var(--negro-card);box-shadow:-6px 0 8px -6px rgba(0,0,0,0.6)"></th>
             </tr>
           </thead>
-          <tbody>${_invTransacciones.map(renderInversionTransaccionFila).join('')}</tbody>
+          <tbody>${_invTransacciones.map(t => renderInversionTransaccionFila(t, pnlPorId[t.id])).join('')}</tbody>
         </table>
         </div>`}
       </div>`;
@@ -4783,7 +4872,7 @@
     </tr>`;
   }
 
-  function renderInversionTransaccionFila(t) {
+  function renderInversionTransaccionFila(t, pnl) {
     const fecha = new Date(t.fecha + 'T00:00:00').toLocaleDateString('es-AR', {day:'2-digit',month:'2-digit',year:'2-digit'});
     const esVenta = t.tipo_operacion === 'venta';
     const montoUsd = invMontoUsd(t);
@@ -4794,6 +4883,7 @@
       <td style="padding:12px 16px;text-align:right">${Number(t.cantidad) % 1 === 0 ? t.cantidad : Number(t.cantidad).toFixed(6)}</td>
       <td style="padding:12px 16px;text-align:right">${t.moneda === 'ARS' ? 'AR$' : '$'}${Number(t.precio).toFixed(2)}</td>
       <td style="padding:12px 16px;text-align:right">$${montoUsd.toFixed(2)}</td>
+      <td style="padding:12px 16px;text-align:right;${pnl != null ? `color:${pnl >= 0 ? 'var(--verde)' : '#E57373'};font-weight:600` : 'color:#444'}">${pnl != null ? (pnl >= 0 ? '+' : '') + '$' + pnl.toFixed(2) : '—'}</td>
       <td style="padding:12px 16px;white-space:nowrap;position:sticky;right:0;background:#0D0D0D;box-shadow:-6px 0 8px -6px rgba(0,0,0,0.6)">
         <button onclick="editarInversion('${escAttr(t.id)}')" style="background:none;border:1px solid #2A2A2A;color:#666;padding:2px 8px;border-radius:5px;cursor:pointer;font-size:11px;margin-right:4px">✏️</button>
         <button onclick="eliminarInversion('${escAttr(t.id)}')" style="background:none;border:1px solid rgba(139,26,26,0.3);color:#E57373;padding:2px 8px;border-radius:5px;cursor:pointer;font-size:11px">✕</button>
@@ -4863,10 +4953,11 @@
           <option value="bcba" ${!t || t.mercado === 'bcba' ? 'selected' : ''}>BCBA — CEDEARs / acciones argentinas / bonos</option>
           <option value="nasdaq" ${t?.mercado === 'nasdaq' ? 'selected' : ''}>Nasdaq (EE.UU.)</option>
           <option value="nyse" ${t?.mercado === 'nyse' ? 'selected' : ''}>NYSE (EE.UU.)</option>
+          <option value="cripto" ${t?.mercado === 'cripto' ? 'selected' : ''}>Cripto (spot, ej: BTC, ETH, SOL)</option>
         </select>
 
         <label style="font-size:11px;color:var(--gris);display:block;margin-bottom:5px;text-transform:uppercase;letter-spacing:1px">Símbolo (ticker)</label>
-        <input type="text" id="invSimbolo" placeholder="Ej: AAPL, SPY, GGAL..." value="${esc(t?.simbolo || '')}" style="width:100%;background:#181818;border:1px solid #2A2A2A;color:var(--blanco);padding:9px 12px;border-radius:7px;font-size:13px;margin-bottom:14px;outline:none;font-family:'DM Sans',sans-serif;text-transform:uppercase">
+        <input type="text" id="invSimbolo" placeholder="Ej: AAPL, SPY, GGAL, BTC..." value="${esc(t?.simbolo || '')}" style="width:100%;background:#181818;border:1px solid #2A2A2A;color:var(--blanco);padding:9px 12px;border-radius:7px;font-size:13px;margin-bottom:14px;outline:none;font-family:'DM Sans',sans-serif;text-transform:uppercase">
 
         <label style="font-size:11px;color:var(--gris);display:block;margin-bottom:5px;text-transform:uppercase;letter-spacing:1px">Nombre (opcional)</label>
         <input type="text" id="invNombre" placeholder="Ej: Apple Inc." value="${esc(t?.nombre || '')}" style="width:100%;background:#181818;border:1px solid #2A2A2A;color:var(--blanco);padding:9px 12px;border-radius:7px;font-size:13px;margin-bottom:14px;outline:none;font-family:'DM Sans',sans-serif">
@@ -4877,6 +4968,7 @@
           <option value="cedear" ${t?.tipo_activo === 'cedear' ? 'selected' : ''}>CEDEAR</option>
           <option value="etf_indice" ${t?.tipo_activo === 'etf_indice' ? 'selected' : ''}>ETF / Índice (ej: QQQ, SPY)</option>
           <option value="bono" ${t?.tipo_activo === 'bono' ? 'selected' : ''}>Bono</option>
+          <option value="cripto" ${t?.tipo_activo === 'cripto' ? 'selected' : ''}>Criptomoneda</option>
           <option value="otro" ${t?.tipo_activo === 'otro' ? 'selected' : ''}>Otro</option>
         </select>
 

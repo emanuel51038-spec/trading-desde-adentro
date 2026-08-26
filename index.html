@@ -4113,14 +4113,22 @@
   ══════════════════════════════════════════════════════ */
 
   let _fondeosFiltrados = [];
+  let _gastoCategorias = [];
+  let _fondeoComprobantes = [];
 
   async function cargarFondeos() {
     const cont = document.getElementById('fondeosContainer');
     cont.innerHTML = '<div style="text-align:center;padding:40px;color:var(--gris)"><span class="spinner"></span> Cargando fondeos...</div>';
 
-    const r = await sbFetch('/rest/v1/fondeos?select=*&user_id=eq.' + sesiónActual.user.id + '&order=fecha.desc', {}, sesiónActual.access_token);
+    const [r, rCat, rComp] = await Promise.all([
+      sbFetch('/rest/v1/fondeos?select=*&user_id=eq.' + sesiónActual.user.id + '&order=fecha.desc', {}, sesiónActual.access_token),
+      sbFetch('/rest/v1/gasto_categorias?select=*&user_id=eq.' + sesiónActual.user.id + '&order=orden.asc', {}, sesiónActual.access_token),
+      sbFetch('/rest/v1/fondeos_comprobantes?select=*&user_id=eq.' + sesiónActual.user.id, {}, sesiónActual.access_token)
+    ]);
     const fondeos = r.ok && Array.isArray(r.data) ? r.data : [];
     _fondeosFiltrados = fondeos;
+    _gastoCategorias = rCat.ok && Array.isArray(rCat.data) ? rCat.data : [];
+    _fondeoComprobantes = rComp.ok && Array.isArray(rComp.data) ? rComp.data : [];
     renderFondeos(fondeos);
   }
 
@@ -4130,11 +4138,12 @@
     // Calcular métricas
     const evals    = fondeos.filter(f => f.tipo === 'Evaluacion');
     const retiros  = fondeos.filter(f => f.tipo === 'Retiro');
+    const gastosOp = fondeos.filter(f => f.tipo === 'Gasto');
     const superadas  = evals.filter(f => f.resultado === 'Superada').length;
     const quemadas   = evals.filter(f => f.resultado === 'Quemada').length;
     const totalEvals = evals.filter(f => f.resultado === 'Superada' || f.resultado === 'Quemada').length;
     const ratioAprobacion = totalEvals > 0 ? Math.round(superadas / totalEvals * 100) : 0;
-    const totalGastado = evals.reduce((a, f) => a + Number(f.monto), 0);
+    const totalGastado = [...evals, ...gastosOp].reduce((a, f) => a + Number(f.monto), 0);
     const totalRetirado = retiros.reduce((a, f) => a + Number(f.monto), 0);
     const neto = totalRetirado - totalGastado;
     const cuentasFondeadasActivas = evals.filter(f => f.resultado === 'Superada' && !f.cuenta_quemada_luego).length;
@@ -4192,6 +4201,7 @@
           <option value="">Todos los tipos</option>
           <option value="Evaluacion">Evaluación</option>
           <option value="Retiro">Retiro</option>
+          <option value="Gasto">Gasto operativo</option>
         </select>
         <select id="filtroFondeoResultado" onchange="filtrarFondeos()" style="background:#0D0D0D;border:1px solid #1E1E1E;color:var(--blanco);padding:7px 12px;border-radius:8px;font-size:13px;cursor:pointer;font-family:'DM Sans',sans-serif">
           <option value="">Todos los resultados</option>
@@ -4219,7 +4229,7 @@
             <div style="font-size:13px">Hacé clic en <strong>+ Nuevo registro</strong> para empezar</div>
           </div>` : `
         <div style="overflow-x:auto">
-        <table style="width:100%;min-width:1000px;border-collapse:collapse">
+        <table style="width:100%;min-width:1080px;border-collapse:collapse">
           <thead>
             <tr style="border-bottom:1px solid #1E1E1E;color:var(--gris)">
               <th style="padding:12px 16px;font-weight:600;text-align:left;font-size:11px;text-transform:uppercase;letter-spacing:1px">Fecha</th>
@@ -4230,6 +4240,7 @@
               <th style="padding:12px 16px;font-weight:600;text-align:left;font-size:11px;text-transform:uppercase;letter-spacing:1px">Estado actual</th>
               <th style="padding:12px 16px;font-weight:600;text-align:left;font-size:11px;text-transform:uppercase;letter-spacing:1px">Monto</th>
               <th style="padding:12px 16px;font-weight:600;text-align:left;font-size:11px;text-transform:uppercase;letter-spacing:1px">Notas</th>
+              <th style="padding:12px 16px;font-weight:600;text-align:center;font-size:11px;text-transform:uppercase;letter-spacing:1px">📎</th>
               <th style="padding:12px 16px;font-weight:600;text-align:left;font-size:11px;text-transform:uppercase;letter-spacing:1px;position:sticky;right:0;background:var(--negro-card);box-shadow:-6px 0 8px -6px rgba(0,0,0,0.6)"></th>
             </tr>
           </thead>
@@ -4276,6 +4287,7 @@
   function renderFondeoFila(f) {
     const fecha = new Date(f.fecha + 'T00:00:00').toLocaleDateString('es-AR', {day:'2-digit',month:'2-digit',year:'2-digit'});
     const esRetiro = f.tipo === 'Retiro';
+    const esGasto = f.tipo === 'Gasto';
     const montoColor = esRetiro ? 'var(--verde)' : '#E57373';
     const montoStr = (esRetiro ? '+' : '-') + '$' + Number(f.monto).toFixed(2);
     const resultadoColor = {
@@ -4288,19 +4300,24 @@
       'En curso': { texto: 'En evaluación', color: '#FFD700' },
       'Renovada': { texto: 'En evaluación', color: '#64B5F6' }
     };
-    let estadoActual = esRetiro ? null : estadoActualMap[f.resultado];
-    if (!esRetiro && f.resultado === 'Superada' && f.cuenta_quemada_luego) {
+    let estadoActual = (esRetiro || esGasto) ? null : estadoActualMap[f.resultado];
+    if (!esRetiro && !esGasto && f.resultado === 'Superada' && f.cuenta_quemada_luego) {
       estadoActual = { texto: 'Quemada', color: '#E57373' };
     }
+    const tipoLabel = esGasto ? 'Gasto operativo' : (f.tipo === 'Evaluacion' ? 'Evaluación' : 'Retiro');
+    const cantComprobantes = _fondeoComprobantes.filter(c => c.fondeo_id === f.id).length;
     return `<tr style="border-bottom:1px solid #1A1A1A" onmouseover="this.style.background='#111'" onmouseout="this.style.background='transparent'">
       <td style="padding:12px 16px;color:var(--gris)">${fecha}</td>
       <td style="padding:12px 16px;font-weight:600">${esc(f.empresa)}</td>
-      <td style="padding:12px 16px;color:var(--gris)">${f.tipo === 'Evaluacion' ? 'Evaluación' : 'Retiro'}</td>
+      <td style="padding:12px 16px;color:var(--gris)">${tipoLabel}</td>
       <td style="padding:12px 16px"><span style="color:${motivoColor};font-size:12px;font-weight:600">${f.motivo || '—'}</span></td>
       <td style="padding:12px 16px"><span style="color:${resultadoColor};font-size:12px;font-weight:600">${f.resultado || '—'}</span></td>
       <td style="padding:12px 16px">${estadoActual ? `<span style="color:${estadoActual.color};font-size:12px;font-weight:600">${estadoActual.texto}</span>${(f.cuenta_quemada_luego && f.fecha_cuenta_quemada) ? `<div style="font-size:10px;color:var(--gris);margin-top:2px">desde ${new Date(f.fecha_cuenta_quemada+'T00:00:00').toLocaleDateString('es-AR',{day:'2-digit',month:'2-digit',year:'2-digit'})}</div>` : ''}` : '<span style="color:var(--gris)">—</span>'}</td>
       <td style="padding:12px 16px;font-weight:700;color:${montoColor}">${montoStr}</td>
       <td style="padding:12px 16px;color:var(--gris);font-size:12px;max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(f.notas || '—')}</td>
+      <td style="padding:12px 16px;text-align:center">
+        <button onclick="abrirModalComprobantes('${escAttr(f.id)}')" style="background:none;border:1px solid ${cantComprobantes > 0 ? 'rgba(100,181,246,0.4)' : '#2A2A2A'};color:${cantComprobantes > 0 ? '#64B5F6' : '#555'};padding:3px 9px;border-radius:6px;cursor:pointer;font-size:11px;font-weight:600">📎 ${cantComprobantes}</button>
+      </td>
       <td style="padding:12px 16px;white-space:nowrap;position:sticky;right:0;background:#0D0D0D;box-shadow:-6px 0 8px -6px rgba(0,0,0,0.6)">
         <button onclick="editarFondeo('${escAttr(f.id)}')" style="background:none;border:1px solid #2A2A2A;color:#666;padding:2px 8px;border-radius:5px;cursor:pointer;font-size:11px;margin-right:4px">✏️</button>
         <button onclick="eliminarFondeo('${escAttr(f.id)}')" style="background:none;border:1px solid rgba(139,26,26,0.3);color:#E57373;padding:2px 8px;border-radius:5px;cursor:pointer;font-size:11px">✕</button>
@@ -4450,15 +4467,27 @@
         <input type="date" id="fondeoFecha" value="${fondeo?.fecha || new Date().toISOString().slice(0,10)}"
           style="width:100%;background:#181818;border:1px solid #2A2A2A;color:var(--blanco);padding:9px 12px;border-radius:7px;font-size:13px;margin-bottom:14px;outline:none;font-family:'DM Sans',sans-serif">
 
-        <label style="font-size:11px;color:var(--gris);display:block;margin-bottom:5px;text-transform:uppercase;letter-spacing:1px">Empresa</label>
-        <input type="text" id="fondeoEmpresa" placeholder="Ej: FTMO, MyFundedFutures..." value="${esc(fondeo?.empresa || '')}"
-          style="width:100%;background:#181818;border:1px solid #2A2A2A;color:var(--blanco);padding:9px 12px;border-radius:7px;font-size:13px;margin-bottom:14px;outline:none;font-family:'DM Sans',sans-serif">
+        <div id="fondeoEmpresaWrap">
+          <label style="font-size:11px;color:var(--gris);display:block;margin-bottom:5px;text-transform:uppercase;letter-spacing:1px">Empresa</label>
+          <input type="text" id="fondeoEmpresa" placeholder="Ej: FTMO, MyFundedFutures..." value="${esc(fondeo?.empresa || '')}"
+            style="width:100%;background:#181818;border:1px solid #2A2A2A;color:var(--blanco);padding:9px 12px;border-radius:7px;font-size:13px;margin-bottom:14px;outline:none;font-family:'DM Sans',sans-serif">
+        </div>
 
         <label style="font-size:11px;color:var(--gris);display:block;margin-bottom:5px;text-transform:uppercase;letter-spacing:1px">Tipo</label>
         <select id="fondeoTipo" onchange="toggleFondeoEstado()" style="width:100%;background:#181818;border:1px solid #2A2A2A;color:var(--blanco);padding:9px 12px;border-radius:7px;font-size:13px;margin-bottom:14px;outline:none;font-family:'DM Sans',sans-serif">
           <option value="Evaluacion" ${!fondeo || fondeo.tipo === 'Evaluacion' ? 'selected' : ''}>Evaluación</option>
           <option value="Retiro" ${fondeo?.tipo === 'Retiro' ? 'selected' : ''}>Retiro</option>
+          <option value="Gasto" ${fondeo?.tipo === 'Gasto' ? 'selected' : ''}>Gasto operativo (contador, monotributo, impuestos...)</option>
         </select>
+
+        <div id="fondeoGastoWrap">
+          <label style="font-size:11px;color:var(--gris);display:block;margin-bottom:5px;text-transform:uppercase;letter-spacing:1px">Categoría del gasto</label>
+          <select id="fondeoCategoriaGasto" style="width:100%;background:#181818;border:1px solid #2A2A2A;color:var(--blanco);padding:9px 12px;border-radius:7px;font-size:13px;margin-bottom:8px;outline:none;font-family:'DM Sans',sans-serif">
+            <option value="">Elegí una categoría...</option>
+            ${_gastoCategorias.map(c => `<option value="${escAttr(c.id)}" ${fondeo?.categoria_gasto_id === c.id ? 'selected' : ''}>${esc(c.nombre)}</option>`).join('')}
+          </select>
+          <button type="button" onclick="abrirModalGastoCategorias()" style="background:none;border:none;color:#64B5F6;font-size:12px;cursor:pointer;padding:0 0 14px;text-decoration:underline">⚙ Gestionar categorías</button>
+        </div>
 
         <div id="fondeoEvalWrap">
           <label style="font-size:11px;color:var(--gris);display:block;margin-bottom:5px;text-transform:uppercase;letter-spacing:1px">Motivo</label>
@@ -4510,7 +4539,11 @@
   function toggleFondeoEstado() {
     const tipo = document.getElementById('fondeoTipo')?.value;
     const wrap = document.getElementById('fondeoEvalWrap');
-    if (wrap) wrap.style.display = tipo === 'Retiro' ? 'none' : 'block';
+    if (wrap) wrap.style.display = (tipo === 'Retiro' || tipo === 'Gasto') ? 'none' : 'block';
+    const wrapEmpresa = document.getElementById('fondeoEmpresaWrap');
+    if (wrapEmpresa) wrapEmpresa.style.display = tipo === 'Gasto' ? 'none' : 'block';
+    const wrapGasto = document.getElementById('fondeoGastoWrap');
+    if (wrapGasto) wrapGasto.style.display = tipo === 'Gasto' ? 'block' : 'none';
   }
 
   function toggleFondeoQuemadaLuegoWrap() {
@@ -4528,12 +4561,23 @@
 
   async function guardarFondeo(id) {
     const msg     = document.getElementById('fondeoMsg');
-    const fecha   = document.getElementById('fondeoFecha')?.value;
-    const empresa = document.getElementById('fondeoEmpresa')?.value?.trim();
     const tipo    = document.getElementById('fondeoTipo')?.value;
-    const motivo   = tipo === 'Retiro' ? null : document.getElementById('fondeoMotivo')?.value;
-    const resultado = tipo === 'Retiro' ? null : document.getElementById('fondeoResultado')?.value;
-    const cuentaQuemadaLuego = (tipo !== 'Retiro' && resultado === 'Superada')
+    const fecha   = document.getElementById('fondeoFecha')?.value;
+    let empresa   = document.getElementById('fondeoEmpresa')?.value?.trim();
+    const categoria_gasto_id = tipo === 'Gasto' ? (document.getElementById('fondeoCategoriaGasto')?.value || null) : null;
+
+    if (tipo === 'Gasto') {
+      const cat = _gastoCategorias.find(c => c.id === categoria_gasto_id);
+      if (!cat) {
+        msg.style.display = 'block'; msg.style.background = 'rgba(229,115,115,0.1)'; msg.style.color = '#E57373'; msg.style.border = '1px solid rgba(229,115,115,0.3)';
+        msg.textContent = 'Elegí una categoría para el gasto.'; return;
+      }
+      empresa = cat.nombre;
+    }
+
+    const motivo   = tipo === 'Evaluacion' ? document.getElementById('fondeoMotivo')?.value : null;
+    const resultado = tipo === 'Evaluacion' ? document.getElementById('fondeoResultado')?.value : null;
+    const cuentaQuemadaLuego = (tipo === 'Evaluacion' && resultado === 'Superada')
       ? !!document.getElementById('fondeoQuemadaLuego')?.checked
       : false;
     const fechaCuentaQuemada = cuentaQuemadaLuego
@@ -4547,9 +4591,9 @@
       msg.textContent = 'Completá fecha, empresa y monto.'; return;
     }
 
-    const payload = { user_id: sesiónActual.user.id, fecha, empresa, tipo, motivo, resultado, cuenta_quemada_luego: cuentaQuemadaLuego, fecha_cuenta_quemada: fechaCuentaQuemada, monto, notas };
+    const payload = { user_id: sesiónActual.user.id, fecha, empresa, tipo, motivo, resultado, cuenta_quemada_luego: cuentaQuemadaLuego, fecha_cuenta_quemada: fechaCuentaQuemada, monto, notas, categoria_gasto_id };
     const r = id
-      ? await sbFetch('/rest/v1/fondeos?id=eq.' + id, { method: 'PATCH', body: JSON.stringify({ fecha, empresa, tipo, motivo, resultado, cuenta_quemada_luego: cuentaQuemadaLuego, fecha_cuenta_quemada: fechaCuentaQuemada, monto, notas }) }, sesiónActual.access_token)
+      ? await sbFetch('/rest/v1/fondeos?id=eq.' + id, { method: 'PATCH', body: JSON.stringify({ fecha, empresa, tipo, motivo, resultado, cuenta_quemada_luego: cuentaQuemadaLuego, fecha_cuenta_quemada: fechaCuentaQuemada, monto, notas, categoria_gasto_id }) }, sesiónActual.access_token)
       : await sbFetch('/rest/v1/fondeos', { method: 'POST', body: JSON.stringify(payload), headers: { 'Prefer': 'return=minimal' } }, sesiónActual.access_token);
 
     if (r.ok || r.status === 201) {
@@ -4568,9 +4612,229 @@
   }
 
   async function eliminarFondeo(id) {
-    if (!confirm('¿Eliminár este registro?')) return;
+    if (!confirm('¿Eliminár este registro? Los comprobantes adjuntos también se van a borrar.')) return;
     await sbFetch('/rest/v1/fondeos?id=eq.' + id, { method: 'DELETE' }, sesiónActual.access_token);
     cargarFondeos();
+  }
+
+  /* ══════════════════════
+     CATEGORÍAS DE GASTO OPERATIVO
+  ══════════════════════ */
+  function abrirModalGastoCategorias() {
+    let modal = document.getElementById('modalGastoCategorias');
+    if (!modal) {
+      modal = document.createElement('div');
+      modal.id = 'modalGastoCategorias';
+      modal.className = 'modal-overlay';
+      document.body.appendChild(modal);
+    }
+    modal.innerHTML = `
+      <div class="modal" style="max-width:420px;max-height:90vh;overflow-y:auto">
+        <button class="modal-close" onclick="cerrarModal('modalGastoCategorias')">✕</button>
+        <h3 style="margin-bottom:16px">Categorías de gasto</h3>
+        <div id="listaGastoCategorias">${renderListaGastoCategorias()}</div>
+        <button onclick="abrirModalGastoCategoriaForm()" style="width:100%;background:#1E1E1E;border:1px solid #2A2A2A;color:var(--blanco);padding:10px;border-radius:8px;cursor:pointer;font-size:13px;font-weight:600;margin-top:12px">+ Nueva categoría</button>
+      </div>`;
+    modal.classList.add('active');
+  }
+
+  function renderListaGastoCategorias() {
+    if (_gastoCategorias.length === 0) return `<div style="color:var(--gris);font-size:13px;padding:12px 0">Todavía no creaste ninguna. Sugerencias: Contador, Monotributo, Impuestos, Comisión bancaria.</div>`;
+    return _gastoCategorias.map(c => `
+      <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid #1A1A1A">
+        <span style="font-size:13px;font-weight:600">${esc(c.nombre)}</span>
+        <div>
+          <button onclick="abrirModalGastoCategoriaForm('${escAttr(c.id)}')" style="background:none;border:1px solid #2A2A2A;color:#666;padding:4px 9px;border-radius:5px;cursor:pointer;font-size:11px;margin-right:4px">✏️</button>
+          <button onclick="eliminarGastoCategoria('${escAttr(c.id)}')" style="background:none;border:1px solid rgba(139,26,26,0.3);color:#E57373;padding:4px 9px;border-radius:5px;cursor:pointer;font-size:11px">✕</button>
+        </div>
+      </div>`).join('');
+  }
+
+  function abrirModalGastoCategoriaForm(id) {
+    const cat = id ? _gastoCategorias.find(c => c.id === id) : null;
+    let modal = document.getElementById('modalGastoCategoriaForm');
+    if (!modal) {
+      modal = document.createElement('div');
+      modal.id = 'modalGastoCategoriaForm';
+      modal.className = 'modal-overlay';
+      document.body.appendChild(modal);
+    }
+    modal.innerHTML = `
+      <div class="modal" style="max-width:380px">
+        <button class="modal-close" onclick="cerrarModal('modalGastoCategoriaForm')">✕</button>
+        <h3 style="margin-bottom:16px">${cat ? 'Editar categoría' : 'Nueva categoría'}</h3>
+        <label style="font-size:11px;color:var(--gris);display:block;margin-bottom:5px;text-transform:uppercase;letter-spacing:1px">Nombre</label>
+        <input type="text" id="gastoCatNombre" placeholder="Ej: Contador, Monotributo..." value="${esc(cat?.nombre || '')}" style="width:100%;background:#181818;border:1px solid #2A2A2A;color:var(--blanco);padding:9px 12px;border-radius:7px;font-size:13px;margin-bottom:16px;outline:none;font-family:'DM Sans',sans-serif">
+        <div id="gastoCatMsg" style="display:none;margin-bottom:12px;font-size:12px;padding:8px 12px;border-radius:6px"></div>
+        <div style="display:flex;gap:8px">
+          <button onclick="guardarGastoCategoria('${escAttr(cat?.id || '')}')" class="modal-confirm" style="flex:1">Guardar</button>
+          <button onclick="cerrarModal('modalGastoCategoriaForm')" style="background:#1E1E1E;border:1px solid #2A2A2A;color:var(--gris);padding:12px 18px;border-radius:8px;cursor:pointer;font-size:13px;font-weight:600">Cancelar</button>
+        </div>
+      </div>`;
+    modal.classList.add('active');
+  }
+
+  async function guardarGastoCategoria(id) {
+    const msg = document.getElementById('gastoCatMsg');
+    const nombre = document.getElementById('gastoCatNombre')?.value?.trim();
+    if (!nombre) {
+      msg.style.display = 'block'; msg.style.background = 'rgba(229,115,115,0.1)'; msg.style.color = '#E57373'; msg.style.border = '1px solid rgba(229,115,115,0.3)';
+      msg.textContent = 'Ingresá un nombre.'; return;
+    }
+    const payload = { user_id: sesiónActual.user.id, nombre, orden: _gastoCategorias.length };
+    const r = id
+      ? await sbFetch('/rest/v1/gasto_categorias?id=eq.' + id, { method: 'PATCH', body: JSON.stringify({ nombre }) }, sesiónActual.access_token)
+      : await sbFetch('/rest/v1/gasto_categorias', { method: 'POST', body: JSON.stringify(payload), headers: { 'Prefer': 'return=minimal' } }, sesiónActual.access_token);
+
+    if (r.ok || r.status === 201) {
+      await recargarGastoCategorias();
+      cerrarModal('modalGastoCategoriaForm');
+      abrirModalGastoCategorias();
+      const selCat = document.getElementById('fondeoCategoriaGasto');
+      if (selCat) selCat.innerHTML = `<option value="">Elegí una categoría...</option>${_gastoCategorias.map(c => `<option value="${escAttr(c.id)}">${esc(c.nombre)}</option>`).join('')}`;
+    } else {
+      msg.style.display = 'block'; msg.style.background = 'rgba(229,115,115,0.1)'; msg.style.color = '#E57373'; msg.style.border = '1px solid rgba(229,115,115,0.3)';
+      msg.textContent = 'Error al guardar.';
+    }
+  }
+
+  async function eliminarGastoCategoria(id) {
+    if (!confirm('¿Eliminar esta categoría? Los gastos que la tenían asignada quedan con el nombre guardado, pero sin vínculo activo.')) return;
+    await sbFetch('/rest/v1/gasto_categorias?id=eq.' + id, { method: 'DELETE' }, sesiónActual.access_token);
+    await recargarGastoCategorias();
+    abrirModalGastoCategorias();
+  }
+
+  async function recargarGastoCategorias() {
+    const r = await sbFetch('/rest/v1/gasto_categorias?select=*&user_id=eq.' + sesiónActual.user.id + '&order=orden.asc', {}, sesiónActual.access_token);
+    _gastoCategorias = r.ok && Array.isArray(r.data) ? r.data : [];
+  }
+
+  /* ══════════════════════
+     COMPROBANTES ADJUNTOS (fondeos)
+  ══════════════════════ */
+  const COMPROBANTES_BUCKET = 'comprobantes-fondeos';
+
+  function formatearBytes(bytes) {
+    if (!bytes) return '';
+    if (bytes < 1024) return bytes + ' B';
+    if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(0) + ' KB';
+    return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
+  }
+
+  function abrirModalComprobantes(fondeoId) {
+    let modal = document.getElementById('modalComprobantes');
+    if (!modal) {
+      modal = document.createElement('div');
+      modal.id = 'modalComprobantes';
+      modal.className = 'modal-overlay';
+      document.body.appendChild(modal);
+    }
+    modal.dataset.fondeoId = fondeoId;
+    modal.innerHTML = `
+      <div class="modal" style="max-width:460px;max-height:85vh;overflow-y:auto">
+        <button class="modal-close" onclick="cerrarModal('modalComprobantes')">✕</button>
+        <h3 style="margin-bottom:16px">Comprobantes adjuntos</h3>
+        <div id="listaComprobantes">${renderListaComprobantes(fondeoId)}</div>
+        <div style="margin-top:16px;padding-top:16px;border-top:1px solid #1A1A1A">
+          <input type="file" id="comprobanteInputArchivos" multiple accept="application/pdf,image/*" style="display:none" onchange="subirComprobantesArchivos('${escAttr(fondeoId)}')">
+          <button onclick="document.getElementById('comprobanteInputArchivos').click()" style="width:100%;background:#1E1E1E;border:1px solid #2A2A2A;color:var(--blanco);padding:10px;border-radius:8px;cursor:pointer;font-size:13px;font-weight:600">📎 Subir comprobante (PDF o imagen)</button>
+          <div id="comprobanteSubiendoMsg" style="display:none;text-align:center;font-size:12px;color:var(--gris);margin-top:10px"></div>
+        </div>
+      </div>`;
+    modal.classList.add('active');
+  }
+
+  function renderListaComprobantes(fondeoId) {
+    const items = _fondeoComprobantes.filter(c => c.fondeo_id === fondeoId);
+    if (items.length === 0) return `<div style="color:var(--gris);font-size:13px;padding:8px 0">Sin comprobantes adjuntos todavía.</div>`;
+    return items.map(c => {
+      const esImagen = (c.tipo_mime || '').startsWith('image/');
+      return `<div style="display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px 0;border-bottom:1px solid #1A1A1A">
+        <div style="display:flex;align-items:center;gap:10px;min-width:0">
+          <span style="font-size:18px">${esImagen ? '🖼️' : '📄'}</span>
+          <div style="min-width:0">
+            <div style="font-size:13px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(c.nombre_archivo)}</div>
+            <div style="font-size:11px;color:var(--gris)">${formatearBytes(c.tamano_bytes)}</div>
+          </div>
+        </div>
+        <div style="display:flex;gap:6px;flex-shrink:0">
+          <button onclick="descargarComprobante('${escAttr(c.storage_path)}','${escAttr(c.nombre_archivo)}')" style="background:none;border:1px solid #2A2A2A;color:#64B5F6;padding:5px 10px;border-radius:6px;cursor:pointer;font-size:11px">⬇</button>
+          <button onclick="eliminarComprobante('${escAttr(c.id)}','${escAttr(c.storage_path)}')" style="background:none;border:1px solid rgba(139,26,26,0.3);color:#E57373;padding:5px 10px;border-radius:6px;cursor:pointer;font-size:11px">✕</button>
+        </div>
+      </div>`;
+    }).join('');
+  }
+
+  async function subirComprobantesArchivos(fondeoId) {
+    const input = document.getElementById('comprobanteInputArchivos');
+    const archivos = Array.from(input?.files || []);
+    if (archivos.length === 0) return;
+    const msgEl = document.getElementById('comprobanteSubiendoMsg');
+
+    for (let i = 0; i < archivos.length; i++) {
+      const archivo = archivos[i];
+      if (msgEl) { msgEl.style.display = 'block'; msgEl.textContent = `Subiendo ${i + 1}/${archivos.length}...`; }
+
+      const nombreSeguro = archivo.name.replace(/[^a-zA-Z0-9._-]/g, '_');
+      const path = `${sesiónActual.user.id}/${fondeoId}/${Date.now()}_${i}_${nombreSeguro}`;
+
+      const uploadRes = await fetch(`${SUPABASE_URL}/storage/v1/object/${COMPROBANTES_BUCKET}/${path}`, {
+        method: 'POST',
+        headers: { 'apikey': SUPABASE_ANON, 'Authorization': 'Bearer ' + sesiónActual.access_token, 'Content-Type': archivo.type || 'application/octet-stream' },
+        body: archivo
+      });
+
+      if (uploadRes.ok) {
+        await sbFetch('/rest/v1/fondeos_comprobantes', {
+          method: 'POST',
+          headers: { 'Prefer': 'return=minimal' },
+          body: JSON.stringify({
+            fondeo_id: fondeoId, user_id: sesiónActual.user.id, storage_path: path,
+            nombre_archivo: archivo.name, tipo_mime: archivo.type || null, tamano_bytes: archivo.size
+          })
+        }, sesiónActual.access_token);
+      }
+    }
+
+    if (msgEl) msgEl.style.display = 'none';
+    input.value = '';
+
+    const r = await sbFetch('/rest/v1/fondeos_comprobantes?select=*&user_id=eq.' + sesiónActual.user.id, {}, sesiónActual.access_token);
+    _fondeoComprobantes = r.ok && Array.isArray(r.data) ? r.data : [];
+    document.getElementById('listaComprobantes').innerHTML = renderListaComprobantes(fondeoId);
+    filtrarFondeos();
+  }
+
+  async function descargarComprobante(path, nombreArchivo) {
+    try {
+      const res = await fetch(`${SUPABASE_URL}/storage/v1/object/${COMPROBANTES_BUCKET}/${path}`, {
+        headers: { 'apikey': SUPABASE_ANON, 'Authorization': 'Bearer ' + sesiónActual.access_token }
+      });
+      if (!res.ok) throw new Error('No se pudo descargar');
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url; a.download = nombreArchivo;
+      document.body.appendChild(a); a.click(); a.remove();
+      URL.revokeObjectURL(url);
+    } catch (e) {
+      alert('No se pudo descargar el archivo.');
+    }
+  }
+
+  async function eliminarComprobante(id, path) {
+    if (!confirm('¿Eliminar este comprobante?')) return;
+    await sbFetch('/rest/v1/fondeos_comprobantes?id=eq.' + id, { method: 'DELETE' }, sesiónActual.access_token);
+    await fetch(`${SUPABASE_URL}/storage/v1/object/${COMPROBANTES_BUCKET}/${path}`, {
+      method: 'DELETE',
+      headers: { 'apikey': SUPABASE_ANON, 'Authorization': 'Bearer ' + sesiónActual.access_token }
+    });
+    _fondeoComprobantes = _fondeoComprobantes.filter(c => c.id !== id);
+    const modal = document.getElementById('modalComprobantes');
+    const fondeoId = modal?.dataset.fondeoId;
+    if (fondeoId) document.getElementById('listaComprobantes').innerHTML = renderListaComprobantes(fondeoId);
+    filtrarFondeos();
   }
 
   /* ══════════════════════

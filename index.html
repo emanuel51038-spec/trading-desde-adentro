@@ -4186,7 +4186,19 @@
 
       <!-- Evolución en el tiempo -->
       <div style="background:var(--negro-card);border:1px solid var(--negro-border);border-radius:16px;padding:20px;margin-bottom:24px">
-        <div style="font-size:11px;font-weight:600;letter-spacing:1px;text-transform:uppercase;color:var(--gris);margin-bottom:12px">Ganancia vs Gastos en el tiempo</div>
+        <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-bottom:12px">
+          <div style="font-size:11px;font-weight:600;letter-spacing:1px;text-transform:uppercase;color:var(--gris)">Ganancia vs Gastos en el tiempo</div>
+          <div style="display:flex;gap:14px;font-size:12px;color:var(--gris)">
+            <label style="display:flex;align-items:center;gap:5px;cursor:pointer">
+              <input type="checkbox" id="filtroLineaEvaluaciones" checked onchange="dibujarLineaFondeos()" style="cursor:pointer">
+              Evaluaciones (pruebas)
+            </label>
+            <label style="display:flex;align-items:center;gap:5px;cursor:pointer">
+              <input type="checkbox" id="filtroLineaGastosOp" checked onchange="dibujarLineaFondeos()" style="cursor:pointer">
+              Gastos operativos
+            </label>
+          </div>
+        </div>
         <canvas id="fondeosLineCanvas" style="width:100%;max-height:220px"></canvas>
         ${renderCapitalRecuperado(totalGastado, totalRetirado)}
       </div>
@@ -4330,7 +4342,7 @@
     const barCanvas = document.getElementById('fondeosBarCanvas');
     if (barCanvas) {
       const empresas = [...new Set(fondeos.map(f => f.empresa))].sort();
-      const gastos   = empresas.map(e => fondeos.filter(f => f.empresa === e && f.tipo === 'Evaluacion').reduce((a, f) => a + Number(f.monto), 0));
+      const gastos   = empresas.map(e => fondeos.filter(f => f.empresa === e && (f.tipo === 'Evaluacion' || f.tipo === 'Gasto')).reduce((a, f) => a + Number(f.monto), 0));
       const retiros  = empresas.map(e => fondeos.filter(f => f.empresa === e && f.tipo === 'Retiro').reduce((a, f) => a + Number(f.monto), 0));
 
       if (window._fondeoBarChart) window._fondeoBarChart.destroy();
@@ -4381,45 +4393,57 @@
       });
     }
 
-    // ── Gráfico de línea: ganancia (retiros) vs gastos (evaluaciones) acumulados en el tiempo ──
-    const lineCanvas = document.getElementById('fondeosLineCanvas');
-    if (lineCanvas) {
-      const ordenados = [...fondeos].sort((a, b) => new Date(a.fecha) - new Date(b.fecha));
-      let gastoAcum = 0, retiroAcum = 0;
-      const labels = [];
-      const gastoSerie = [];
-      const retiroSerie = [];
-      const netoSerie = [];
-      ordenados.forEach(f => {
-        if (f.tipo === 'Evaluacion') gastoAcum += Number(f.monto);
-        else retiroAcum += Number(f.monto);
-        labels.push(new Date(f.fecha + 'T00:00:00').toLocaleDateString('es-AR', {day:'2-digit',month:'2-digit',year:'2-digit'}));
-        gastoSerie.push(Math.round(gastoAcum * 100) / 100);
-        retiroSerie.push(Math.round(retiroAcum * 100) / 100);
-        netoSerie.push(Math.round((retiroAcum - gastoAcum) * 100) / 100);
-      });
+    // ── Gráfico de línea: ganancia (retiros) vs gastos acumulados en el tiempo,
+    // con filtros para incluir/excluir evaluaciones y gastos operativos ──
+    _fondeosParaLinea = fondeos;
+    dibujarLineaFondeos();
+  }
 
-      if (window._fondeoLineChart) window._fondeoLineChart.destroy();
-      window._fondeoLineChart = new Chart(lineCanvas.getContext('2d'), {
-        type: 'line',
-        data: {
-          labels,
-          datasets: [
-            { label: 'Retirado (ganancia)', data: retiroSerie, borderColor: 'rgba(76,175,80,1)', backgroundColor: 'rgba(76,175,80,0.12)', fill: true, tension: 0.25, pointRadius: 2 },
-            { label: 'Gastado', data: gastoSerie, borderColor: 'rgba(229,115,115,1)', backgroundColor: 'rgba(229,115,115,0.12)', fill: true, tension: 0.25, pointRadius: 2 },
-            { label: 'Neto', data: netoSerie, borderColor: 'rgba(255,215,0,1)', backgroundColor: 'transparent', borderDash: [4,3], fill: false, tension: 0.25, pointRadius: 2 }
-          ]
-        },
-        options: {
-          responsive: true, maintainAspectRatio: false,
-          plugins: { legend: { position: 'bottom', labels: { color: '#9E9E9E', font: { size: 11 } } } },
-          scales: {
-            x: { ticks: { color: '#666', maxRotation: 0, autoSkip: true }, grid: { color: 'rgba(255,255,255,0.05)' } },
-            y: { ticks: { color: '#666', callback: v => '$' + v }, grid: { color: 'rgba(255,255,255,0.05)' } }
-          }
+  let _fondeosParaLinea = [];
+
+  function dibujarLineaFondeos() {
+    const lineCanvas = document.getElementById('fondeosLineCanvas');
+    if (!lineCanvas) return;
+    const incluirEvals  = document.getElementById('filtroLineaEvaluaciones')?.checked ?? true;
+    const incluirGastos = document.getElementById('filtroLineaGastosOp')?.checked ?? true;
+
+    const ordenados = [..._fondeosParaLinea].sort((a, b) => new Date(a.fecha) - new Date(b.fecha));
+    let gastoAcum = 0, retiroAcum = 0;
+    const labels = [];
+    const gastoSerie = [];
+    const retiroSerie = [];
+    const netoSerie = [];
+    ordenados.forEach(f => {
+      if (f.tipo === 'Evaluacion' && incluirEvals) gastoAcum += Number(f.monto);
+      else if (f.tipo === 'Gasto' && incluirGastos) gastoAcum += Number(f.monto);
+      else if (f.tipo === 'Retiro') retiroAcum += Number(f.monto);
+      else return; // este movimiento está filtrado, no mueve el gráfico
+      labels.push(new Date(f.fecha + 'T00:00:00').toLocaleDateString('es-AR', {day:'2-digit',month:'2-digit',year:'2-digit'}));
+      gastoSerie.push(Math.round(gastoAcum * 100) / 100);
+      retiroSerie.push(Math.round(retiroAcum * 100) / 100);
+      netoSerie.push(Math.round((retiroAcum - gastoAcum) * 100) / 100);
+    });
+
+    if (window._fondeoLineChart) window._fondeoLineChart.destroy();
+    window._fondeoLineChart = new Chart(lineCanvas.getContext('2d'), {
+      type: 'line',
+      data: {
+        labels,
+        datasets: [
+          { label: 'Retirado (ganancia)', data: retiroSerie, borderColor: 'rgba(76,175,80,1)', backgroundColor: 'rgba(76,175,80,0.12)', fill: true, tension: 0.25, pointRadius: 2 },
+          { label: 'Gastado', data: gastoSerie, borderColor: 'rgba(229,115,115,1)', backgroundColor: 'rgba(229,115,115,0.12)', fill: true, tension: 0.25, pointRadius: 2 },
+          { label: 'Neto', data: netoSerie, borderColor: 'rgba(255,215,0,1)', backgroundColor: 'transparent', borderDash: [4,3], fill: false, tension: 0.25, pointRadius: 2 }
+        ]
+      },
+      options: {
+        responsive: true, maintainAspectRatio: false,
+        plugins: { legend: { position: 'bottom', labels: { color: '#9E9E9E', font: { size: 11 } } } },
+        scales: {
+          x: { ticks: { color: '#666', maxRotation: 0, autoSkip: true }, grid: { color: 'rgba(255,255,255,0.05)' } },
+          y: { ticks: { color: '#666', callback: v => '$' + v }, grid: { color: 'rgba(255,255,255,0.05)' } }
         }
-      });
-    }
+      }
+    });
   }
 
   function filtrarFondeos() {

@@ -3964,11 +3964,11 @@
           </select>
           <div style="display:flex;align-items:center;gap:4px;background:#0D0D0D;border:1px solid #1E1E1E;border-radius:8px;padding:4px 10px">
             <span style="font-size:11px;color:var(--gris);white-space:nowrap">Desde</span>
-            <input type="date" id="filtroDesde" onchange="filtrarJournal()" style="background:transparent;border:none;color:var(--blanco);font-size:13px;font-family:'DM Sans',sans-serif;cursor:pointer;outline:none;width:130px;color-scheme:dark">
+            <input type="date" id="filtroDesde" onchange="filtrarJournal()" onclick="this.showPicker && this.showPicker()" style="background:transparent;border:none;color:var(--blanco);font-size:13px;font-family:'DM Sans',sans-serif;cursor:pointer;outline:none;width:130px;color-scheme:dark">
           </div>
           <div style="display:flex;align-items:center;gap:4px;background:#0D0D0D;border:1px solid #1E1E1E;border-radius:8px;padding:4px 10px">
             <span style="font-size:11px;color:var(--gris);white-space:nowrap">Hasta</span>
-            <input type="date" id="filtroHasta" onchange="filtrarJournal()" style="background:transparent;border:none;color:var(--blanco);font-size:13px;font-family:'DM Sans',sans-serif;cursor:pointer;outline:none;width:130px;color-scheme:dark">
+            <input type="date" id="filtroHasta" onchange="filtrarJournal()" onclick="this.showPicker && this.showPicker()" style="background:transparent;border:none;color:var(--blanco);font-size:13px;font-family:'DM Sans',sans-serif;cursor:pointer;outline:none;width:130px;color-scheme:dark">
           </div>
           <button onclick="limpiarFiltros()" style="background:#1A1A1A;border:1px solid #2A2A2A;color:var(--gris);padding:7px 12px;border-radius:8px;font-size:12px;cursor:pointer">✕ Limpiar filtro</button>
         </div>
@@ -4183,8 +4183,8 @@
           <option value="Inicio" ${filtroMotivo === 'Inicio' ? 'selected' : ''}>Inicio</option>
           <option value="Renovacion" ${filtroMotivo === 'Renovacion' ? 'selected' : ''}>Renovación</option>
         </select>
-        <input type="date" id="filtroFondeoDesde" onchange="filtrarFondeos()" value="${esc(filtroDesde)}" style="background:#0D0D0D;border:1px solid #1E1E1E;color:var(--blanco);padding:7px 12px;border-radius:8px;font-size:13px;font-family:'DM Sans',sans-serif">
-        <input type="date" id="filtroFondeoHasta" onchange="filtrarFondeos()" value="${esc(filtroHasta)}" style="background:#0D0D0D;border:1px solid #1E1E1E;color:var(--blanco);padding:7px 12px;border-radius:8px;font-size:13px;font-family:'DM Sans',sans-serif">
+        <input type="date" id="filtroFondeoDesde" onchange="filtrarFondeos()" onclick="this.showPicker && this.showPicker()" value="${esc(filtroDesde)}" style="background:#0D0D0D;border:1px solid #1E1E1E;color:var(--blanco);padding:7px 12px;border-radius:8px;font-size:13px;font-family:'DM Sans',sans-serif;cursor:pointer;color-scheme:dark">
+        <input type="date" id="filtroFondeoHasta" onchange="filtrarFondeos()" onclick="this.showPicker && this.showPicker()" value="${esc(filtroHasta)}" style="background:#0D0D0D;border:1px solid #1E1E1E;color:var(--blanco);padding:7px 12px;border-radius:8px;font-size:13px;font-family:'DM Sans',sans-serif;cursor:pointer;color-scheme:dark">
         <button onclick="limpiarFiltrosFondeos()" style="background:#1A1A1A;border:1px solid #2A2A2A;color:var(--gris);padding:7px 14px;border-radius:8px;cursor:pointer;font-size:12px">✕ Limpiar</button>
       </div>
 
@@ -4512,8 +4512,8 @@
         <h3 style="margin-bottom:20px">${esEdicion ? 'Editar registro' : 'Nuevo registro'}</h3>
 
         <label style="font-size:11px;color:var(--gris);display:block;margin-bottom:5px;text-transform:uppercase;letter-spacing:1px">Fecha</label>
-        <input type="date" id="fondeoFecha" value="${fondeo?.fecha || new Date().toISOString().slice(0,10)}"
-          style="width:100%;background:#181818;border:1px solid #2A2A2A;color:var(--blanco);padding:9px 12px;border-radius:7px;font-size:13px;margin-bottom:14px;outline:none;font-family:'DM Sans',sans-serif">
+        <input type="date" id="fondeoFecha" value="${fondeo?.fecha || new Date().toISOString().slice(0,10)}" onclick="this.showPicker && this.showPicker()"
+          style="width:100%;background:#181818;border:1px solid #2A2A2A;color:var(--blanco);padding:9px 12px;border-radius:7px;font-size:13px;margin-bottom:14px;outline:none;font-family:'DM Sans',sans-serif;cursor:pointer;color-scheme:dark">
 
         <div id="fondeoEmpresaWrap">
           <label style="font-size:11px;color:var(--gris);display:block;margin-bottom:5px;text-transform:uppercase;letter-spacing:1px">Empresa</label>
@@ -4559,8 +4559,8 @@
             </label>
             <div id="fondeoFechaQuemadaWrap">
               <label style="font-size:11px;color:var(--gris);display:block;margin-bottom:5px;text-transform:uppercase;letter-spacing:1px">Fecha en que se quemó</label>
-              <input type="date" id="fondeoFechaQuemada" value="${fondeo?.fecha_cuenta_quemada || new Date().toISOString().slice(0,10)}"
-                style="width:100%;background:#181818;border:1px solid #2A2A2A;color:var(--blanco);padding:9px 12px;border-radius:7px;font-size:13px;margin-bottom:14px;outline:none;font-family:'DM Sans',sans-serif">
+              <input type="date" id="fondeoFechaQuemada" value="${fondeo?.fecha_cuenta_quemada || new Date().toISOString().slice(0,10)}" onclick="this.showPicker && this.showPicker()"
+                style="width:100%;background:#181818;border:1px solid #2A2A2A;color:var(--blanco);padding:9px 12px;border-radius:7px;font-size:13px;margin-bottom:14px;outline:none;font-family:'DM Sans',sans-serif;cursor:pointer;color-scheme:dark">
             </div>
           </div>
         </div>
@@ -5291,7 +5291,7 @@
         </select>
 
         <label style="font-size:11px;color:var(--gris);display:block;margin-bottom:5px;text-transform:uppercase;letter-spacing:1px">Fecha</label>
-        <input type="date" id="invFecha" value="${t?.fecha || new Date().toISOString().slice(0,10)}" style="width:100%;background:#181818;border:1px solid #2A2A2A;color:var(--blanco);padding:9px 12px;border-radius:7px;font-size:13px;margin-bottom:14px;outline:none;font-family:'DM Sans',sans-serif">
+        <input type="date" id="invFecha" value="${t?.fecha || new Date().toISOString().slice(0,10)}" onclick="this.showPicker && this.showPicker()" style="width:100%;background:#181818;border:1px solid #2A2A2A;color:var(--blanco);padding:9px 12px;border-radius:7px;font-size:13px;margin-bottom:14px;outline:none;font-family:'DM Sans',sans-serif;cursor:pointer;color-scheme:dark">
 
         <label style="font-size:11px;color:var(--gris);display:block;margin-bottom:5px;text-transform:uppercase;letter-spacing:1px">Cantidad <span style="color:#666">(podés poner decimales, ej: 0.5 para fracciones de CEDEAR)</span></label>
         <input type="number" id="invCantidad" step="any" min="0" placeholder="0" value="${t?.cantidad || ''}" style="width:100%;background:#181818;border:1px solid #2A2A2A;color:var(--blanco);padding:9px 12px;border-radius:7px;font-size:13px;margin-bottom:14px;outline:none;font-family:'DM Sans',sans-serif">
@@ -11630,7 +11630,7 @@
             </div>
             <div>
               <label class="padmin-label">Vencimiento (opcional)</label>
-              <input type="date" id="adminCuponVence" class="padmin-input" style="color-scheme:dark">
+              <input type="date" id="adminCuponVence" class="padmin-input" onclick="this.showPicker && this.showPicker()" style="color-scheme:dark;cursor:pointer">
             </div>
           </div>
           <label class="padmin-label">Usos máximos (vacío = ilimitado)</label>

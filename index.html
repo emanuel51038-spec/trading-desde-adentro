@@ -4135,7 +4135,6 @@
   function renderFondeos(fondeosCompletos) {
     const cont = document.getElementById('fondeosContainer');
 
-    // Leer filtros actuales (si el usuario ya tenía alguno aplicado, se preserva)
     const filtroEmpresa   = document.getElementById('filtroFondeoEmpresa')?.value || '';
     const filtroTipo      = document.getElementById('filtroFondeoTipo')?.value || '';
     const filtroResultado = document.getElementById('filtroFondeoResultado')?.value || '';
@@ -4143,32 +4142,13 @@
     const filtroDesde     = document.getElementById('filtroFondeoDesde')?.value || '';
     const filtroHasta     = document.getElementById('filtroFondeoHasta')?.value || '';
 
-    const fondeos = fondeosCompletos.filter(f => {
-      return (!filtroEmpresa   || f.empresa === filtroEmpresa)
-          && (!filtroTipo      || f.tipo === filtroTipo)
-          && (!filtroResultado || f.resultado === filtroResultado)
-          && (!filtroMotivo    || f.motivo === filtroMotivo)
-          && (!filtroDesde     || f.fecha >= filtroDesde)
-          && (!filtroHasta     || f.fecha <= filtroHasta);
-    });
-
-    // Calcular métricas (sobre el conjunto YA filtrado)
-    const evals    = fondeos.filter(f => f.tipo === 'Evaluacion');
-    const retiros  = fondeos.filter(f => f.tipo === 'Retiro');
-    const gastosOp = fondeos.filter(f => f.tipo === 'Gasto');
-    const superadas  = evals.filter(f => f.resultado === 'Superada').length;
-    const quemadas   = evals.filter(f => f.resultado === 'Quemada').length;
-    const totalEvals = evals.filter(f => f.resultado === 'Superada' || f.resultado === 'Quemada').length;
-    const ratioAprobacion = totalEvals > 0 ? Math.round(superadas / totalEvals * 100) : 0;
-    const totalGastado = [...evals, ...gastosOp].reduce((a, f) => a + Number(f.monto), 0);
-    const totalRetirado = retiros.reduce((a, f) => a + Number(f.monto), 0);
-    const neto = totalRetirado - totalGastado;
-    const cuentasFondeadasActivas = evals.filter(f => f.resultado === 'Superada' && !f.cuenta_quemada_luego).length;
-
     // Empresas únicas para el filtro: siempre desde el conjunto COMPLETO, para que
     // las opciones no desaparezcan al filtrar por otra cosa.
     const empresas = [...new Set(fondeosCompletos.map(f => f.empresa))].sort();
 
+    // El header y la barra de filtros se arman UNA sola vez (acá) y no se vuelven a
+    // tocar en cada cambio de filtro — si se reconstruyeran los <input type="date">
+    // en cada tecla, el navegador cierra el calendario nativo a mitad de la carga.
     cont.innerHTML = `
       <!-- Header -->
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;flex-wrap:wrap;gap:12px">
@@ -4208,6 +4188,49 @@
         <button onclick="limpiarFiltrosFondeos()" style="background:#1A1A1A;border:1px solid #2A2A2A;color:var(--gris);padding:7px 14px;border-radius:8px;cursor:pointer;font-size:12px">✕ Limpiar</button>
       </div>
 
+      <div id="fondeosResultados"></div>`;
+
+    _fondeosCompletosActuales = fondeosCompletos;
+    actualizarResultadosFondeos();
+  }
+
+  let _fondeosCompletosActuales = [];
+
+  function actualizarResultadosFondeos() {
+    const fondeosCompletos = _fondeosCompletosActuales;
+    const resCont = document.getElementById('fondeosResultados');
+    if (!resCont) return;
+
+    const filtroEmpresa   = document.getElementById('filtroFondeoEmpresa')?.value || '';
+    const filtroTipo      = document.getElementById('filtroFondeoTipo')?.value || '';
+    const filtroResultado = document.getElementById('filtroFondeoResultado')?.value || '';
+    const filtroMotivo    = document.getElementById('filtroFondeoMotivo')?.value || '';
+    const filtroDesde     = document.getElementById('filtroFondeoDesde')?.value || '';
+    const filtroHasta     = document.getElementById('filtroFondeoHasta')?.value || '';
+
+    const fondeos = fondeosCompletos.filter(f => {
+      return (!filtroEmpresa   || f.empresa === filtroEmpresa)
+          && (!filtroTipo      || f.tipo === filtroTipo)
+          && (!filtroResultado || f.resultado === filtroResultado)
+          && (!filtroMotivo    || f.motivo === filtroMotivo)
+          && (!filtroDesde     || f.fecha >= filtroDesde)
+          && (!filtroHasta     || f.fecha <= filtroHasta);
+    });
+
+    // Calcular métricas (sobre el conjunto YA filtrado)
+    const evals    = fondeos.filter(f => f.tipo === 'Evaluacion');
+    const retiros  = fondeos.filter(f => f.tipo === 'Retiro');
+    const gastosOp = fondeos.filter(f => f.tipo === 'Gasto');
+    const superadas  = evals.filter(f => f.resultado === 'Superada').length;
+    const quemadas   = evals.filter(f => f.resultado === 'Quemada').length;
+    const totalEvals = evals.filter(f => f.resultado === 'Superada' || f.resultado === 'Quemada').length;
+    const ratioAprobacion = totalEvals > 0 ? Math.round(superadas / totalEvals * 100) : 0;
+    const totalGastado = [...evals, ...gastosOp].reduce((a, f) => a + Number(f.monto), 0);
+    const totalRetirado = retiros.reduce((a, f) => a + Number(f.monto), 0);
+    const neto = totalRetirado - totalGastado;
+    const cuentasFondeadasActivas = evals.filter(f => f.resultado === 'Superada' && !f.cuenta_quemada_luego).length;
+
+    resCont.innerHTML = `
       <!-- Métricas -->
       <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px;margin-bottom:24px">
         ${renderFondeoCard('TOTAL GASTADO', '-$' + totalGastado.toFixed(2), '#E57373')}
@@ -4465,13 +4488,13 @@
   }
 
   function filtrarFondeos() {
-    renderFondeos(_fondeosFiltrados);
+    actualizarResultadosFondeos();
   }
 
   function limpiarFiltrosFondeos() {
     ['filtroFondeoEmpresa','filtroFondeoTipo','filtroFondeoResultado','filtroFondeoMotivo','filtroFondeoDesde','filtroFondeoHasta']
       .forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
-    renderFondeos(_fondeosFiltrados);
+    actualizarResultadosFondeos();
   }
 
   function abrirModalFondeo(fondeo = null) {

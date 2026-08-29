@@ -622,18 +622,22 @@
     .panel-nav {
       background: #0D0D0D; border-bottom: 1px solid var(--negro-border);
       padding: 0 24px; display: flex; gap: 4px;
+      overflow-x: auto; overflow-y: hidden; -webkit-overflow-scrolling: touch;
+      scrollbar-width: none; -ms-overflow-style: none;
     }
+    .panel-nav::-webkit-scrollbar { display: none; }
     .panel-nav-btn {
       padding: 14px 18px; font-size: 13px; font-weight: 600; color: var(--gris);
       border: none; background: none; cursor: pointer; font-family: 'DM Sans', sans-serif;
       border-bottom: 2px solid transparent; margin-bottom: -1px; transition: all 0.2s;
+      white-space: nowrap; flex-shrink: 0;
     }
     .panel-nav-btn.active { color: var(--blanco); border-bottom-color: var(--rojo); }
     .panel-nav-btn:hover { color: var(--blanco); }
 
     /* Nav dropdowns (Mi Panel / Mi Trading) */
     .panel-nav { z-index: 30; }
-    .panel-nav-dropdown { position: relative; }
+    .panel-nav-dropdown { position: relative; flex-shrink: 0; }
     .panel-nav-dropdown .panel-nav-btn { display: flex; align-items: center; gap: 5px; }
     .panel-nav-dropdown-caret { font-size: 9px; transition: transform 0.2s; }
     .panel-nav-dropdown.open .panel-nav-dropdown-caret { transform: rotate(180deg); }
@@ -650,6 +654,11 @@
       cursor: pointer; font-family: 'DM Sans', sans-serif; transition: all 0.15s;
     }
     .panel-nav-dropdown-item:hover { background: #1E1E1E; color: var(--blanco); }
+
+    @media (max-width: 480px) {
+      .panel-nav { padding: 0 12px; }
+      .panel-nav-btn { padding: 12px 12px; font-size: 12.5px; }
+    }
 
     /* Badge de no leídos */
     .nav-badge {

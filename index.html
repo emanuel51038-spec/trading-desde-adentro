@@ -1047,6 +1047,21 @@
     .padmin-table td { padding: 10px 12px; border-bottom: 1px solid #111; color: #CCC; }
     .padmin-table tr:last-child td { border-bottom: none; }
     .padmin-preview { background: #0D0D0D; border: 1px solid #1E1E1E; border-radius: 10px; padding: 20px; margin-bottom: 16px; display: none; }
+
+    /* ══════════════════════════════
+       CONTROL DE FONDEOS — responsive
+    ══════════════════════════════ */
+    .fondeos-filtros { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 20px; align-items: center; }
+    .fondeos-filtros > select, .fondeos-filtros > input { flex: 1 1 140px; min-width: 0; }
+    .fondeos-filtros > button { flex: 0 0 auto; }
+    .fondeos-charts-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 24px; }
+    @media (max-width: 768px) {
+      .fondeos-charts-grid { grid-template-columns: 1fr; }
+    }
+    @media (max-width: 480px) {
+      .fondeos-filtros > select, .fondeos-filtros > input { flex: 1 1 100%; }
+      .fondeos-filtros > button { flex: 1 1 100%; }
+    }
   </style>
   <script defer src="/_vercel/insights/script.js"></script>
 </head>
@@ -4160,7 +4175,7 @@
       </div>
 
       <!-- Filtros: se aplican a todo lo de abajo (tarjetas, gráficos y tabla) -->
-      <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:20px;align-items:center">
+      <div class="fondeos-filtros">
         <select id="filtroFondeoEmpresa" onchange="filtrarFondeos()" style="background:#0D0D0D;border:1px solid #1E1E1E;color:var(--blanco);padding:7px 12px;border-radius:8px;font-size:13px;cursor:pointer;font-family:'DM Sans',sans-serif">
           <option value="">Todas las empresas</option>
           ${empresas.map(e => `<option value="${esc(e)}" ${filtroEmpresa === e ? 'selected' : ''}>${esc(e)}</option>`).join('')}
@@ -4229,6 +4244,7 @@
     const totalRetirado = retiros.reduce((a, f) => a + Number(f.monto), 0);
     const neto = totalRetirado - totalGastado;
     const cuentasFondeadasActivas = evals.filter(f => f.resultado === 'Superada' && !f.cuenta_quemada_luego).length;
+    const enEvaluacion = evals.filter(f => f.resultado === 'En curso').length;
 
     resCont.innerHTML = `
       <!-- Métricas -->
@@ -4239,11 +4255,12 @@
         ${renderFondeoCard('RATIO APROBACIÓN', ratioAprobacion + '%', ratioAprobacion >= 50 ? 'var(--verde)' : '#E57373')}
         ${renderFondeoCard('SUPERADAS', superadas + ' / ' + totalEvals, 'var(--verde)')}
         ${renderFondeoCard('QUEMADAS', String(quemadas), '#E57373')}
+        ${renderFondeoCard('EN EVALUACIÓN', String(enEvaluacion), '#FFD700')}
         ${renderFondeoCard('CUENTAS FONDEADAS', String(cuentasFondeadasActivas), 'var(--verde)')}
       </div>
 
       <!-- Gráficos -->
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:24px">
+      <div class="fondeos-charts-grid">
         <div style="background:var(--negro-card);border:1px solid var(--negro-border);border-radius:16px;padding:20px">
           <div style="font-size:11px;font-weight:600;letter-spacing:1px;text-transform:uppercase;color:var(--gris);margin-bottom:12px">Gastos vs Retiros acumulados</div>
           <canvas id="fondeosBarCanvas" style="width:100%;max-height:180px"></canvas>
@@ -5100,7 +5117,7 @@
       ${sinCotizar > 0 ? `<div style="font-size:12px;color:#FFD700;margin:-14px 0 20px">⚠ ${sinCotizar} activo(s) sin cotización disponible en este momento — no se incluyen en el rendimiento total.</div>` : ''}
 
       <!-- Gráficos -->
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:24px">
+      <div class="fondeos-charts-grid">
         <div style="background:var(--negro-card);border:1px solid var(--negro-border);border-radius:16px;padding:20px">
           <div style="font-size:11px;font-weight:600;letter-spacing:1px;text-transform:uppercase;color:var(--gris);margin-bottom:12px">Distribución de la cartera</div>
           <canvas id="invPieCanvas" style="width:100%;max-height:200px"></canvas>

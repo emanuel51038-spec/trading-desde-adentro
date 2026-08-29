@@ -642,9 +642,9 @@
     .panel-nav-dropdown-caret { font-size: 9px; transition: transform 0.2s; }
     .panel-nav-dropdown.open .panel-nav-dropdown-caret { transform: rotate(180deg); }
     .panel-nav-dropdown-menu {
-      display: none; position: absolute; top: 100%; left: 0; margin-top: 6px;
+      display: none; position: fixed; margin-top: 6px;
       background: #141414; border: 1px solid var(--negro-border); border-radius: 10px;
-      min-width: 210px; padding: 6px; box-shadow: 0 14px 32px rgba(0,0,0,0.55); z-index: 60;
+      min-width: 210px; padding: 6px; box-shadow: 0 14px 32px rgba(0,0,0,0.55); z-index: 9999;
     }
     .panel-nav-dropdown.open .panel-nav-dropdown-menu { display: block; animation: navDropIn 0.15s ease both; }
     @keyframes navDropIn { from { opacity: 0; transform: translateY(-6px); } to { opacity: 1; transform: translateY(0); } }
@@ -2155,11 +2155,34 @@
     if (sec === 'admin') cargarPanelAdmin();
   }
 
+  let _navScrollListenerAttached = false;
+
+  function posicionarNavDropdown(dropdownEl) {
+    const btn = dropdownEl.querySelector('.panel-nav-btn');
+    const menu = dropdownEl.querySelector('.panel-nav-dropdown-menu');
+    if (!btn || !menu) return;
+    const rect = btn.getBoundingClientRect();
+    menu.style.top = (rect.bottom + 6) + 'px';
+    menu.style.left = rect.left + 'px';
+  }
+
   function toggleNavDropdown(id) {
     const target = document.getElementById(id);
     const wasOpen = target.classList.contains('open');
     document.querySelectorAll('.panel-nav-dropdown').forEach(d => d.classList.remove('open'));
-    if (!wasOpen) target.classList.add('open');
+    if (!wasOpen) {
+      target.classList.add('open');
+      posicionarNavDropdown(target);
+      // El menú es position:fixed (para no quedar recortado por el scroll horizontal
+      // del nav en mobile), así que si el usuario scrollea o cambia el tamaño de
+      // ventana mientras está abierto, lo cerramos en vez de dejarlo desalineado.
+      if (!_navScrollListenerAttached) {
+        _navScrollListenerAttached = true;
+        const cerrarTodos = () => document.querySelectorAll('.panel-nav-dropdown.open').forEach(d => d.classList.remove('open'));
+        document.querySelector('.panel-nav')?.addEventListener('scroll', cerrarTodos);
+        window.addEventListener('resize', cerrarTodos);
+      }
+    }
   }
 
   function toggleAccountDropdown() {

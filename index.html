@@ -7304,31 +7304,23 @@
     const canvas = document.getElementById('radarPerfCanvas');
     if (!canvas || ops.length === 0) return;
 
-    const pnls = ops.map(o => pnlNeto(o));
-    const ganadoras = pnls.filter(p => p > 0);
-    const perdedoras = pnls.filter(p => p < 0);
+    // Usamos EXACTAMENTE los mismos números que las tarjetas (calcularStats),
+    // en vez de recalcular con otra fórmula — así nunca pueden desincronizarse.
+    const stats = calcularStats(ops);
+    const winRate = stats.winRate; // ya viene 0-100, excluyendo breakeven
+    const ratio = parseFloat(stats.ratio) || 0; // '—' → 0
+    const pf = parseFloat(stats.pf) || 0;
+    const sharpe = parseFloat(stats.sharpe) || 0;
 
-    // Win Rate (0-100)
-    const winRate = ops.length ? ganadoras.length / ops.length * 100 : 0;
-
-    // Ratio R/B — promedio ganadora / |promedio perdedora| → normalizado a 0-100 (cap en 3:1 = 100)
-    const avgGan = ganadoras.length ? ganadoras.reduce((a,b) => a+b, 0) / ganadoras.length : 0;
-    const avgPer = perdedoras.length ? Math.abs(perdedoras.reduce((a,b) => a+b, 0) / perdedoras.length) : 1;
-    const ratio = avgPer > 0 ? avgGan / avgPer : 0;
+    // Ratio R/B y Profit Factor → normalizados a 0-100 (cap en 3:1 = 100)
     const ratioNorm = Math.min(ratio / 3 * 100, 100);
-
-    // Profit Factor → normalizado a 0-100 (cap en PF=3 = 100)
-    const totalGan = ganadoras.reduce((a,b) => a+b, 0);
-    const totalPer = Math.abs(perdedoras.reduce((a,b) => a+b, 0));
-    const pf = totalPer > 0 ? totalGan / totalPer : (totalGan > 0 ? 3 : 0);
     const pfNorm = Math.min(pf / 3 * 100, 100);
 
-    // Sharpe = promedio PnL / desv estándar PnL → normalizado (cap en 2 = 100)
-    const avg = pnls.reduce((a,b) => a+b, 0) / pnls.length;
-    const variance = pnls.reduce((a,b) => a + Math.pow(b - avg, 2), 0) / pnls.length;
-    const std = Math.sqrt(variance);
-    const sharpe = std > 0 ? avg / std : 0;
-    const sharpeNorm = Math.min(Math.max(sharpe / 2 * 100, 0), 100);
+    // Sharpe acá es "PnL promedio / desvío estándar" POR OPERACIÓN (no anualizado),
+    // así que en la práctica rara vez pasa de 0.3-0.5 incluso con un sistema sólido.
+    // Usar un cap de 2 (como antes) lo dejaba siempre pegado al centro del gráfico,
+    // desparejo contra el resto. Con un cap de 0.5 queda representativo de verdad.
+    const sharpeNorm = Math.min(Math.max(sharpe / 0.5 * 100, 0), 100);
 
     const data = [
       Math.round(winRate),

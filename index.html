@@ -3921,14 +3921,6 @@
                   <a href="https://pjrwdseaomijkgytbglh.supabase.co/storage/v1/object/public/Instaladores/TraderJournalTDA_V4.zip" target="_blank" rel="noopener noreferrer" style="display:inline-flex;align-items:center;gap:6px;background:var(--rojo);color:white;padding:7px 14px;border-radius:7px;text-decoration:none;font-size:12px;font-weight:600">⬇ Descargar ZIP (NT8)</a>
                   <a href="https://pjrwdseaomijkgytbglh.supabase.co/storage/v1/object/public/Instaladores/GUIA_INSTALACION_TRADINGJOURNALTDA-V4.pdf" target="_blank" rel="noopener noreferrer" style="display:inline-flex;align-items:center;gap:6px;background:#1A1A1A;border:1px solid #2A2A2A;color:var(--gris);padding:7px 14px;border-radius:7px;text-decoration:none;font-size:12px;font-weight:600">📄 Guía PDF</a>
                 </div>
-                ${esAdmin() ? `
-                <div style="margin-top:10px;padding-top:10px;border-top:1px solid #1E1E1E;display:flex;align-items:center;gap:8px;flex-wrap:wrap">
-                  <input type="file" id="inputReemplazarJournalZip" accept=".zip" style="display:none" onchange="reemplazarZipJournal(this.files[0])">
-                  <button id="btnReemplazarJournalZip" onclick="document.getElementById('inputReemplazarJournalZip').click()" style="display:inline-flex;align-items:center;gap:6px;background:rgba(139,26,26,0.15);border:1px solid rgba(139,26,26,0.4);color:#E57373;padding:6px 12px;border-radius:7px;font-size:11px;font-weight:600;cursor:pointer">
-                    ⬆️ Reemplazar ZIP (admin)
-                  </button>
-                  <span id="reemplazarJournalZipMsg" style="font-size:11px;color:var(--gris)"></span>
-                </div>` : ''}
               </div>
             </div>
             <div style="display:flex;gap:12px;align-items:flex-start;background:#111;border:1px solid #1E1E1E;border-radius:10px;padding:14px 16px">
@@ -4159,47 +4151,6 @@
     setTimeout(() => dibujarRadar(ops), 100);
     setTimeout(() => dibujarRadarPerf(ops), 110);
     setTimeout(() => iniciarCuentasDropdown(ops), 50);
-  }
-
-  // Reemplazo directo del ZIP del Journal (misma ruta fija que usa el link de descarga),
-  // reutilizando el mismo mecanismo PUT→POST/upsert que "Subir actualización".
-  async function reemplazarZipJournal(file) {
-    if (!file) return;
-    const btn = document.getElementById('btnReemplazarJournalZip');
-    const msg = document.getElementById('reemplazarJournalZipMsg');
-    const fileName = 'TraderJournalTDA_V4.zip';
-
-    btn.disabled = true;
-    msg.style.color = 'var(--gris)';
-    msg.textContent = 'Subiendo...';
-
-    let res = await fetch(`${SUPABASE_URL}/storage/v1/object/Instaladores/${fileName}`, {
-      method: 'PUT',
-      headers: { 'apikey': SUPABASE_ANON, 'Authorization': 'Bearer ' + sesiónActual.access_token,
-        'Content-Type': 'application/zip', 'x-upsert': 'true' },
-      body: file
-    });
-    if (!res.ok) {
-      res = await fetch(`${SUPABASE_URL}/storage/v1/object/Instaladores/${fileName}`, {
-        method: 'POST',
-        headers: { 'apikey': SUPABASE_ANON, 'Authorization': 'Bearer ' + sesiónActual.access_token,
-          'Content-Type': 'application/zip', 'x-upsert': 'true' },
-        body: file
-      });
-    }
-
-    btn.disabled = false;
-    document.getElementById('inputReemplazarJournalZip').value = '';
-
-    if (res.ok) {
-      msg.style.color = '#66BB6A';
-      msg.textContent = '✔ Listo — archivo reemplazado (Ctrl+F5 para ver el cambio reflejado).';
-    } else {
-      const errTxt = await res.text();
-      console.error('Reemplazo ZIP Journal error', res.status, errTxt);
-      msg.style.color = '#E57373';
-      msg.textContent = 'Error al subir. Revisá la consola (F12).';
-    }
   }
 
   // Llamar equity curve después de renderizar

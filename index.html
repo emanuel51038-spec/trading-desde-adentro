@@ -5585,9 +5585,10 @@
       ${renderStatCard('Profit Factor', stats.pf, parseFloat(stats.pf) >= 1 ? 'var(--verde)' : '#E57373')}
       ${renderStatCard('Expected Value', stats.evR + 'R', parseFloat(stats.evR) >= 0 ? 'var(--verde)' : '#E57373')}
       ${renderStatCard('Sharpe Ratio', stats.sharpe, parseFloat(stats.sharpe) >= 1 ? 'var(--verde)' : parseFloat(stats.sharpe) >= 0 ? '#FFD700' : '#E57373')}
-      ${renderStatCard('Max Drawdown', '-$' + stats.maxDD, '#E57373')}
+      ${renderStatCard('Max Drawdown', '-$' + stats.maxDD + ' (' + stats.maxDDPct + '%)', '#E57373')}
       ${renderStatCard('Máx. racha negativa', stats.rachaMax + ' ops', '#E57373')}
       ${renderStatCard('Racha actual', stats.rachaActualCount + (stats.rachaActualTipo==='win' ? ' ✅' : ' ❌'), stats.rachaActualTipo==='win' ? 'var(--verde)' : '#E57373')}
+      ${renderStatCard('Drawdown actual', (parseFloat(stats.ddActual) > 0 ? '-$' + stats.ddActual + ' (' + stats.ddActualPct + '%)' : '$0.00 (0%)'), parseFloat(stats.ddActual) > 0 ? '#E57373' : 'var(--verde)')}
       ${renderStatCard('Breakeven', String(stats.beCount || 0), '#FFD700')}
       ${renderStatCard('Estrategia top', stats.estMasUsada, 'var(--blanco)')}
       ${renderStatCard('Emoción top', stats.emocionTop, 'var(--blanco)')}
@@ -5620,8 +5621,21 @@
     const evR = avgPer > 0 ? ((wr * ratioNum) - (1 - wr)).toFixed(2) : '—';
     // Acumulado total (incluye BE, porque sigue siendo dinero real)
     const acumulado = ops.reduce((a, o) => a + pnlNeto(o), 0);
-    let equity = 0, peak = 0, maxDD = 0;
-    [...ops].reverse().forEach(o => { equity += pnlNeto(o); if (equity > peak) peak = equity; const dd = peak - equity; if (dd > maxDD) maxDD = dd; });
+    let equity = 0, peak = 0, maxDD = 0, peakAlMaxDD = 0;
+    [...ops].reverse().forEach(o => {
+      equity += pnlNeto(o);
+      if (equity > peak) peak = equity;
+      const dd = peak - equity;
+      if (dd > maxDD) { maxDD = dd; peakAlMaxDD = peak; }
+    });
+    // % del Max Drawdown: caída respecto al pico de equity vigente en ese momento.
+    // Si el pico era 0 o negativo (todavía sin ganancias acumuladas), el % no es
+    // representativo, así que lo dejamos en 0 en vez de mostrar un número engañoso.
+    const maxDDPct = peakAlMaxDD > 0 ? (maxDD / peakAlMaxDD * 100) : 0;
+    // Drawdown ACTUAL: cuánto por debajo del pico histórico estás ahora mismo
+    // (0 si estás en un máximo nuevo o cerca de él).
+    const ddActual = peak - equity;
+    const ddActualPct = peak > 0 ? (ddActual / peak * 100) : 0;
     // Racha máx negativa (BE no cuenta como pérdida ni corta la racha)
     let rachaMax = 0, _rAct = 0;
     [...opsSinBE].reverse().forEach(o => { if (pnlNeto(o) < 0) { _rAct++; if (_rAct > rachaMax) rachaMax = _rAct; } else _rAct = 0; });
@@ -5650,7 +5664,7 @@
     const avgPnl = pnls.reduce((a,b) => a+b, 0) / (pnls.length || 1);
     const stdPnl = Math.sqrt(pnls.reduce((a,b) => a + Math.pow(b - avgPnl, 2), 0) / (pnls.length || 1));
     const sharpe = stdPnl > 0 ? (avgPnl / stdPnl).toFixed(2) : '—';
-    return { winRate, ratio, pf, evR, acumulado, maxDD: maxDD.toFixed(2), rachaMax, rachaActualCount, rachaActualTipo, estMasUsada, emocionTop, sharpe, beCount, avgGan, avgPer };
+    return { winRate, ratio, pf, evR, acumulado, maxDD: maxDD.toFixed(2), maxDDPct: maxDDPct.toFixed(1), ddActual: ddActual.toFixed(2), ddActualPct: ddActualPct.toFixed(1), rachaMax, rachaActualCount, rachaActualTipo, estMasUsada, emocionTop, sharpe, beCount, avgGan, avgPer };
   }
 
   function renderOpFila(o) {

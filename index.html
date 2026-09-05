@@ -3921,6 +3921,14 @@
                   <a href="https://pjrwdseaomijkgytbglh.supabase.co/storage/v1/object/public/Instaladores/TraderJournalTDA_V4.zip" target="_blank" rel="noopener noreferrer" style="display:inline-flex;align-items:center;gap:6px;background:var(--rojo);color:white;padding:7px 14px;border-radius:7px;text-decoration:none;font-size:12px;font-weight:600">⬇ Descargar ZIP (NT8)</a>
                   <a href="https://pjrwdseaomijkgytbglh.supabase.co/storage/v1/object/public/Instaladores/GUIA_INSTALACION_TRADINGJOURNALTDA-V4.pdf" target="_blank" rel="noopener noreferrer" style="display:inline-flex;align-items:center;gap:6px;background:#1A1A1A;border:1px solid #2A2A2A;color:var(--gris);padding:7px 14px;border-radius:7px;text-decoration:none;font-size:12px;font-weight:600">📄 Guía PDF</a>
                 </div>
+                ${esAdmin() ? `
+                <div style="margin-top:10px;padding-top:10px;border-top:1px solid #1E1E1E;display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+                  <input type="file" id="inputReemplazarJournalZip" accept=".zip" style="display:none" onchange="reemplazarZipJournal(this.files[0])">
+                  <button id="btnReemplazarJournalZip" onclick="document.getElementById('inputReemplazarJournalZip').click()" style="display:inline-flex;align-items:center;gap:6px;background:rgba(139,26,26,0.15);border:1px solid rgba(139,26,26,0.4);color:#E57373;padding:6px 12px;border-radius:7px;font-size:11px;font-weight:600;cursor:pointer">
+                    ⬆️ Reemplazar ZIP (admin)
+                  </button>
+                  <span id="reemplazarJournalZipMsg" style="font-size:11px;color:var(--gris)"></span>
+                </div>` : ''}
               </div>
             </div>
             <div style="display:flex;gap:12px;align-items:flex-start;background:#111;border:1px solid #1E1E1E;border-radius:10px;padding:14px 16px">
@@ -4153,6 +4161,47 @@
     setTimeout(() => iniciarCuentasDropdown(ops), 50);
   }
 
+  // Reemplazo directo del ZIP del Journal (misma ruta fija que usa el link de descarga),
+  // reutilizando el mismo mecanismo PUT→POST/upsert que "Subir actualización".
+  async function reemplazarZipJournal(file) {
+    if (!file) return;
+    const btn = document.getElementById('btnReemplazarJournalZip');
+    const msg = document.getElementById('reemplazarJournalZipMsg');
+    const fileName = 'TraderJournalTDA_V4.zip';
+
+    btn.disabled = true;
+    msg.style.color = 'var(--gris)';
+    msg.textContent = 'Subiendo...';
+
+    let res = await fetch(`${SUPABASE_URL}/storage/v1/object/Instaladores/${fileName}`, {
+      method: 'PUT',
+      headers: { 'apikey': SUPABASE_ANON, 'Authorization': 'Bearer ' + sesiónActual.access_token,
+        'Content-Type': 'application/zip', 'x-upsert': 'true' },
+      body: file
+    });
+    if (!res.ok) {
+      res = await fetch(`${SUPABASE_URL}/storage/v1/object/Instaladores/${fileName}`, {
+        method: 'POST',
+        headers: { 'apikey': SUPABASE_ANON, 'Authorization': 'Bearer ' + sesiónActual.access_token,
+          'Content-Type': 'application/zip', 'x-upsert': 'true' },
+        body: file
+      });
+    }
+
+    btn.disabled = false;
+    document.getElementById('inputReemplazarJournalZip').value = '';
+
+    if (res.ok) {
+      msg.style.color = '#66BB6A';
+      msg.textContent = '✔ Listo — archivo reemplazado (Ctrl+F5 para ver el cambio reflejado).';
+    } else {
+      const errTxt = await res.text();
+      console.error('Reemplazo ZIP Journal error', res.status, errTxt);
+      msg.style.color = '#E57373';
+      msg.textContent = 'Error al subir. Revisá la consola (F12).';
+    }
+  }
+
   // Llamar equity curve después de renderizar
   // ── CALENDARIO ──────────────────────────────────────
   /* ══════════════════════════════════════════════════════
@@ -4277,6 +4326,10 @@
     const neto = totalRetirado - totalGastado;
     const cuentasFondeadasActivas = evals.filter(f => f.resultado === 'Superada' && !f.cuenta_quemada_luego).length;
     const enEvaluacion = evals.filter(f => f.resultado === 'En curso').length;
+    const superadasConFecha = evals.filter(f => f.resultado === 'Superada' && f.fecha_resultado);
+    const promDiasSuperar = superadasConFecha.length > 0
+      ? Math.round(superadasConFecha.reduce((a, f) => a + (new Date(f.fecha_resultado) - new Date(f.fecha)) / 86400000, 0) / superadasConFecha.length)
+      : null;
 
     resCont.innerHTML = `
       <!-- Métricas -->
@@ -4289,6 +4342,7 @@
         ${renderFondeoCard('QUEMADAS', String(quemadas), '#E57373')}
         ${renderFondeoCard('EN EVALUACIÓN', String(enEvaluacion), '#FFD700')}
         ${renderFondeoCard('CUENTAS FONDEADAS', String(cuentasFondeadasActivas), 'var(--verde)')}
+        ${promDiasSuperar !== null ? renderFondeoCard('PROM. PARA SUPERAR', promDiasSuperar + (promDiasSuperar === 1 ? ' día' : ' días'), '#64B5F6') : ''}
       </div>
 
       <!-- Gráficos -->
@@ -4414,7 +4468,7 @@
       <td style="padding:12px 16px;color:var(--gris)">${tipoLabel}</td>
       <td style="padding:12px 16px"><span style="color:${motivoColor};font-size:12px;font-weight:600">${f.motivo || '—'}</span></td>
       <td style="padding:12px 16px"><span style="color:${resultadoColor};font-size:12px;font-weight:600">${f.resultado || '—'}</span></td>
-      <td style="padding:12px 16px">${estadoActual ? `<span style="color:${estadoActual.color};font-size:12px;font-weight:600">${estadoActual.texto}</span>${(f.cuenta_quemada_luego && f.fecha_cuenta_quemada) ? `<div style="font-size:10px;color:var(--gris);margin-top:2px">desde ${new Date(f.fecha_cuenta_quemada+'T00:00:00').toLocaleDateString('es-AR',{day:'2-digit',month:'2-digit',year:'2-digit'})}</div>` : ''}` : '<span style="color:var(--gris)">—</span>'}</td>
+      <td style="padding:12px 16px">${estadoActual ? `<span style="color:${estadoActual.color};font-size:12px;font-weight:600">${estadoActual.texto}</span>${(f.cuenta_quemada_luego && f.fecha_cuenta_quemada) ? `<div style="font-size:10px;color:var(--gris);margin-top:2px">desde ${new Date(f.fecha_cuenta_quemada+'T00:00:00').toLocaleDateString('es-AR',{day:'2-digit',month:'2-digit',year:'2-digit'})}</div>` : (f.fecha_resultado ? `<div style="font-size:10px;color:var(--gris);margin-top:2px">el ${new Date(f.fecha_resultado+'T00:00:00').toLocaleDateString('es-AR',{day:'2-digit',month:'2-digit',year:'2-digit'})}</div>` : '')}` : '<span style="color:var(--gris)">—</span>'}</td>
       <td style="padding:12px 16px;font-weight:700;color:${montoColor}">${montoStr}</td>
       <td style="padding:12px 16px;color:var(--gris);font-size:12px;max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(f.notas || '—')}</td>
       <td style="padding:12px 16px;text-align:center">
@@ -4594,12 +4648,18 @@
           </select>
 
           <label style="font-size:11px;color:var(--gris);display:block;margin-bottom:5px;text-transform:uppercase;letter-spacing:1px">Resultado</label>
-          <select id="fondeoResultado" onchange="toggleFondeoQuemadaLuegoWrap()" style="width:100%;background:#181818;border:1px solid #2A2A2A;color:var(--blanco);padding:9px 12px;border-radius:7px;font-size:13px;margin-bottom:14px;outline:none;font-family:'DM Sans',sans-serif">
+          <select id="fondeoResultado" onchange="toggleFondeoQuemadaLuegoWrap(); toggleFondeoFechaResultadoWrap()" style="width:100%;background:#181818;border:1px solid #2A2A2A;color:var(--blanco);padding:9px 12px;border-radius:7px;font-size:13px;margin-bottom:14px;outline:none;font-family:'DM Sans',sans-serif">
             <option value="En curso" ${(!fondeo || fondeo.resultado === 'En curso') ? 'selected' : ''}>En curso</option>
             <option value="Superada" ${fondeo?.resultado === 'Superada' ? 'selected' : ''}>Superada</option>
             <option value="Quemada" ${fondeo?.resultado === 'Quemada' ? 'selected' : ''}>Quemada</option>
             <option value="Renovada" ${fondeo?.resultado === 'Renovada' ? 'selected' : ''}>Renovada</option>
           </select>
+
+          <div id="fondeoFechaResultadoWrap">
+            <label style="font-size:11px;color:var(--gris);display:block;margin-bottom:5px;text-transform:uppercase;letter-spacing:1px">Fecha en que pasó a este resultado</label>
+            <input type="date" id="fondeoFechaResultado" value="${fondeo?.fecha_resultado || new Date().toISOString().slice(0,10)}" onclick="this.showPicker && this.showPicker()"
+              style="width:100%;background:#181818;border:1px solid #2A2A2A;color:var(--blanco);padding:9px 12px;border-radius:7px;font-size:13px;margin-bottom:14px;outline:none;font-family:'DM Sans',sans-serif;cursor:pointer;color-scheme:dark">
+          </div>
 
           <div id="fondeoQuemadaLuegoWrap">
             <label style="display:flex;align-items:center;gap:8px;cursor:pointer;margin-bottom:14px;font-size:13px;color:var(--blanco)">
@@ -4630,6 +4690,7 @@
     modal.classList.add('active');
     toggleFondeoEstado();
     toggleFondeoQuemadaLuegoWrap();
+    toggleFondeoFechaResultadoWrap();
     toggleFondeoFechaQuemada();
   }
 
@@ -4648,6 +4709,12 @@
     const wrapQuemadaLuego = document.getElementById('fondeoQuemadaLuegoWrap');
     if (wrapQuemadaLuego) wrapQuemadaLuego.style.display = (resultado === 'Superada') ? 'block' : 'none';
     toggleFondeoFechaQuemada();
+  }
+
+  function toggleFondeoFechaResultadoWrap() {
+    const resultado = document.getElementById('fondeoResultado')?.value;
+    const wrap = document.getElementById('fondeoFechaResultadoWrap');
+    if (wrap) wrap.style.display = (resultado === 'Superada' || resultado === 'Quemada') ? 'block' : 'none';
   }
 
   function toggleFondeoFechaQuemada() {
@@ -4674,6 +4741,9 @@
 
     const motivo   = tipo === 'Evaluacion' ? document.getElementById('fondeoMotivo')?.value : null;
     const resultado = tipo === 'Evaluacion' ? document.getElementById('fondeoResultado')?.value : null;
+    const fechaResultado = (tipo === 'Evaluacion' && (resultado === 'Superada' || resultado === 'Quemada'))
+      ? document.getElementById('fondeoFechaResultado')?.value || null
+      : null;
     const cuentaQuemadaLuego = (tipo === 'Evaluacion' && resultado === 'Superada')
       ? !!document.getElementById('fondeoQuemadaLuego')?.checked
       : false;
@@ -4688,9 +4758,9 @@
       msg.textContent = 'Completá fecha, empresa y monto.'; return;
     }
 
-    const payload = { user_id: sesiónActual.user.id, fecha, empresa, tipo, motivo, resultado, cuenta_quemada_luego: cuentaQuemadaLuego, fecha_cuenta_quemada: fechaCuentaQuemada, monto, notas, categoria_gasto_id };
+    const payload = { user_id: sesiónActual.user.id, fecha, empresa, tipo, motivo, resultado, fecha_resultado: fechaResultado, cuenta_quemada_luego: cuentaQuemadaLuego, fecha_cuenta_quemada: fechaCuentaQuemada, monto, notas, categoria_gasto_id };
     const r = id
-      ? await sbFetch('/rest/v1/fondeos?id=eq.' + id, { method: 'PATCH', body: JSON.stringify({ fecha, empresa, tipo, motivo, resultado, cuenta_quemada_luego: cuentaQuemadaLuego, fecha_cuenta_quemada: fechaCuentaQuemada, monto, notas, categoria_gasto_id }) }, sesiónActual.access_token)
+      ? await sbFetch('/rest/v1/fondeos?id=eq.' + id, { method: 'PATCH', body: JSON.stringify({ fecha, empresa, tipo, motivo, resultado, fecha_resultado: fechaResultado, cuenta_quemada_luego: cuentaQuemadaLuego, fecha_cuenta_quemada: fechaCuentaQuemada, monto, notas, categoria_gasto_id }) }, sesiónActual.access_token)
       : await sbFetch('/rest/v1/fondeos', { method: 'POST', body: JSON.stringify(payload), headers: { 'Prefer': 'return=minimal' } }, sesiónActual.access_token);
 
     if (r.ok || r.status === 201) {

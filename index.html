@@ -3997,6 +3997,7 @@
       <div id="journalStatsGrid" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:12px;margin-bottom:28px">
         ${_renderStatsCardsHTML(stats)}
       </div>
+      <div id="journalBEPanel">${renderPanelGestionBE(ops)}</div>
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;flex-wrap:wrap;gap:10px">
         <span id="journalConteo" style="font-size:14px;font-weight:600">${ops.length} operaciones</span>
         <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
@@ -5737,6 +5738,131 @@
     return { winRate, ratio, pf, evR, acumulado, maxDD: maxDD.toFixed(2), maxDDPct: maxDDPct.toFixed(1), ddActual: ddActual.toFixed(2), ddActualPct: ddActualPct.toFixed(1), rachaMax, rachaActualCount, rachaActualTipo, estMasUsada, emocionTop, sharpe, beCount, avgGan, avgPer };
   }
 
+  /* ══════════════════════
+     GESTIÓN DE BE: ¿qué hace el precio después de sacarte en breakeven?
+     r = ganadoras (sin BE) · s = BE que luego fueron al target · u = BE que luego fueron al stop original
+     Con target T (en R): stop quieto gana al BE cuando s·T > u  ⇔  s/(s+u) > 1/(T+1)
+  ══════════════════════ */
+  function calcularGestionBE(ops) {
+    const be = ops.filter(o => o.es_breakeven);
+    const r = ops.filter(o => !o.es_breakeven && pnlNeto(o) > 0).length;
+    const cuenta = arr => ({
+      total: arr.length,
+      target: arr.filter(o => o.be_post === 'target').length,
+      stop: arr.filter(o => o.be_post === 'stop').length
+    });
+    const g = cuenta(be);
+    const s = g.target, u = g.stop, k = s + u, N = r + s + u;
+    const T = parseFloat(calcularStats(ops).ratio);
+    const Tok = isFinite(T) && T > 0;
+    const p = k ? s / k : null;
+    let ic = null; // intervalo de Wilson 95%
+    if (k) {
+      const z = 1.96, d = 1 + z * z / k;
+      const c = (p + z * z / (2 * k)) / d;
+      const h = z * Math.sqrt(p * (1 - p) / k + z * z / (4 * k * k)) / d;
+      ic = [Math.max(0, c - h), Math.min(1, c + h)];
+    }
+    // Pico de R antes de volver a la entrada (solo se registra en BE que luego fueron al target)
+    const picos = be.filter(o => o.be_post === 'target' && o.be_max_r != null)
+      .map(o => Number(o.be_max_r)).filter(v => isFinite(v) && v > 0);
+    const prom = a => a.reduce((x, y) => x + y, 0) / a.length;
+    const trailing = picos.length ? { n: picos.length, pico: prom(picos), trail: prom(picos.map(v => Math.max(v - 1, 0))) } : null;
+    return {
+      trailing,
+      beTotal: be.length,
+      sinClasificar: be.filter(o => !o.be_post).length,
+      g, r, s, u, k, N, T: Tok ? T : null, p, ic,
+      umbral: Tok ? 1 / (T + 1) : null,
+      exp: (Tok && N) ? {
+        stopQuieto: ((r + s) * T - u) / N,
+        beEn1R: (r * T) / N,
+        cierre1a1: 1
+      } : null,
+      porTipo: {
+        tecnico: cuenta(be.filter(o => o.be_tipo === 'tecnico')),
+        emocional: cuenta(be.filter(o => o.be_tipo === 'emocional')),
+        sinTipo: cuenta(be.filter(o => !o.be_tipo))
+      }
+    };
+  }
+
+  function renderPanelGestionBE(ops) {
+    const d = calcularGestionBE(ops);
+    if (!d.beTotal) return '';
+    const pct = v => (v * 100).toFixed(0) + '%';
+    const rFmt = v => (v >= 0 ? '+' : '') + v.toFixed(2) + 'R';
+    const card = (label, valor, color, sub) => `<div style="background:var(--negro-card);border:1px solid var(--negro-border);border-radius:12px;padding:14px 16px">
+        <div style="font-size:10px;color:var(--gris);text-transform:uppercase;letter-spacing:1px;margin-bottom:6px">${label}</div>
+        <div style="font-size:24px;font-family:'Bebas Neue',sans-serif;color:${color}">${valor}</div>
+        ${sub ? `<div style="font-size:11px;color:#666;margin-top:2px">${sub}</div>` : ''}
+      </div>`;
+
+    let veredicto, vColor = '#FFD700';
+    if (d.k < 15) {
+      veredicto = `Muestra chica: ${d.k} BE clasificados como target o stop. Con 15-20 ya empieza a verse una tendencia.`;
+    } else if (d.umbral === null) {
+      veredicto = 'Falta un ratio R:R calculable para comparar las políticas.';
+    } else if (d.ic[0] > d.umbral) {
+      veredicto = 'Los datos favorecen dejar el stop original quieto: la proporción de BE que seguían al target supera el umbral incluso en el peor caso del intervalo.'; vColor = 'var(--verde)';
+    } else if (d.ic[1] < d.umbral) {
+      veredicto = 'Los datos favorecen proteger en BE (o cerrar en 1:1): la proporción de BE que seguían al target queda por debajo del umbral incluso en el mejor caso del intervalo.'; vColor = '#64B5F6';
+    } else {
+      veredicto = 'Todavía no se distingue: el intervalo de confianza cruza el umbral. Hace falta más muestra.';
+    }
+
+    const filaTipo = (nombre, c) => `<tr>
+        <td style="padding:6px 8px;color:var(--blanco)">${nombre}</td>
+        <td style="padding:6px 8px;text-align:right">${c.total}</td>
+        <td style="padding:6px 8px;text-align:right;color:var(--verde)">${c.target}</td>
+        <td style="padding:6px 8px;text-align:right;color:#E57373">${c.stop}</td>
+      </tr>`;
+    const pt = d.porTipo;
+    const kEmo = pt.emocional.target + pt.emocional.stop;
+    const notaEmo = kEmo > 0
+      ? `<div style="font-size:12px;color:var(--gris);margin-top:8px">De tus BE emocionales clasificados, ${pct(pt.emocional.target / kEmo)} siguió al target.</div>` : '';
+
+    const expHTML = d.exp ? `
+      <div style="font-size:11px;color:var(--gris);text-transform:uppercase;letter-spacing:1px;margin:16px 0 8px">Expectativa por trade que llega a 1R</div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px">
+        ${card('Stop quieto', rFmt(d.exp.stopQuieto), d.exp.stopQuieto >= 0 ? 'var(--verde)' : '#E57373')}
+        ${card('BE en 1R', rFmt(d.exp.beEn1R), d.exp.beEn1R >= 0 ? 'var(--verde)' : '#E57373')}
+        ${card('Cierre en 1:1', rFmt(d.exp.cierre1a1), 'var(--verde)', 'antes de comisiones')}
+      </div>` : '';
+
+    const trHTML = d.trailing ? `
+      <div style="font-size:11px;color:var(--gris);text-transform:uppercase;letter-spacing:1px;margin:16px 0 8px">¿Conviene un trailing de 1R por detrás?</div>
+      <div style="font-size:13px;line-height:1.6;color:var(--blanco)">En ${d.trailing.n} BE que luego llegaron al target, el pico promedio antes de volver a la entrada fue <strong>${d.trailing.pico.toFixed(1)}R</strong>. Un trailing de 1R por detrás habría dado ≈ <strong>${rFmt(d.trailing.trail)}</strong> por trade, contra 0R del BE${d.T ? ' y +' + d.T.toFixed(2) + 'R de dejar el stop quieto' : ''}.</div>
+      <div style="font-size:11px;color:#555;margin-top:6px;line-height:1.5">El máx. R solo se pide en BE que luego fueron al target, así que esta comparación no incluye qué habría pasado con el trailing en los BE que fueron al stop. "10R o más" se toma como 10R.</div>` : '';
+
+    return `<div style="background:#0D0D0D;border:1px solid #1E1E1E;border-radius:12px;padding:18px;margin-bottom:28px">
+      <div style="font-family:'Bebas Neue',sans-serif;font-size:20px;letter-spacing:1.5px;margin-bottom:4px">Gestión de BE</div>
+      <div style="font-size:12px;color:var(--gris);margin-bottom:14px">Qué hizo el precio después de sacarte en breakeven.</div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:10px">
+        ${card('BE totales', d.beTotal, '#FFD700', d.sinClasificar ? d.sinClasificar + ' sin clasificar' : 'todos clasificados')}
+        ${card('Fue al target', d.s, 'var(--verde)')}
+        ${card('Fue al stop', d.u, '#E57373')}
+        ${card('% siguió al target', d.p === null ? '—' : pct(d.p), 'var(--blanco)', d.ic ? 'IC 95%: ' + pct(d.ic[0]) + '–' + pct(d.ic[1]) : '')}
+        ${card('Umbral', d.umbral === null ? '—' : pct(d.umbral), 'var(--blanco)', d.T ? 'con target ' + d.T.toFixed(2) + 'R' : '')}
+      </div>
+      <div style="margin-top:12px;padding:10px 12px;border-left:3px solid ${vColor};background:#111;font-size:13px;line-height:1.5;color:var(--blanco)">${veredicto}</div>
+      ${expHTML}
+      ${trHTML}
+      <div style="font-size:11px;color:var(--gris);text-transform:uppercase;letter-spacing:1px;margin:16px 0 8px">BE técnico vs. emocional</div>
+      <div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:13px;color:var(--gris)">
+        <thead><tr style="border-bottom:1px solid #1E1E1E;font-size:11px">
+          <th style="padding:6px 8px;text-align:left;font-weight:500">Tipo</th>
+          <th style="padding:6px 8px;text-align:right;font-weight:500">BE</th>
+          <th style="padding:6px 8px;text-align:right;font-weight:500">Target</th>
+          <th style="padding:6px 8px;text-align:right;font-weight:500">Stop</th>
+        </tr></thead>
+        <tbody>${filaTipo('Técnico', pt.tecnico)}${filaTipo('Emocional', pt.emocional)}${filaTipo('Sin tipo', pt.sinTipo)}</tbody>
+      </table></div>
+      ${notaEmo}
+      <div style="font-size:11px;color:#555;margin-top:14px;line-height:1.5">Solo cuentan los trades que llegaron a 1R: las ganadoras sin BE se toman como "fueron al target sin tocar la entrada", y el target es tu ratio R:R realizado. Usá el filtro de fechas para medir desde que aplicás la regla de BE en 1:1. Esto mide expectativa; el drawdown que evita el BE también cuenta.</div>
+    </div>`;
+  }
+
   function renderOpFila(o) {
     const fecha = new Date(o.fecha).toLocaleDateString('es-AR', { day: '2-digit', month: '2-digit', year: '2-digit' });
     const pnlBruto = Number(o.pnl);
@@ -6323,6 +6449,8 @@
       const statsGrid = document.getElementById('journalStatsGrid');
       if (statsGrid) statsGrid.innerHTML = _renderStatsCardsHTML(calcularStats([]));
     }
+    const _bePanel = document.getElementById('journalBEPanel');
+    if (_bePanel) _bePanel.innerHTML = renderPanelGestionBE(opsFiltradas);
     _opsFiltradas = opsFiltradas;
     if (typeof iniciarCalendario === 'function') iniciarCalendario(opsFiltradas);
     if (typeof dibujarEquityCurve === 'function') dibujarEquityCurve(opsFiltradas);
@@ -6940,9 +7068,31 @@
         <textarea id="editOpNotas" placeholder="Observaciones..." style="width:100%;background:#181818;border:1px solid #2A2A2A;color:var(--blanco);padding:9px 12px;border-radius:7px;font-size:13px;min-height:80px;resize:vertical;outline:none;font-family:'DM Sans',sans-serif;margin-bottom:16px">${escAttr(notasActuales)}</textarea>
 
         <label style="display:flex;align-items:center;gap:8px;cursor:pointer;margin-bottom:16px;padding:10px 12px;background:#181818;border:1px solid #2A2A2A;border-radius:7px">
-          <input type="checkbox" id="editOpBreakeven" ${op.es_breakeven ? 'checked' : ''} style="width:16px;height:16px;cursor:pointer;accent-color:#FFD700">
+          <input type="checkbox" id="editOpBreakeven" ${op.es_breakeven ? 'checked' : ''} onchange="document.getElementById('editOpBEExtra').style.display=this.checked?'block':'none'" style="width:16px;height:16px;cursor:pointer;accent-color:#FFD700">
           <span style="font-size:13px;color:var(--blanco)">⚖️ Fue Breakeven (protegida en 1:1, no una ganadora real)</span>
         </label>
+
+        <div id="editOpBEExtra" style="display:${op.es_breakeven ? 'block' : 'none'};margin-bottom:16px;padding:12px;background:#181818;border:1px solid #2A2A2A;border-radius:7px">
+          <label style="font-size:11px;color:var(--gris);display:block;margin-bottom:6px;text-transform:uppercase;letter-spacing:1px">¿Qué hizo el precio después?</label>
+          <select id="editOpBePost" onchange="document.getElementById('editOpBeMaxRWrap').style.display=this.value==='target'?'block':'none'" style="width:100%;background:#181818;border:1px solid #2A2A2A;color:var(--blanco);padding:9px 12px;border-radius:7px;font-size:13px;margin-bottom:12px;outline:none;font-family:'DM Sans',sans-serif">
+            <option value="">— Sin clasificar —</option>
+            <option value="target" ${op.be_post === 'target' ? 'selected' : ''}>Llegó al target</option>
+            <option value="stop" ${op.be_post === 'stop' ? 'selected' : ''}>Fue al stop original</option>
+          </select>
+          <label style="font-size:11px;color:var(--gris);display:block;margin-bottom:6px;text-transform:uppercase;letter-spacing:1px">Tipo de BE</label>
+          <select id="editOpBeTipo" style="width:100%;background:#181818;border:1px solid #2A2A2A;color:var(--blanco);padding:9px 12px;border-radius:7px;font-size:13px;margin-bottom:12px;outline:none;font-family:'DM Sans',sans-serif">
+            <option value="">— Sin clasificar —</option>
+            <option value="tecnico" ${op.be_tipo === 'tecnico' ? 'selected' : ''}>Técnico (regla del sistema)</option>
+            <option value="emocional" ${op.be_tipo === 'emocional' ? 'selected' : ''}>Emocional (miedo / ansiedad)</option>
+          </select>
+          <div id="editOpBeMaxRWrap" style="display:${op.be_post === 'target' ? 'block' : 'none'}">
+            <label style="font-size:11px;color:var(--gris);display:block;margin-bottom:6px;text-transform:uppercase;letter-spacing:1px">Máx. R antes de volver a la entrada</label>
+            <select id="editOpBeMaxR" style="width:100%;background:#181818;border:1px solid #2A2A2A;color:var(--blanco);padding:9px 12px;border-radius:7px;font-size:13px;margin-bottom:0;outline:none;font-family:'DM Sans',sans-serif">
+              <option value="">— Sin registrar —</option>
+              ${[1,1.5,2,2.5,3,4,5,6,8,10].map(v => `<option value="${v}" ${Number(op.be_max_r) === v ? 'selected' : ''}>${v === 10 ? '10R o más' : v + 'R'}</option>`).join('')}
+            </select>
+          </div>
+        </div>
 
         <label style="font-size:11px;color:var(--gris);display:block;margin-bottom:6px;text-transform:uppercase;letter-spacing:1px">PnL (ajustar si incluye comisión)</label>
         <input type="number" id="editOpPnl" step="0.01" value="${pnl.toFixed(2)}"
@@ -7004,6 +7154,10 @@
     });
 
     const payload = { pnl: pnlEdit, cantidad: cantEdit, es_breakeven: esBreakeven };
+    // Si ya no es BE, se limpian los datos de clasificación para no ensuciar la estadística
+    payload.be_post = esBreakeven ? (document.getElementById('editOpBePost')?.value || null) : null;
+    payload.be_tipo = esBreakeven ? (document.getElementById('editOpBeTipo')?.value || null) : null;
+    payload.be_max_r = (esBreakeven && payload.be_post === 'target') ? (parseFloat(document.getElementById('editOpBeMaxR')?.value) || null) : null;
     if (estrategia) payload.estrategia = estrategia;
     if (emocion)    payload.emocion    = emocion;
     if (notas)      payload.notas      = notas;

@@ -5739,68 +5739,25 @@
   }
 
   /* ══════════════════════
-     GESTIÓN DE BE: ¿qué hace el precio después de sacarte en breakeven?
-     r = ganadoras (sin BE) · s = BE que luego fueron al target · u = BE que luego fueron al stop original
-     Con target T (en R): stop quieto gana al BE cuando s·T > u  ⇔  s/(s+u) > 1/(T+1)
+     GESTIÓN DE BE: qué hizo el precio después de sacarte en breakeven
   ══════════════════════ */
-  function getBeCfg() {
-    try { return { target: localStorage.getItem('tda_be_target_r') || '', nivel: localStorage.getItem('tda_be_nivel_r') || '' }; }
-    catch (e) { return { target: '', nivel: '' }; }
-  }
-  function setBeCfg(clave, v) {
-    try { if (v === '') localStorage.removeItem(clave); else localStorage.setItem(clave, v); } catch (e) {}
-    const el = document.getElementById('journalBEPanel');
-    if (el && window._beOpsActual) el.innerHTML = renderPanelGestionBE(window._beOpsActual);
-  }
-
-  function calcularGestionBE(opsTodas, cfg) {
-    cfg = cfg || {};
-    // Ventana de medición: desde el primer BE clasificado. Antes de eso las ganadoras (r) no son
-    // comparables con s/u, porque los BE viejos no tienen clasificación y quedarían fuera.
-    const fk = o => (o.fecha ? String(o.fecha).substring(0, 10) : '');
-    const clasif = opsTodas.filter(o => o.es_breakeven && o.be_post).map(fk).filter(Boolean).sort();
-    const desde = clasif.length ? clasif[0] : null;
-    const ops = desde ? opsTodas.filter(o => fk(o) >= desde) : opsTodas;
-    const beAntes = desde ? opsTodas.filter(o => o.es_breakeven && fk(o) < desde).length : 0;
+  function calcularGestionBE(ops) {
     const be = ops.filter(o => o.es_breakeven);
-    const r = ops.filter(o => !o.es_breakeven && pnlNeto(o) > 0).length;
     const cuenta = arr => ({
       total: arr.length,
       target: arr.filter(o => o.be_post === 'target').length,
       stop: arr.filter(o => o.be_post === 'stop').length
     });
     const g = cuenta(be);
-    const s = g.target, u = g.stop, k = s + u, N = r + s + u;
-    const Tman = parseFloat(cfg.target);
-    const Tmanual = isFinite(Tman) && Tman > 0;
-    const T = Tmanual ? Tman : parseFloat(calcularStats(opsTodas).ratio);
-    const Tok = isFinite(T) && T > 0;
-    const nv = parseFloat(cfg.nivel);
-    const nivel = (isFinite(nv) && nv > 0) ? nv : 1.1;
-    const p = k ? s / k : null;
-    let ic = null; // intervalo de Wilson 95%
-    if (k) {
-      const z = 1.96, d = 1 + z * z / k;
-      const c = (p + z * z / (2 * k)) / d;
-      const h = z * Math.sqrt(p * (1 - p) / k + z * z / (4 * k * k)) / d;
-      ic = [Math.max(0, c - h), Math.min(1, c + h)];
-    }
-    // Pico de R antes de volver a la entrada (solo se registra en BE que luego fueron al target)
+    const k = g.target + g.stop;
     const picos = be.filter(o => o.be_post === 'target' && o.be_max_r != null)
       .map(o => Number(o.be_max_r)).filter(v => isFinite(v) && v > 0);
-    const prom = a => a.reduce((x, y) => x + y, 0) / a.length;
-    const trailing = picos.length ? { n: picos.length, pico: prom(picos), trail: prom(picos.map(v => Math.max(v - 1, 0))) } : null;
     return {
-      trailing, desde, beAntes, Tmanual, nivel,
       beTotal: be.length,
       sinClasificar: be.filter(o => !o.be_post).length,
-      g, r, s, u, k, N, T: Tok ? T : null, p, ic,
-      umbral: Tok ? 1 / (T + 1) : null,
-      exp: (Tok && N) ? {
-        stopQuieto: ((r + s) * T - u) / N,
-        beEn1R: (r * T) / N,
-        cierreFijo: nivel
-      } : null,
+      g, k,
+      p: k ? g.target / k : null,
+      pico: picos.length ? { n: picos.length, prom: picos.reduce((a, b) => a + b, 0) / picos.length } : null,
       porTipo: {
         tecnico: cuenta(be.filter(o => o.be_tipo === 'tecnico')),
         emocional: cuenta(be.filter(o => o.be_tipo === 'emocional')),
@@ -5810,31 +5767,14 @@
   }
 
   function renderPanelGestionBE(ops) {
-    window._beOpsActual = ops;
-    const cfg = getBeCfg();
-    const d = calcularGestionBE(ops, cfg);
+    const d = calcularGestionBE(ops);
     if (!d.beTotal) return '';
     const pct = v => (v * 100).toFixed(0) + '%';
-    const rFmt = v => (v >= 0 ? '+' : '') + v.toFixed(2) + 'R';
     const card = (label, valor, color, sub) => `<div style="background:var(--negro-card);border:1px solid var(--negro-border);border-radius:12px;padding:14px 16px">
         <div style="font-size:10px;color:var(--gris);text-transform:uppercase;letter-spacing:1px;margin-bottom:6px">${label}</div>
         <div style="font-size:24px;font-family:'Bebas Neue',sans-serif;color:${color}">${valor}</div>
         ${sub ? `<div style="font-size:11px;color:#666;margin-top:2px">${sub}</div>` : ''}
       </div>`;
-
-    let veredicto, vColor = '#FFD700';
-    if (d.k < 15) {
-      veredicto = `Muestra chica: ${d.k} BE clasificados como target o stop. Con 15-20 ya empieza a verse una tendencia.`;
-    } else if (d.umbral === null) {
-      veredicto = 'Falta un ratio R:R calculable para comparar las políticas.';
-    } else if (d.ic[0] > d.umbral) {
-      veredicto = 'Los datos favorecen dejar el stop original quieto: la proporción de BE que seguían al target supera el umbral incluso en el peor caso del intervalo.'; vColor = 'var(--verde)';
-    } else if (d.ic[1] < d.umbral) {
-      veredicto = 'Los datos favorecen proteger en BE (o cerrar en 1:1): la proporción de BE que seguían al target queda por debajo del umbral incluso en el mejor caso del intervalo.'; vColor = '#64B5F6';
-    } else {
-      veredicto = 'Todavía no se distingue: el intervalo de confianza cruza el umbral. Hace falta más muestra.';
-    }
-
     const filaTipo = (nombre, c) => `<tr>
         <td style="padding:6px 8px;color:var(--blanco)">${nombre}</td>
         <td style="padding:6px 8px;text-align:right">${c.total}</td>
@@ -5842,45 +5782,19 @@
         <td style="padding:6px 8px;text-align:right;color:#E57373">${c.stop}</td>
       </tr>`;
     const pt = d.porTipo;
-    const kEmo = pt.emocional.target + pt.emocional.stop;
-    const notaEmo = kEmo > 0
-      ? `<div style="font-size:12px;color:var(--gris);margin-top:8px">De tus BE emocionales clasificados, ${pct(pt.emocional.target / kEmo)} siguió al target.</div>` : '';
-
-    const expHTML = (d.exp && d.k >= 15) ? `
-      <div style="font-size:11px;color:var(--gris);text-transform:uppercase;letter-spacing:1px;margin:16px 0 8px">Expectativa por trade que llega a 1R</div>
-      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px">
-        ${card('Stop quieto', rFmt(d.exp.stopQuieto), d.exp.stopQuieto >= 0 ? 'var(--verde)' : '#E57373')}
-        ${card('BE en 1R', rFmt(d.exp.beEn1R), d.exp.beEn1R >= 0 ? 'var(--verde)' : '#E57373')}
-        ${card('Cierre fijo en ' + d.nivel + 'R', rFmt(d.exp.cierreFijo), 'var(--verde)', 'antes de comisiones')}
-      </div>` : `
-      <div style="font-size:12px;color:#666;margin-top:14px;line-height:1.5">La comparación de expectativas aparece con al menos 15 BE clasificados (hoy: ${d.k}).</div>`;
-
-    const trHTML = (d.trailing && d.trailing.n >= 3) ? `
-      <div style="font-size:11px;color:var(--gris);text-transform:uppercase;letter-spacing:1px;margin:16px 0 8px">¿Conviene un trailing de 1R por detrás?</div>
-      <div style="font-size:13px;line-height:1.6;color:var(--blanco)">En ${d.trailing.n} BE que luego llegaron al target, el pico promedio antes de volver a la entrada fue <strong>${d.trailing.pico.toFixed(1)}R</strong>. Un trailing de 1R por detrás habría dado ≈ <strong>${rFmt(d.trailing.trail)}</strong> por trade, contra 0R del BE${d.T ? ' y +' + d.T.toFixed(2) + 'R de dejar el stop quieto' : ''}.</div>
-      <div style="font-size:11px;color:#555;margin-top:6px;line-height:1.5">El máx. R solo se pide en BE que luego fueron al target, así que esta comparación no incluye qué habría pasado con el trailing en los BE que fueron al stop. "10R o más" se toma como 10R.</div>` : `
-      <div style="font-size:12px;color:#666;margin-top:14px;line-height:1.5">El análisis de trailing de 1R aparece con al menos 3 BE que luego llegaron al target y tengan el máx. R cargado (hoy: ${d.trailing ? d.trailing.n : 0}).</div>`;
+    const picoHTML = d.pico
+      ? `<div style="font-size:13px;color:var(--gris);margin-top:12px">En los BE que luego llegaron al target, el máximo R promedio antes de volver a la entrada fue <strong style="color:var(--blanco)">${d.pico.prom.toFixed(1)}R</strong> (${d.pico.n} con dato).</div>` : '';
 
     return `<div style="background:#0D0D0D;border:1px solid #1E1E1E;border-radius:12px;padding:18px;margin-bottom:28px">
       <div style="font-family:'Bebas Neue',sans-serif;font-size:20px;letter-spacing:1.5px;margin-bottom:4px">Gestión de BE</div>
-      <div style="font-size:12px;color:var(--gris);margin-bottom:12px">Qué hizo el precio después de sacarte en breakeven.${d.desde ? ' Medición desde el ' + d.desde.split('-').reverse().join('/') + ' (primer BE clasificado).' : ''}</div>
-      <div style="display:flex;align-items:center;gap:14px;flex-wrap:wrap;margin-bottom:14px;font-size:12px;color:var(--gris)">
-        <label style="display:flex;align-items:center;gap:6px">Se activa el BE en
-          <input type="number" step="0.1" min="0.1" value="${cfg.nivel}" placeholder="1.1" onchange="setBeCfg('tda_be_nivel_r', this.value)" style="width:72px;background:#181818;border:1px solid #2A2A2A;color:var(--blanco);padding:6px 8px;border-radius:6px;font-size:13px;outline:none;font-family:'DM Sans',sans-serif"> R</label>
-        <label style="display:flex;align-items:center;gap:6px">Target a evaluar
-          <input type="number" step="0.1" min="0.5" value="${cfg.target}" placeholder="${d.T ? d.T.toFixed(2) : ''}" onchange="setBeCfg('tda_be_target_r', this.value)" style="width:72px;background:#181818;border:1px solid #2A2A2A;color:var(--blanco);padding:6px 8px;border-radius:6px;font-size:13px;outline:none;font-family:'DM Sans',sans-serif"> R</label>
-        <span style="color:#555">${d.Tmanual ? '' : 'Sin target cargado: se usa tu R:R realizado.'}</span>
-      </div>
+      <div style="font-size:12px;color:var(--gris);margin-bottom:14px">Qué hizo el precio después de sacarte en breakeven.</div>
       <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:10px">
-        ${card('BE en la medición', d.beTotal, '#FFD700', (d.sinClasificar ? d.sinClasificar + ' sin clasificar' : 'todos clasificados') + (d.beAntes ? ' · ' + d.beAntes + ' anteriores fuera' : ''))}
-        ${card('Fue al target', d.s, 'var(--verde)')}
-        ${card('Fue al stop', d.u, '#E57373')}
-        ${card('% siguió al target', d.p === null ? '—' : pct(d.p), 'var(--blanco)', d.ic ? 'IC 95%: ' + pct(d.ic[0]) + '–' + pct(d.ic[1]) : '')}
-        ${card('Umbral', d.umbral === null ? '—' : pct(d.umbral), 'var(--blanco)', d.T ? 'con target ' + d.T.toFixed(2) + 'R' + (d.Tmanual ? '' : ' (realizado)') : '')}
+        ${card('BE totales', d.beTotal, '#FFD700', d.sinClasificar ? d.sinClasificar + ' sin clasificar' : 'todos clasificados')}
+        ${card('Fue al target', d.g.target, 'var(--verde)')}
+        ${card('Fue al stop', d.g.stop, '#E57373')}
+        ${card('% siguió al target', d.p === null ? '—' : pct(d.p), 'var(--blanco)', d.k ? 'de ' + d.k + ' clasificados' : '')}
       </div>
-      <div style="margin-top:12px;padding:10px 12px;border-left:3px solid ${vColor};background:#111;font-size:13px;line-height:1.5;color:var(--blanco)">${veredicto}</div>
-      ${expHTML}
-      ${trHTML}
+      ${picoHTML}
       <div style="font-size:11px;color:var(--gris);text-transform:uppercase;letter-spacing:1px;margin:16px 0 8px">BE técnico vs. emocional</div>
       <div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:13px;color:var(--gris)">
         <thead><tr style="border-bottom:1px solid #1E1E1E;font-size:11px">
@@ -5891,8 +5805,7 @@
         </tr></thead>
         <tbody>${filaTipo('Técnico', pt.tecnico)}${filaTipo('Emocional', pt.emocional)}${filaTipo('Sin tipo', pt.sinTipo)}</tbody>
       </table></div>
-      ${notaEmo}
-      <div style="font-size:11px;color:#555;margin-top:14px;line-height:1.5">Solo cuentan los trades que llegaron a 1R: las ganadoras sin BE se toman como "fueron al target sin tocar la entrada", y el target es el que cargues arriba (si no, tu R:R realizado). La medición arranca en tu primer BE clasificado, así los BE viejos sin clasificar no distorsionan. Esto mide expectativa; el drawdown que evita el BE también cuenta.</div>
+      <div style="font-size:11px;color:#555;margin-top:14px;line-height:1.5">Los BE sin clasificar no entran en el porcentaje. Podés completarlos desde el bot o desde el modal de edición de cada operación.</div>
     </div>`;
   }
 

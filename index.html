@@ -4325,6 +4325,13 @@
     const totalGastado = [...evals, ...gastosOp].reduce((a, f) => a + Number(f.monto), 0);
     const totalRetirado = retiros.reduce((a, f) => a + Number(f.monto), 0);
     const neto = totalRetirado - totalGastado;
+    // ROI sobre el coste total (evaluaciones + gastos) y conversión a retiro (retiros / pruebas)
+    const roi = totalGastado > 0 ? neto / totalGastado * 100 : null;
+    const claveCuenta = f => f.cuenta_numero ? (String(f.empresa || '').trim().toLowerCase() + '|' + String(f.cuenta_numero).trim().toLowerCase()) : null;
+    const cuentasConRetiro = new Set(fondeosCompletos.filter(f => f.tipo === 'Retiro').map(claveCuenta).filter(Boolean));
+    const evalsConRetiro = evals.filter(e => claveCuenta(e) && cuentasConRetiro.has(claveCuenta(e))).length;
+    const retirosSinVincular = retiros.filter(r => !claveCuenta(r)).length;
+    const conversionRetiro = evals.length > 0 ? Math.round(evalsConRetiro / evals.length * 100) : null;
     const cuentasFondeadasActivas = evals.filter(f => f.resultado === 'Superada' && !f.cuenta_quemada_luego).length;
     const enEvaluacion = evals.filter(f => f.resultado === 'En curso').length;
     const superadasConFecha = evals.filter(f => f.resultado === 'Superada' && f.fecha_resultado);
@@ -4338,7 +4345,9 @@
         ${renderFondeoCard('TOTAL GASTADO', '-$' + totalGastado.toFixed(2), '#E57373')}
         ${renderFondeoCard('TOTAL RETIRADO', '+$' + totalRetirado.toFixed(2), 'var(--verde)')}
         ${renderFondeoCard('NETO', (neto >= 0 ? '+' : '') + '$' + neto.toFixed(2), neto >= 0 ? 'var(--verde)' : '#E57373')}
+        ${roi !== null ? renderFondeoCard('ROI', (roi >= 0 ? '+' : '') + roi.toLocaleString('es-AR', { minimumFractionDigits: 1, maximumFractionDigits: 1 }) + '%', roi >= 0 ? 'var(--verde)' : '#E57373', 'sobre coste total') : ''}
         ${renderFondeoCard('RATIO APROBACIÓN', ratioAprobacion + '%', ratioAprobacion >= 50 ? 'var(--verde)' : '#E57373')}
+        ${conversionRetiro !== null ? renderFondeoCard('CONVERSIÓN A RETIRO', conversionRetiro + '%', conversionRetiro > 0 ? 'var(--verde)' : 'var(--gris)', evalsConRetiro + ' de ' + evals.length + ' pruebas con retiro' + (retirosSinVincular ? ' · ' + retirosSinVincular + ' retiros sin vincular' : '')) : ''}
         ${renderFondeoCard('SUPERADAS', superadas + ' / ' + totalEvals, 'var(--verde)')}
         ${renderFondeoCard('QUEMADAS', String(quemadas), '#E57373')}
         ${renderFondeoCard('EN EVALUACIÓN', String(enEvaluacion), '#FFD700')}
@@ -4412,10 +4421,11 @@
     }, 100);
   }
 
-  function renderFondeoCard(label, valor, color) {
+  function renderFondeoCard(label, valor, color, sub) {
     return `<div style="background:var(--negro-card);border:1px solid var(--negro-border);border-radius:12px;padding:16px 18px">
       <div style="font-size:10px;color:var(--gris);text-transform:uppercase;letter-spacing:1px;margin-bottom:8px">${label}</div>
       <div style="font-size:22px;font-family:'Bebas Neue',sans-serif;color:${color}">${valor}</div>
+      ${sub ? `<div style="font-size:11px;color:#666;margin-top:2px">${sub}</div>` : ''}
     </div>`;
   }
 
@@ -4465,7 +4475,7 @@
     const cantComprobantes = _fondeoComprobantes.filter(c => c.fondeo_id === f.id).length;
     return `<tr style="border-bottom:1px solid #1A1A1A" onmouseover="this.style.background='#111'" onmouseout="this.style.background='transparent'">
       <td style="padding:12px 16px;color:var(--gris)">${fecha}</td>
-      <td style="padding:12px 16px;font-weight:600">${esc(f.empresa)}</td>
+      <td style="padding:12px 16px;font-weight:600">${esc(f.empresa)}${f.cuenta_numero ? `<div style="font-size:10px;color:var(--gris);font-weight:400;margin-top:2px">#${esc(f.cuenta_numero)}</div>` : ''}</td>
       <td style="padding:12px 16px;color:var(--gris)">${tipoLabel}</td>
       <td style="padding:12px 16px"><span style="color:${motivoColor};font-size:12px;font-weight:600">${f.motivo || '—'}</span></td>
       <td style="padding:12px 16px"><span style="color:${resultadoColor};font-size:12px;font-weight:600">${f.resultado || '—'}</span></td>
@@ -4610,6 +4620,10 @@
       document.body.appendChild(modal);
     }
     const esEdicion = !!fondeo;
+    const _evalsConCuenta = (_fondeosCompletosActuales || []).filter(f => f.tipo === 'Evaluacion' && f.cuenta_numero);
+    const _retiroCuentaSel = (fondeo?.tipo === 'Retiro' && fondeo.cuenta_numero)
+      ? (_evalsConCuenta.find(e => e.cuenta_numero === fondeo.cuenta_numero && String(e.empresa).trim().toLowerCase() === String(fondeo.empresa || '').trim().toLowerCase())?.id || '')
+      : '';
     modal.innerHTML = `
       <div class="modal" style="max-width:460px;max-height:90vh;overflow-y:auto">
         <button class="modal-close" onclick="cerrarModal('modalFondeo')">✕</button>
@@ -4632,6 +4646,15 @@
           <option value="Gasto" ${fondeo?.tipo === 'Gasto' ? 'selected' : ''}>Gasto operativo (contador, monotributo, impuestos...)</option>
         </select>
 
+        <div id="fondeoRetiroCuentaWrap">
+          <label style="font-size:11px;color:var(--gris);display:block;margin-bottom:5px;text-transform:uppercase;letter-spacing:1px">Cuenta del retiro</label>
+          <select id="fondeoRetiroCuenta" onchange="alElegirCuentaRetiro()" style="width:100%;background:#181818;border:1px solid #2A2A2A;color:var(--blanco);padding:9px 12px;border-radius:7px;font-size:13px;margin-bottom:14px;outline:none;font-family:'DM Sans',sans-serif">
+            <option value="">— Sin vincular —</option>
+            ${_evalsConCuenta.map(e => `<option value="${escAttr(e.id)}" ${_retiroCuentaSel === e.id ? 'selected' : ''}>${esc(e.empresa)} · #${esc(e.cuenta_numero)}${e.resultado ? ' (' + esc(e.resultado) + ')' : ''}</option>`).join('')}
+          </select>
+          ${_evalsConCuenta.length === 0 ? `<div style="font-size:11px;color:#666;margin:-6px 0 14px;line-height:1.5">Cargá el N° de cuenta en tus evaluaciones para poder vincularles los retiros.</div>` : ''}
+        </div>
+
         <div id="fondeoGastoWrap">
           <label style="font-size:11px;color:var(--gris);display:block;margin-bottom:5px;text-transform:uppercase;letter-spacing:1px">Categoría del gasto</label>
           <select id="fondeoCategoriaGasto" style="width:100%;background:#181818;border:1px solid #2A2A2A;color:var(--blanco);padding:9px 12px;border-radius:7px;font-size:13px;margin-bottom:8px;outline:none;font-family:'DM Sans',sans-serif">
@@ -4642,6 +4665,10 @@
         </div>
 
         <div id="fondeoEvalWrap">
+          <label style="font-size:11px;color:var(--gris);display:block;margin-bottom:5px;text-transform:uppercase;letter-spacing:1px">N° de cuenta (ID que te da la empresa)</label>
+          <input type="text" id="fondeoCuentaNumero" placeholder="Ej: 1234567 (opcional)" value="${esc(fondeo?.tipo === 'Evaluacion' ? (fondeo?.cuenta_numero || '') : '')}"
+            style="width:100%;background:#181818;border:1px solid #2A2A2A;color:var(--blanco);padding:9px 12px;border-radius:7px;font-size:13px;margin-bottom:14px;outline:none;font-family:'DM Sans',sans-serif">
+
           <label style="font-size:11px;color:var(--gris);display:block;margin-bottom:5px;text-transform:uppercase;letter-spacing:1px">Motivo</label>
           <select id="fondeoMotivo" style="width:100%;background:#181818;border:1px solid #2A2A2A;color:var(--blanco);padding:9px 12px;border-radius:7px;font-size:13px;margin-bottom:14px;outline:none;font-family:'DM Sans',sans-serif">
             <option value="Inicio" ${!fondeo || fondeo.motivo === 'Inicio' ? 'selected' : ''}>Inicio</option>
@@ -4703,6 +4730,16 @@
     if (wrapEmpresa) wrapEmpresa.style.display = tipo === 'Gasto' ? 'none' : 'block';
     const wrapGasto = document.getElementById('fondeoGastoWrap');
     if (wrapGasto) wrapGasto.style.display = tipo === 'Gasto' ? 'block' : 'none';
+    const wrapRetiroCuenta = document.getElementById('fondeoRetiroCuentaWrap');
+    if (wrapRetiroCuenta) wrapRetiroCuenta.style.display = tipo === 'Retiro' ? 'block' : 'none';
+  }
+
+  // Al elegir la cuenta de un retiro, la empresa se completa con la de esa evaluación
+  function alElegirCuentaRetiro() {
+    const id = document.getElementById('fondeoRetiroCuenta')?.value;
+    const ev = (_fondeosCompletosActuales || []).find(f => f.id === id);
+    const inp = document.getElementById('fondeoEmpresa');
+    if (ev && inp) inp.value = ev.empresa;
   }
 
   function toggleFondeoQuemadaLuegoWrap() {
@@ -4754,14 +4791,24 @@
     const monto   = parseFloat(document.getElementById('fondeoMonto')?.value || '0');
     const notas   = document.getElementById('fondeoNotas')?.value?.trim() || null;
 
+    // N° de cuenta: en la evaluación se escribe; en el retiro se elige una evaluación y hereda su empresa y número
+    let cuenta_numero = null;
+    if (tipo === 'Evaluacion') {
+      cuenta_numero = document.getElementById('fondeoCuentaNumero')?.value?.trim() || null;
+    } else if (tipo === 'Retiro') {
+      const evId = document.getElementById('fondeoRetiroCuenta')?.value;
+      const ev = (_fondeosCompletosActuales || []).find(f => f.id === evId);
+      if (ev) { cuenta_numero = ev.cuenta_numero; empresa = ev.empresa; }
+    }
+
     if (!fecha || !empresa || !monto || monto <= 0) {
       msg.style.display = 'block'; msg.style.background = 'rgba(229,115,115,0.1)'; msg.style.color = '#E57373'; msg.style.border = '1px solid rgba(229,115,115,0.3)';
       msg.textContent = 'Completá fecha, empresa y monto.'; return;
     }
 
-    const payload = { user_id: sesiónActual.user.id, fecha, empresa, tipo, motivo, resultado, fecha_resultado: fechaResultado, cuenta_quemada_luego: cuentaQuemadaLuego, fecha_cuenta_quemada: fechaCuentaQuemada, monto, notas, categoria_gasto_id };
+    const payload = { user_id: sesiónActual.user.id, fecha, empresa, tipo, motivo, resultado, fecha_resultado: fechaResultado, cuenta_quemada_luego: cuentaQuemadaLuego, fecha_cuenta_quemada: fechaCuentaQuemada, monto, notas, categoria_gasto_id, cuenta_numero };
     const r = id
-      ? await sbFetch('/rest/v1/fondeos?id=eq.' + id, { method: 'PATCH', body: JSON.stringify({ fecha, empresa, tipo, motivo, resultado, fecha_resultado: fechaResultado, cuenta_quemada_luego: cuentaQuemadaLuego, fecha_cuenta_quemada: fechaCuentaQuemada, monto, notas, categoria_gasto_id }) }, sesiónActual.access_token)
+      ? await sbFetch('/rest/v1/fondeos?id=eq.' + id, { method: 'PATCH', body: JSON.stringify({ fecha, empresa, tipo, motivo, resultado, fecha_resultado: fechaResultado, cuenta_quemada_luego: cuentaQuemadaLuego, fecha_cuenta_quemada: fechaCuentaQuemada, monto, notas, categoria_gasto_id, cuenta_numero }) }, sesiónActual.access_token)
       : await sbFetch('/rest/v1/fondeos', { method: 'POST', body: JSON.stringify(payload), headers: { 'Prefer': 'return=minimal' } }, sesiónActual.access_token);
 
     if (r.ok || r.status === 201) {

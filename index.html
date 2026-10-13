@@ -4280,8 +4280,8 @@
           <option value="Inicio" ${filtroMotivo === 'Inicio' ? 'selected' : ''}>Inicio</option>
           <option value="Renovacion" ${filtroMotivo === 'Renovacion' ? 'selected' : ''}>Renovación</option>
         </select>
-        <input type="date" id="filtroFondeoDesde" onchange="filtrarFondeos()" onclick="this.showPicker && this.showPicker()" value="${esc(filtroDesde)}" style="background:#0D0D0D;border:1px solid #1E1E1E;color:var(--blanco);padding:7px 12px;border-radius:8px;font-size:13px;font-family:'DM Sans',sans-serif;cursor:pointer;color-scheme:dark">
-        <input type="date" id="filtroFondeoHasta" onchange="filtrarFondeos()" onclick="this.showPicker && this.showPicker()" value="${esc(filtroHasta)}" style="background:#0D0D0D;border:1px solid #1E1E1E;color:var(--blanco);padding:7px 12px;border-radius:8px;font-size:13px;font-family:'DM Sans',sans-serif;cursor:pointer;color-scheme:dark">
+        <input type="date" id="filtroFondeoDesde" onchange="filtrarFondeos()" value="${esc(filtroDesde)}" style="background:#0D0D0D;border:1px solid #1E1E1E;color:var(--blanco);padding:7px 12px;border-radius:8px;font-size:13px;font-family:'DM Sans',sans-serif;cursor:pointer;color-scheme:dark">
+        <input type="date" id="filtroFondeoHasta" onchange="filtrarFondeos()" value="${esc(filtroHasta)}" style="background:#0D0D0D;border:1px solid #1E1E1E;color:var(--blanco);padding:7px 12px;border-radius:8px;font-size:13px;font-family:'DM Sans',sans-serif;cursor:pointer;color-scheme:dark">
         <button onclick="limpiarFiltrosFondeos()" style="background:#1A1A1A;border:1px solid #2A2A2A;color:var(--gris);padding:7px 14px;border-radius:8px;cursor:pointer;font-size:12px">✕ Limpiar</button>
       </div>
 
@@ -4631,7 +4631,7 @@
         <h3 style="margin-bottom:20px">${esEdicion ? 'Editar registro' : 'Nuevo registro'}</h3>
 
         <label style="font-size:11px;color:var(--gris);display:block;margin-bottom:5px;text-transform:uppercase;letter-spacing:1px">Fecha</label>
-        <input type="date" id="fondeoFecha" value="${fondeo?.fecha || new Date().toISOString().slice(0,10)}" onclick="this.showPicker && this.showPicker()"
+        <input type="date" id="fondeoFecha" value="${fondeo?.fecha || new Date().toISOString().slice(0,10)}"
           style="width:100%;background:#181818;border:1px solid #2A2A2A;color:var(--blanco);padding:9px 12px;border-radius:7px;font-size:13px;margin-bottom:14px;outline:none;font-family:'DM Sans',sans-serif;cursor:pointer;color-scheme:dark">
 
         <div id="fondeoEmpresaWrap">
@@ -4677,7 +4677,7 @@
           </select>
 
           <label style="font-size:11px;color:var(--gris);display:block;margin-bottom:5px;text-transform:uppercase;letter-spacing:1px">Resultado</label>
-          <select id="fondeoResultado" onchange="toggleFondeoQuemadaLuegoWrap(); toggleFondeoFechaResultadoWrap()" style="width:100%;background:#181818;border:1px solid #2A2A2A;color:var(--blanco);padding:9px 12px;border-radius:7px;font-size:13px;margin-bottom:14px;outline:none;font-family:'DM Sans',sans-serif">
+          <select id="fondeoResultado" onchange="toggleFondeoQuemadaLuegoWrap(); toggleFondeoFechaResultadoWrap(true)" style="width:100%;background:#181818;border:1px solid #2A2A2A;color:var(--blanco);padding:9px 12px;border-radius:7px;font-size:13px;margin-bottom:14px;outline:none;font-family:'DM Sans',sans-serif">
             <option value="En curso" ${(!fondeo || fondeo.resultado === 'En curso') ? 'selected' : ''}>En curso</option>
             <option value="Superada" ${fondeo?.resultado === 'Superada' ? 'selected' : ''}>Superada</option>
             <option value="Quemada" ${fondeo?.resultado === 'Quemada' ? 'selected' : ''}>Quemada</option>
@@ -4686,18 +4686,18 @@
 
           <div id="fondeoFechaResultadoWrap">
             <label style="font-size:11px;color:var(--gris);display:block;margin-bottom:5px;text-transform:uppercase;letter-spacing:1px">Fecha en que pasó a este resultado</label>
-            <input type="date" id="fondeoFechaResultado" value="${fondeo?.fecha_resultado || new Date().toISOString().slice(0,10)}" onclick="this.showPicker && this.showPicker()"
+            <input type="date" id="fondeoFechaResultado" value="${fondeo ? (fondeo.fecha_resultado || '') : new Date().toISOString().slice(0,10)}"
               style="width:100%;background:#181818;border:1px solid #2A2A2A;color:var(--blanco);padding:9px 12px;border-radius:7px;font-size:13px;margin-bottom:14px;outline:none;font-family:'DM Sans',sans-serif;cursor:pointer;color-scheme:dark">
           </div>
 
           <div id="fondeoQuemadaLuegoWrap">
             <label style="display:flex;align-items:center;gap:8px;cursor:pointer;margin-bottom:14px;font-size:13px;color:var(--blanco)">
-              <input type="checkbox" id="fondeoQuemadaLuego" onchange="toggleFondeoFechaQuemada()" ${fondeo?.cuenta_quemada_luego ? 'checked' : ''} style="width:16px;height:16px;cursor:pointer">
+              <input type="checkbox" id="fondeoQuemadaLuego" onchange="toggleFondeoFechaQuemada(true)" ${fondeo?.cuenta_quemada_luego ? 'checked' : ''} style="width:16px;height:16px;cursor:pointer">
               Esta cuenta fondeada se quemó después
             </label>
             <div id="fondeoFechaQuemadaWrap">
               <label style="font-size:11px;color:var(--gris);display:block;margin-bottom:5px;text-transform:uppercase;letter-spacing:1px">Fecha en que se quemó</label>
-              <input type="date" id="fondeoFechaQuemada" value="${fondeo?.fecha_cuenta_quemada || new Date().toISOString().slice(0,10)}" onclick="this.showPicker && this.showPicker()"
+              <input type="date" id="fondeoFechaQuemada" value="${fondeo ? (fondeo.fecha_cuenta_quemada || '') : new Date().toISOString().slice(0,10)}"
                 style="width:100%;background:#181818;border:1px solid #2A2A2A;color:var(--blanco);padding:9px 12px;border-radius:7px;font-size:13px;margin-bottom:14px;outline:none;font-family:'DM Sans',sans-serif;cursor:pointer;color-scheme:dark">
             </div>
           </div>
@@ -4750,16 +4750,25 @@
     toggleFondeoFechaQuemada();
   }
 
-  function toggleFondeoFechaResultadoWrap() {
+  function toggleFondeoFechaResultadoWrap(porUsuario) {
     const resultado = document.getElementById('fondeoResultado')?.value;
     const wrap = document.getElementById('fondeoFechaResultadoWrap');
-    if (wrap) wrap.style.display = (resultado === 'Superada' || resultado === 'Quemada') ? 'block' : 'none';
+    const visible = resultado === 'Superada' || resultado === 'Quemada';
+    if (wrap) wrap.style.display = visible ? 'block' : 'none';
+    if (porUsuario === true && visible) {
+      const inp = document.getElementById('fondeoFechaResultado');
+      if (inp && !inp.value) inp.value = new Date().toISOString().slice(0,10);
+    }
   }
 
-  function toggleFondeoFechaQuemada() {
+  function toggleFondeoFechaQuemada(porUsuario) {
     const marcada = document.getElementById('fondeoQuemadaLuego')?.checked;
     const wrap = document.getElementById('fondeoFechaQuemadaWrap');
     if (wrap) wrap.style.display = marcada ? 'block' : 'none';
+    if (porUsuario === true && marcada) {
+      const inp = document.getElementById('fondeoFechaQuemada');
+      if (inp && !inp.value) inp.value = new Date().toISOString().slice(0,10);
+    }
   }
 
   async function guardarFondeo(id) {

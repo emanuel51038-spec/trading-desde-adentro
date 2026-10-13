@@ -4329,9 +4329,10 @@
     const roi = totalGastado > 0 ? neto / totalGastado * 100 : null;
     const claveCuenta = f => f.cuenta_numero ? (String(f.empresa || '').trim().toLowerCase() + '|' + String(f.cuenta_numero).trim().toLowerCase()) : null;
     const cuentasConRetiro = new Set(fondeosCompletos.filter(f => f.tipo === 'Retiro').map(claveCuenta).filter(Boolean));
-    const evalsConRetiro = evals.filter(e => claveCuenta(e) && cuentasConRetiro.has(claveCuenta(e))).length;
+    // La conversión a retiro se mide sobre las cuentas superadas (fondeadas), no sobre todas las pruebas
+    const evalsConRetiro = evals.filter(e => e.resultado === 'Superada' && claveCuenta(e) && cuentasConRetiro.has(claveCuenta(e))).length;
     const retirosSinVincular = retiros.filter(r => !claveCuenta(r)).length;
-    const conversionRetiro = evals.length > 0 ? Math.round(evalsConRetiro / evals.length * 100) : null;
+    const conversionRetiro = superadas > 0 ? Math.round(evalsConRetiro / superadas * 100) : null;
     const cuentasFondeadasActivas = evals.filter(f => f.resultado === 'Superada' && !f.cuenta_quemada_luego).length;
     const enEvaluacion = evals.filter(f => f.resultado === 'En curso').length;
     const superadasConFecha = evals.filter(f => f.resultado === 'Superada' && f.fecha_resultado);
@@ -4347,7 +4348,7 @@
         ${renderFondeoCard('NETO', (neto >= 0 ? '+' : '') + '$' + neto.toFixed(2), neto >= 0 ? 'var(--verde)' : '#E57373')}
         ${roi !== null ? renderFondeoCard('ROI', (roi >= 0 ? '+' : '') + roi.toLocaleString('es-AR', { minimumFractionDigits: 1, maximumFractionDigits: 1 }) + '%', roi >= 0 ? 'var(--verde)' : '#E57373', 'sobre coste total') : ''}
         ${renderFondeoCard('RATIO APROBACIÓN', ratioAprobacion + '%', ratioAprobacion >= 50 ? 'var(--verde)' : '#E57373')}
-        ${conversionRetiro !== null ? renderFondeoCard('CONVERSIÓN A RETIRO', conversionRetiro + '%', conversionRetiro > 0 ? 'var(--verde)' : 'var(--gris)', evalsConRetiro + ' de ' + evals.length + ' pruebas con retiro' + (retirosSinVincular ? ' · ' + retirosSinVincular + ' retiros sin vincular' : '')) : ''}
+        ${conversionRetiro !== null ? renderFondeoCard('CONVERSIÓN A RETIRO', conversionRetiro + '%', conversionRetiro > 0 ? 'var(--verde)' : 'var(--gris)', evalsConRetiro + ' de ' + superadas + ' superadas con retiro' + (retirosSinVincular ? ' · ' + retirosSinVincular + ' retiros sin vincular' : '')) : ''}
         ${renderFondeoCard('SUPERADAS', superadas + ' / ' + totalEvals, 'var(--verde)')}
         ${renderFondeoCard('QUEMADAS', String(quemadas), '#E57373')}
         ${renderFondeoCard('EN EVALUACIÓN', String(enEvaluacion), '#FFD700')}

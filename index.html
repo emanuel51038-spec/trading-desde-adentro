@@ -1201,13 +1201,13 @@
           </div>
           <span class="pay-amount" id="arsAmount">≈ ARS —</span>
         </button>
-        <button class="pay-btn" disabled style="opacity:0.4;cursor:not-allowed">
+        <button class="pay-btn" onclick="pagarConMercadoPago()" id="btnMp">
           <span class="pay-icon">💳</span>
           <div class="pay-info">
-            <div class="pay-name">MercadoPago</div>
-            <div class="pay-desc">Próximamente disponible</div>
+            <div class="pay-name">Mercado Pago</div>
+            <div class="pay-desc">Tarjeta, dinero en cuenta · Precio en pesos del día</div>
           </div>
-          <span class="pay-amount" id="mpAmount">USD 60</span>
+          <span class="pay-amount" id="mpAmount">≈ ARS —</span>
         </button>
       </div>
 
@@ -3646,7 +3646,7 @@
     const usdtEl = document.getElementById('usdtAmount');
     if (usdtEl) usdtEl.textContent = `${precioFinal} USDT`;
     const mpEl = document.getElementById('mpAmount');
-    if (mpEl) mpEl.textContent = `USD ${precioFinal}`;
+    if (mpEl) mpEl.textContent = cotizacion > 0 ? `≈ ARS ${arsTotal.toLocaleString('es-AR')}` : '≈ ARS —';
     const priceEl = document.querySelector('.price-box .price');
     if (priceEl) priceEl.innerHTML = `<span>USD</span> ${precioFinal}`;
   }
@@ -3711,6 +3711,78 @@
       }
     } catch { msg.className = 'cupon-msg err'; msg.textContent = 'Error al verificar el cupón.'; }
   }
+
+  async function pagarConMercadoPago() {
+    const datos = validarFormulario();
+    if (!datos) return;
+    const msg = document.getElementById('msg');
+    const btn = document.getElementById('btnMp');
+    if (btn && btn.disabled) return;
+    if (btn) btn.disabled = true;
+    msg.className = 'msg';
+    msg.textContent = 'Creando tu pago en Mercado Pago...';
+
+    const payload = JSON.stringify({
+      nombre: datos.nombre,
+      email: datos.email,
+      mac: datos.mac,
+      producto: productoSeleccionado,
+      cupon: cuponAplicado?.codigo || null
+    });
+    const llamar = (token) => fetch(`${SUPABASE_URL}/functions/v1/mp-crear-orden`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'apikey': SUPABASE_ANON, 'Authorization': 'Bearer ' + token },
+      body: payload
+    });
+
+    try {
+      let res = await llamar(sesiónActual?.access_token || SUPABASE_ANON);
+      // Si la sesión venció, reintentamos como invitado
+      if (res.status === 401 && sesiónActual?.access_token) res = await llamar(SUPABASE_ANON);
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok || !data.checkout_url) {
+        msg.className = 'msg err';
+        msg.textContent = data.error || 'No pudimos iniciar el pago con Mercado Pago. Probá de nuevo.';
+        if (btn) btn.disabled = false;
+        return;
+      }
+      msg.textContent = 'Redirigiendo a Mercado Pago...';
+      window.location.href = data.checkout_url;
+    } catch (e) {
+      msg.className = 'msg err';
+      msg.textContent = 'No pudimos conectar con Mercado Pago. Revisá tu conexión y probá de nuevo.';
+      if (btn) btn.disabled = false;
+    }
+  }
+
+  // Aviso cuando el comprador vuelve desde Mercado Pago (?mp=ok | pendiente | error)
+  function mostrarAvisoMercadoPago() {
+    const params = new URLSearchParams(window.location.search);
+    const estado = params.get('mp');
+    if (!estado) return;
+    const textos = {
+      ok: ['#4CAF50', '✅ ¡Pago recibido! Tu licencia se activa en unos instantes. Te llegará un email y la herramienta aparecerá en Mi Panel → Mis herramientas.'],
+      pendiente: ['#E5A93D', '⏳ Tu pago está pendiente de acreditación. Cuando se acredite, la licencia se activa sola y te avisamos por email.'],
+      error: ['#E57373', '❌ El pago no se pudo completar. Podés intentarlo de nuevo cuando quieras.']
+    };
+    const t = textos[estado];
+    if (!t) return;
+    const box = document.createElement('div');
+    box.style.cssText = 'position:fixed;top:16px;left:50%;transform:translateX(-50%);z-index:99999;max-width:92vw;width:520px;background:#141414;border:1px solid ' + t[0] + ';color:#EAEAEA;padding:14px 40px 14px 16px;border-radius:10px;font-size:14px;line-height:1.5;box-shadow:0 8px 30px rgba(0,0,0,.6);';
+    box.textContent = t[1];
+    const x = document.createElement('button');
+    x.textContent = '×';
+    x.setAttribute('aria-label', 'Cerrar');
+    x.style.cssText = 'position:absolute;top:6px;right:10px;background:none;border:none;color:#aaa;font-size:22px;cursor:pointer;';
+    x.onclick = () => box.remove();
+    box.appendChild(x);
+    document.body.appendChild(box);
+    setTimeout(() => box.remove(), 20000);
+    params.delete('mp');
+    const qs = params.toString();
+    history.replaceState(null, '', window.location.pathname + (qs ? '?' + qs : '') + window.location.hash);
+  }
+  window.addEventListener('load', mostrarAvisoMercadoPago);
 
   async function confirmarPago(metodo) {
     const datos = validarFormulario();

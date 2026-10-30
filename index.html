@@ -4154,6 +4154,8 @@
         <div style="font-size:12px;font-weight:600;letter-spacing:1px;text-transform:uppercase;color:var(--gris);margin-bottom:12px">PnL por hora del día</div>
         <canvas id="horaDelDiaCanvas" style="width:100%;height:160px"></canvas>
       </div>
+      <!-- RENDIMIENTO POR DURACIÓN -->
+      <div id="duracionPanel">${renderDuracionPanel(ops)}</div>
       <!-- PNL POR ESTRATEGIA -->
       <div style="background:var(--negro-card);border:1px solid var(--negro-border);border-radius:16px;padding:20px;margin-bottom:16px">
         <div style="font-size:12px;font-weight:600;letter-spacing:1px;text-transform:uppercase;color:var(--gris);margin-bottom:12px">PnL por estrategia</div>
@@ -5764,6 +5766,118 @@
     grid.innerHTML = html;
   }
 
+
+  /* ══════════════════════
+     RENDIMIENTO POR DURACIÓN DEL TRADE
+     (mismos tramos que el panel de la prop firm)
+  ══════════════════════ */
+  const _DUR_BUCKETS = [
+    { label: '0s-15s',  min: 0,     max: 15 },
+    { label: '15s-45s', min: 15,    max: 45 },
+    { label: '45s-1m',  min: 45,    max: 60 },
+    { label: '1m-2m',   min: 60,    max: 120 },
+    { label: '2m-5m',   min: 120,   max: 300 },
+    { label: '5m-10m',  min: 300,   max: 600 },
+    { label: '10m-30m', min: 600,   max: 1800 },
+    { label: '30m-1h',  min: 1800,  max: 3600 },
+    { label: '1h-2h',   min: 3600,  max: 7200 },
+    { label: '2h-4h',   min: 7200,  max: 14400 },
+    { label: '4h-24h',  min: 14400, max: Infinity }
+  ];
+
+  function renderDuracionPanel(ops) {
+    const card  = 'background:var(--negro-card);border:1px solid var(--negro-border);border-radius:16px;padding:20px;margin-bottom:16px';
+    const title = 'font-size:12px;font-weight:600;letter-spacing:1px;text-transform:uppercase;color:var(--gris);margin-bottom:12px';
+    const sub   = 'font-size:11px;font-weight:600;letter-spacing:1px;text-transform:uppercase;color:#777;margin:4px 0 10px';
+
+    const lista  = ops || [];
+    const conDur = lista.filter(o => o.duracion_segundos !== null && o.duracion_segundos !== undefined && o.duracion_segundos !== '' && !isNaN(Number(o.duracion_segundos)));
+    const sinDur = lista.length - conDur.length;
+
+    if (conDur.length === 0) {
+      return `<div style="${card}"><div style="${title}">Rendimiento por duración del trade</div>
+        <div style="text-align:center;color:var(--gris);font-size:13px;padding:20px">Todavía no hay operaciones con duración registrada.</div></div>`;
+    }
+
+    // Agrupar por tramo
+    const b = _DUR_BUCKETS.map(x => ({ label: x.label, min: x.min, max: x.max, n: 0, pnl: 0, wins: 0, sinBE: 0 }));
+    let totWins = 0, totSinBE = 0;
+    conDur.forEach(o => {
+      const d = Number(o.duracion_segundos);
+      const i = b.findIndex(x => d >= x.min && d < x.max);
+      if (i < 0) return;
+      const p = pnlNeto(o);
+      b[i].n++;
+      b[i].pnl += p;
+      if (!o.es_breakeven) {
+        b[i].sinBE++; totSinBE++;
+        if (p > 0) { b[i].wins++; totWins++; }
+      }
+    });
+    const wrGeneral = totSinBE ? (totWins / totSinBE) * 100 : 0;
+
+    const fmtUsd = v => (v >= 0 ? '+' : '-') + '$' + Math.abs(v).toLocaleString('en-US', { maximumFractionDigits: 0 });
+
+    const fila = (label, track, valor, valorColor) => `
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:6px">
+        <div style="width:64px;flex-shrink:0;font-size:11px;color:var(--gris);text-align:right">${label}</div>
+        <div style="position:relative;flex:1;height:16px;background:#111;border-radius:4px;overflow:hidden">${track}</div>
+        <div style="width:64px;flex-shrink:0;font-size:11px;font-weight:600;color:${valorColor || 'var(--blanco)'}">${valor}</div>
+      </div>`;
+
+    // 1) PnL por duración (barras desde el cero)
+    const vals = b.map(x => x.pnl);
+    const mn = Math.min(0, ...vals), mx = Math.max(0, ...vals);
+    const rango = (mx - mn) || 1;
+    const zero = (-mn / rango) * 100;
+    const filasPnl = b.map(x => {
+      let track = `<div style="position:absolute;top:0;bottom:0;left:${zero}%;width:1px;background:#333"></div>`;
+      let valor = '', color = '';
+      if (x.n > 0) {
+        const w = Math.abs(x.pnl) / rango * 100;
+        const left = x.pnl >= 0 ? zero : zero - w;
+        const c = x.pnl >= 0 ? 'var(--verde)' : '#E57373';
+        track += `<div style="position:absolute;top:2px;bottom:2px;left:${left}%;width:${w}%;background:${c};border-radius:3px"></div>`;
+        valor = fmtUsd(x.pnl); color = c;
+      }
+      return fila(x.label, track, valor, color);
+    }).join('');
+
+    // 2) Cantidad de trades por duración
+    const maxN = Math.max(...b.map(x => x.n), 1);
+    const filasCount = b.map(x => {
+      const track = x.n > 0 ? `<div style="position:absolute;top:2px;bottom:2px;left:0;width:${x.n / maxN * 100}%;background:#4A90E2;border-radius:3px"></div>` : '';
+      return fila(x.label, track, x.n > 0 ? String(x.n) : '');
+    }).join('');
+
+    // 3) Win rate por duración (tenue si hay menos de 5 trades)
+    const filasWR = b.map(x => {
+      let track = `<div style="position:absolute;top:0;bottom:0;left:${wrGeneral}%;width:0;border-left:1px dashed #E8C468;z-index:2"></div>`;
+      let valor = '';
+      if (x.sinBE > 0) {
+        const wr = x.wins / x.sinBE * 100;
+        const op = x.sinBE < 5 ? 0.35 : 1;
+        track += `<div style="position:absolute;top:2px;bottom:2px;left:0;width:${wr}%;background:#4A90E2;border-radius:3px;opacity:${op}"></div>`;
+        valor = Math.round(wr) + '%';
+      }
+      return fila(x.label, track, valor);
+    }).join('');
+
+    const nota = (sinDur > 0 ? `${sinDur} operaciones sin duración registrada no están incluidas. ` : '')
+      + `Línea punteada: win rate general (${Math.round(wrGeneral)}%). Barras tenues: menos de 5 operaciones, muestra chica.`;
+
+    return `<div style="${card}">
+      <div style="${title}">Rendimiento por duración del trade</div>
+      <div style="${sub}">PnL por duración</div>
+      ${filasPnl}
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:24px;margin-top:20px">
+        <div><div style="${sub}">Cantidad de trades</div>${filasCount}</div>
+        <div><div style="${sub}">Win rate por duración</div>${filasWR}</div>
+      </div>
+      <div style="font-size:11px;color:#555;margin-top:10px;line-height:1.5">${nota}</div>
+    </div>`;
+  }
+
   function _drawEquityAfterRender(ops) {
     setTimeout(() => dibujarEquityCurve(ops), 50);
     setTimeout(() => dibujarTradesBar(ops), 80);
@@ -6526,6 +6640,8 @@
     }
     const _bePanel = document.getElementById('journalBEPanel');
     if (_bePanel) _bePanel.innerHTML = renderPanelGestionBE(opsFiltradas);
+    const _durPanel = document.getElementById('duracionPanel');
+    if (_durPanel) _durPanel.innerHTML = renderDuracionPanel(opsFiltradas);
     _opsFiltradas = opsFiltradas;
     if (typeof iniciarCalendario === 'function') iniciarCalendario(opsFiltradas);
     if (typeof dibujarEquityCurve === 'function') dibujarEquityCurve(opsFiltradas);

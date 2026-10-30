@@ -5866,6 +5866,52 @@
     const nota = (sinDur > 0 ? `${sinDur} operaciones sin duración registrada no están incluidas. ` : '')
       + `Línea punteada: win rate general (${Math.round(wrGeneral)}%). Barras tenues: menos de 5 operaciones, muestra chica.`;
 
+    // ---- Devolución automática ----
+    const EDGES = [{ s: 60, l: '1 min' }, { s: 120, l: '2 min' }, { s: 300, l: '5 min' }, { s: 600, l: '10 min' }, { s: 1800, l: '30 min' }, { s: 3600, l: '1 h' }];
+    const durs = conDur.map(o => Number(o.duracion_segundos)).sort((a, c) => a - c);
+    const mediana = durs[Math.floor(durs.length / 2)];
+    const corte = EDGES.reduce((best, e) => Math.abs(e.s - mediana) < Math.abs(best.s - mediana) ? e : best, EDGES[0]);
+    const grp = { c: { n: 0, pnl: 0, w: 0, sb: 0 }, l: { n: 0, pnl: 0, w: 0, sb: 0 } };
+    conDur.forEach(o => {
+      const g = Number(o.duracion_segundos) < corte.s ? grp.c : grp.l;
+      const p = pnlNeto(o);
+      g.n++; g.pnl += p;
+      if (!o.es_breakeven) { g.sb++; if (p > 0) g.w++; }
+    });
+    const colDev = v => v >= 0 ? 'var(--verde)' : '#E57373';
+    const money = v => `<strong style="color:${colDev(v)}">${fmtUsd(v)}</strong>`;
+    const wrTxt = g => g.sb ? Math.round(g.w / g.sb * 100) + '%' : '—';
+    const li = t => `<li style="margin-bottom:6px">${t}</li>`;
+    const items = [];
+    if (grp.c.n > 0 && grp.l.n > 0) {
+      items.push(li(`Menos de ${corte.l}: ${grp.c.n} trades, ${money(grp.c.pnl)} (win rate ${wrTxt(grp.c)}). De ${corte.l} o más: ${grp.l.n} trades, ${money(grp.l.pnl)} (win rate ${wrTxt(grp.l)}).`));
+    }
+    const conMuestra = b.filter(x => x.n >= 3);
+    const mejor = conMuestra.reduce((m, x) => (!m || x.pnl > m.pnl) ? x : m, null);
+    const peor  = conMuestra.reduce((m, x) => (!m || x.pnl < m.pnl) ? x : m, null);
+    if (mejor && mejor.pnl > 0) items.push(li(`Tu mejor tramo es <strong>${mejor.label}</strong> (${money(mejor.pnl)} en ${mejor.n} trades).`));
+    if (peor && peor.pnl < 0) items.push(li(`El tramo que más plata te saca es <strong>${peor.label}</strong> (${money(peor.pnl)} en ${peor.n} trades).`));
+    if (items.length === 0) items.push(li('Todavía no hay suficientes tramos con datos para comparar.'));
+
+    let concl = '';
+    if (grp.c.n > 0 && grp.l.n > 0) {
+      const a = grp.c.pnl, z = grp.l.pnl;
+      if (a < 0 && z > 0) concl = 'Los trades que aguantás te pagan y los rápidos te cuestan plata. Revisá en la tabla cuántos de los rápidos fueron entradas apuradas o reentradas después de un stop.';
+      else if (a > 0 && z < 0) concl = 'Tu resultado viene de los trades cortos y los más largos te restan. Revisá si estás dejando correr operaciones que deberías haber cerrado antes.';
+      else if (a >= 0 && z >= 0) concl = 'Los dos grupos son rentables, así que por ahora tu resultado no depende de la duración.';
+      else concl = 'Ninguno de los dos grupos es rentable todavía, así que la duración no es lo que explica el resultado.';
+    }
+    const avisos = [];
+    if (conDur.length < 30) avisos.push(`Con ${conDur.length} operaciones la muestra es chica: tomalo como orientación, no como conclusión.`);
+    avisos.push('Un trade que toca el stop rápido dura poco por definición, así que esto muestra dónde ganás y perdés, no necesariamente por qué.');
+
+    const devolucion = `<div style="margin-top:18px;padding:16px;background:#0D0D0D;border:1px solid #1E1E1E;border-radius:12px">
+      <div style="${sub}">Devolución</div>
+      <ul style="margin:0 0 0 18px;padding:0;font-size:13px;color:var(--blanco);line-height:1.6">${items.join('')}</ul>
+      ${concl ? `<div style="font-size:13px;color:var(--blanco);line-height:1.6;margin-top:10px;padding-top:10px;border-top:1px solid #1E1E1E">${concl}</div>` : ''}
+      <div style="font-size:11px;color:#555;margin-top:10px;line-height:1.5">${avisos.join(' ')}</div>
+    </div>`;
+
     return `<div style="${card}">
       <div style="${title}">Rendimiento por duración del trade</div>
       <div style="${sub}">PnL por duración</div>
@@ -5875,6 +5921,7 @@
         <div><div style="${sub}">Win rate por duración</div>${filasWR}</div>
       </div>
       <div style="font-size:11px;color:#555;margin-top:10px;line-height:1.5">${nota}</div>
+      ${devolucion}
     </div>`;
   }
 

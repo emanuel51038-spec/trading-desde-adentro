@@ -1566,6 +1566,10 @@
           <label class="auth-label">Confirmar contrasena</label>
           <input type="password" class="auth-input" id="regPass2" placeholder="Repeti tu contrasena" onkeydown="if(event.key==='Enter')registrar()">
         </div>
+        <div class="auth-group" style="display:flex;gap:10px;align-items:flex-start">
+          <input type="checkbox" id="regTyc" style="margin-top:3px;flex-shrink:0;width:16px;height:16px;cursor:pointer">
+          <label for="regTyc" style="font-size:13px;line-height:1.5;cursor:pointer">Leí y acepto los <a href="https://pjrwdseaomijkgytbglh.supabase.co/storage/v1/object/public/tyc-registro/tyc-registro-Trading%20desde%20Adentro.pdf" target="_blank" rel="noopener" download style="color:var(--rojo);text-decoration:underline">Términos y Condiciones</a> (descargar PDF)</label>
+        </div>
         <button class="auth-btn" id="regBtn" onclick="registrar()">Crear cuenta</button>
         <div class="auth-msg" id="regMsg" style="display:none"></div>
       </div>
@@ -2259,13 +2263,14 @@
     if (nombre.length > 100) { showAuthMsg(msg, 'El nombre es demasiado largo.', 'err'); return; }
     if (pass !== pass2) { showAuthMsg(msg, 'Las contraseñas no coinciden.', 'err'); return; }
     if (pass.length < 6) { showAuthMsg(msg, 'La contraseña debe tener al menos 6 caracteres.', 'err'); return; }
+    if (!document.getElementById('regTyc').checked) { showAuthMsg(msg, 'Tenés que aceptar los Términos y Condiciones para crear tu cuenta.', 'err'); return; }
 
     btn.disabled = true;
     btn.innerHTML = '<span class="spinner"></span>Creando cuenta...';
 
     const r = await sbFetch('/auth/v1/signup', {
       method: 'POST',
-      body: JSON.stringify({ email, password: pass, data: { nombre } })
+      body: JSON.stringify({ email, password: pass, data: { nombre, tyc_version: '1.0', tyc_aceptado_en: new Date().toISOString() } })
     });
 
     btn.disabled = false;
@@ -2286,6 +2291,7 @@
     document.getElementById('regEmail').value  = '';
     document.getElementById('regPass').value   = '';
     document.getElementById('regPass2').value  = '';
+    document.getElementById('regTyc').checked  = false;
   }
 
   function mostrarRecuperarPass() {

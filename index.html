@@ -2597,7 +2597,14 @@
     if (e.includes('invalid login') || e.includes('invalid credentials')) return 'Email o contraseña incorrectos.';
     if (e.includes('email not confirmed')) return 'Confirmá tu email antes de ingresar. Revisá tu bandeja de entrada.';
     if (e.includes('already registered') || e.includes('user already exists')) return 'Ya existe una cuenta con ese email.';
-    if (e.includes('password')) return 'La contraseña debe tener al menos 6 caracteres.';
+    if (e.includes('password')) {
+      const m = e.match(/at least (\d+) characters/);
+      if (m) return 'La contraseña debe tener al menos ' + m[1] + ' caracteres.';
+      if (e.includes('one character of each')) return 'La contraseña debe incluir minúsculas, mayúsculas, números y símbolos.';
+      if (e.includes('weak') || e.includes('pwned') || e.includes('guess') || e.includes('compromised')) return 'Esa contraseña es muy común o apareció en filtraciones. Elegí otra más segura.';
+      if (e.includes('same') || e.includes('different from')) return 'La nueva contraseña tiene que ser distinta de la anterior.';
+      return 'La contraseña no es válida: ' + e;
+    }
     return e;
   }
 

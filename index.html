@@ -2123,6 +2123,8 @@
      NAVEGACIÓN DE VISTAS
   ══════════════════════ */
   function irA(vista, tab) {
+    // La landing (compra) solo es para usuarios con cuenta: sin sesión → login
+    if (vista === 'landing' && !sesiónActual) { irA('auth', 'login'); return; }
     document.querySelectorAll('.vista').forEach(v => v.classList.remove('activa'));
     document.getElementById('vista-' + vista).classList.add('activa');
     window.scrollTo(0, 0);
@@ -2206,7 +2208,10 @@
     try {
       const vActiva = id => document.getElementById('vista-' + id).classList.contains('activa');
       if (h === 'landing') {
-        if (!vActiva('landing')) irA('landing');
+        if (!sesiónActual) {
+          history.replaceState(null, '', window.location.pathname + window.location.search + '#login');
+          irA('auth', 'login');
+        } else if (!vActiva('landing')) irA('landing');
       } else if (h === 'login' || h === 'registro') {
         if (sesiónActual) {
           // Con sesión iniciada no tiene sentido volver al login: vamos al panel
@@ -12580,7 +12585,8 @@
     }
 
     if (hash === '#landing') {
-      irA('landing');
+      if (cargarSesionGuardada()) irA('landing');
+      else irA('auth', 'login');
       return;
     }
 

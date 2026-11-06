@@ -4289,6 +4289,19 @@
         </div>
         <div id="monteCarloContent"><div style="text-align:center;color:var(--gris);font-size:13px;padding:20px">Presioná <strong style="color:var(--blanco)">🎲 Simular</strong> o <strong style="color:var(--blanco)">F9</strong> para correr una simulación de Monte Carlo.</div></div>
       </div>
+      <!-- ANALIZAR CON CLAUDE -->
+      <div style="background:var(--negro-card);border:1px solid var(--negro-border);border-radius:16px;padding:20px;margin-bottom:16px">
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:16px">
+          <div>
+            <div style="font-size:12px;font-weight:600;letter-spacing:1px;text-transform:uppercase;color:var(--gris)">Analizar con Claude</div>
+            <div style="font-size:11px;color:#555;margin-top:2px">Armamos un resumen de tu journal para que lo pegues en tu Claude y recibas una devolución</div>
+          </div>
+          <button onclick="analizarConClaude()" style="background:var(--rojo);color:white;border:none;padding:8px 16px;border-radius:8px;cursor:pointer;font-size:12px;font-weight:600;display:flex;align-items:center;gap:6px">
+            🤖 Analizar con Claude
+          </button>
+        </div>
+        <div id="claudeAnalisisContent"><div style="text-align:center;color:var(--gris);font-size:13px;padding:20px">Presioná <strong style="color:var(--blanco)">🤖 Analizar con Claude</strong>: se copia el resumen (con los filtros que tengas aplicados) y abrís Claude para pegarlo.</div></div>
+      </div>
       <div id="journalTableScroller" style="overflow-x:auto;background:var(--negro-card);border:1px solid var(--negro-border);border-radius:16px">
         <div id="journalTableScrollTop" style="overflow-x:auto;overflow-y:hidden;height:12px;border-bottom:1px solid #1A1A1A" onscroll="document.getElementById('journalTableScroller').scrollLeft=this.scrollLeft">
           <div id="journalTableScrollTopInner" style="height:1px"></div>
@@ -6909,6 +6922,139 @@
      TEST DE MONTE CARLO
   ══════════════════════ */
   let _mcChart = null;
+
+  /* ══════════════════════
+     ANALIZAR CON CLAUDE
+  ══════════════════════ */
+  function armarResumenParaClaude(ops) {
+    const fmt = n => (n >= 0 ? '+' : '') + n.toFixed(2);
+    const lista = ops.slice().sort((a, b) => new Date(a.fecha) - new Date(b.fecha));
+    const netos = lista.map(o => ({ o: o, p: pnlNeto(o) }));
+    const sinBE = netos.filter(x => !x.o.es_breakeven);
+    const gan = sinBE.filter(x => x.p > 0);
+    const per = sinBE.filter(x => x.p < 0);
+    const sum = arr => arr.reduce((a, x) => a + x.p, 0);
+    const total = sum(netos);
+    const winrate = sinBE.length ? gan.length / sinBE.length * 100 : 0;
+    const avgG = gan.length ? sum(gan) / gan.length : 0;
+    const avgP = per.length ? sum(per) / per.length : 0;
+    const ratio = avgP !== 0 ? avgG / Math.abs(avgP) : 0;
+    const pf = sum(per) !== 0 ? sum(gan) / Math.abs(sum(per)) : 0;
+    const nBE = netos.length - sinBE.length;
+
+    let acum = 0, peak = 0, maxDD = 0, racha = 0, maxRacha = 0;
+    netos.forEach(x => {
+      acum += x.p;
+      if (acum > peak) peak = acum;
+      if (peak - acum > maxDD) maxDD = peak - acum;
+      if (x.p < 0) { racha++; if (racha > maxRacha) maxRacha = racha; }
+      else if (x.p > 0) { racha = 0; }
+    });
+
+    const grupo = (titulo, keyFn) => {
+      const m = {};
+      netos.forEach(x => {
+        const k = keyFn(x.o);
+        if (k === null || k === undefined || k === '') return;
+        if (!m[k]) m[k] = { n: 0, pnl: 0, w: 0, sb: 0 };
+        m[k].n++; m[k].pnl += x.p;
+        if (!x.o.es_breakeven) { m[k].sb++; if (x.p > 0) m[k].w++; }
+      });
+      const filas = Object.keys(m).map(k => {
+        const g = m[k];
+        const wr = g.sb ? Math.round(g.w / g.sb * 100) + '%' : 's/d';
+        return '- ' + k + ': ' + g.n + ' ops, PnL ' + fmt(g.pnl) + ', win rate ' + wr;
+      });
+      return filas.length ? '\n' + titulo + '\n' + filas.join('\n') + '\n' : '';
+    };
+
+    const dias = ['domingo', 'lunes', 'martes', 'miércoles', 'jueves', 'viernes', 'sábado'];
+    const tramoDur = o => {
+      if (o.duracion_segundos === null || o.duracion_segundos === undefined || o.duracion_segundos === '' || isNaN(Number(o.duracion_segundos))) return null;
+      const d = Number(o.duracion_segundos);
+      if (d < 60) return '1) menos de 1 min';
+      if (d < 300) return '2) 1 a 5 min';
+      if (d < 900) return '3) 5 a 15 min';
+      if (d < 3600) return '4) 15 a 60 min';
+      return '5) más de 60 min';
+    };
+
+    const desde = lista.length ? String(lista[0].fecha).substring(0, 10) : '-';
+    const hasta = lista.length ? String(lista[lista.length - 1].fecha).substring(0, 10) : '-';
+
+    let t = 'Sos un coach de trading sistemático. Analizá mi journal de trading (futuros) y dame una devolución honesta y concreta, basada solo en los datos de abajo. No inventes datos que no estén acá, y avisame si la muestra es chica para sacar conclusiones.\n\n';
+    t += 'Quiero que me respondas con:\n1) Diagnóstico general en pocas líneas.\n2) Mis 3 fortalezas, con la evidencia de los datos.\n3) Mis 3 puntos a mejorar, con la evidencia de los datos.\n4) Una sola regla concreta para probar la próxima semana.\n\n';
+    t += '=== RESUMEN ===\n';
+    t += 'Período: ' + desde + ' a ' + hasta + '\n';
+    t += 'Operaciones: ' + netos.length + ' (breakeven: ' + nBE + ')\n';
+    t += 'PnL neto total (con comisiones): ' + fmt(total) + '\n';
+    t += 'Win rate (sin BE): ' + winrate.toFixed(1) + '%\n';
+    t += 'Ganancia promedio: ' + fmt(avgG) + ' | Pérdida promedio: ' + fmt(avgP) + ' | Ratio: ' + ratio.toFixed(2) + '\n';
+    t += 'Profit factor (sin BE): ' + pf.toFixed(2) + '\n';
+    t += 'Drawdown máximo: -' + maxDD.toFixed(2) + '\n';
+    t += 'Peor racha de pérdidas: ' + maxRacha + '\n';
+    t += grupo('=== POR ESTRATEGIA ===', o => o.estrategia);
+    t += grupo('=== POR INSTRUMENTO ===', o => o.instrumento);
+    t += grupo('=== POR DÍA DE LA SEMANA ===', o => { const d = new Date(o.fecha); return isNaN(d) ? null : dias[d.getDay()]; });
+    t += grupo('=== POR HORA DEL DÍA ===', o => { const d = new Date(o.fecha); return isNaN(d) ? null : String(d.getHours()).padStart(2, '0') + ':00'; });
+    t += grupo('=== POR DURACIÓN DEL TRADE ===', tramoDur);
+    t += grupo('=== POR EMOCIÓN ===', o => (o.emocion && !String(o.emocion).startsWith('__')) ? o.emocion : null);
+
+    const ultimas = netos.slice(-40);
+    t += '\n=== ÚLTIMAS ' + ultimas.length + ' OPERACIONES (fecha | instrumento | dirección | PnL neto | BE | estrategia | emoción) ===\n';
+    ultimas.forEach(x => {
+      const o = x.o;
+      t += String(o.fecha).substring(0, 16).replace('T', ' ') + ' | ' + (o.instrumento || '-') + ' | ' + (o.direccion || '-') + ' | ' + fmt(x.p) + ' | ' + (o.es_breakeven ? 'BE' : '-') + ' | ' + (o.estrategia || '-') + ' | ' + ((o.emocion && !String(o.emocion).startsWith('__')) ? o.emocion : '-') + '\n';
+    });
+    return t;
+  }
+
+  async function copiarTextoClaude(texto) {
+    try {
+      await navigator.clipboard.writeText(texto);
+      return true;
+    } catch (e) {
+      try {
+        const ta = document.createElement('textarea');
+        ta.value = texto;
+        ta.style.position = 'fixed';
+        ta.style.opacity = '0';
+        document.body.appendChild(ta);
+        ta.select();
+        const ok = document.execCommand('copy');
+        document.body.removeChild(ta);
+        return ok;
+      } catch (e2) { return false; }
+    }
+  }
+
+  async function analizarConClaude() {
+    const cont = document.getElementById('claudeAnalisisContent');
+    if (!cont) return;
+    const ops = _opsFiltradas.length > 0 ? _opsFiltradas : _todasLasOps;
+    if (ops.length < 5) {
+      cont.innerHTML = '<div style="text-align:center;color:#E57373;font-size:13px;padding:20px">Necesitás al menos 5 operaciones para armar el análisis.</div>';
+      return;
+    }
+    const texto = armarResumenParaClaude(ops);
+    const ok = await copiarTextoClaude(texto);
+    cont.innerHTML = `
+      <div style="font-size:13px;color:${ok ? 'var(--verde)' : '#E57373'};margin-bottom:10px">${ok ? '✅ Resumen copiado. Abrí Claude y pegalo (Ctrl+V).' : 'No pudimos copiar solo. Seleccioná el texto de abajo y copialo.'}</div>
+      <textarea id="claudeResumenTexto" readonly style="width:100%;height:160px;background:#0D0D0D;color:var(--gris);border:1px solid #1E1E1E;border-radius:10px;padding:12px;font-size:12px;font-family:monospace;resize:vertical;box-sizing:border-box"></textarea>
+      <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:12px">
+        <a href="https://claude.ai/new" target="_blank" rel="noopener noreferrer" style="background:var(--rojo);color:white;text-decoration:none;padding:8px 16px;border-radius:8px;font-size:12px;font-weight:600">Abrir Claude</a>
+        <button onclick="copiarResumenClaudeDeNuevo()" style="background:#1A1A1A;color:var(--blanco);border:1px solid #2A2A2A;padding:8px 16px;border-radius:8px;cursor:pointer;font-size:12px;font-weight:600">Copiar de nuevo</button>
+      </div>`;
+    const ta = document.getElementById('claudeResumenTexto');
+    if (ta) ta.value = texto;
+  }
+
+  async function copiarResumenClaudeDeNuevo() {
+    const ta = document.getElementById('claudeResumenTexto');
+    if (!ta) return;
+    const ok = await copiarTextoClaude(ta.value);
+    if (!ok) { ta.focus(); ta.select(); }
+  }
 
   function correrMonteCarlo() {
     const ops = _opsFiltradas.length > 0 ? _opsFiltradas : _todasLasOps;

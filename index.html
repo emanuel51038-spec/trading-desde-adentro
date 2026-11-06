@@ -2130,6 +2130,9 @@
     if (glowFx) glowFx.classList.toggle('activa', vista === 'panel');
     if (vista === 'auth' && tab) switchAuthTab(tab);
     if (vista === 'panel') cargarPanel();
+    if (vista === 'landing') actualizarHash('landing');
+    else if (vista === 'auth') actualizarHash(tab === 'registro' ? 'registro' : 'login');
+    else if (vista === 'panel') actualizarHash('panel/' + seccionPanelActual());
   }
 
   function switchAuthTab(tab) {
@@ -2137,6 +2140,8 @@
     document.getElementById('formRegistro').style.display = tab === 'registro' ? 'block' : 'none';
     document.getElementById('tabLogin').classList.toggle('active', tab === 'login');
     document.getElementById('tabRegistro').classList.toggle('active', tab === 'registro');
+    const vAuth = document.getElementById('vista-auth');
+    if (vAuth && vAuth.classList.contains('activa')) actualizarHash(tab === 'registro' ? 'registro' : 'login');
   }
 
   function switchPanelTab(sec, btn) {
@@ -2157,7 +2162,80 @@
     if (sec === 'mensajes') cargarConversaciones();
     if (sec === 'tienda') renderTienda();
     if (sec === 'admin') cargarPanelAdmin();
+    if (SECCIONES_RUTEABLES.includes(sec)) actualizarHash('panel/' + sec);
   }
+
+  /* ══════════════════════
+     RUTAS (URL con #hash)
+     #landing · #login · #registro · #panel/<seccion>
+  ══════════════════════ */
+  const SECCIONES_RUTEABLES = ['herramientas','historial','tienda','recursos','journal','fondeos','inversiones','afiliados','comunidad','operativagrabada','postmercado','mensajes','admin'];
+  let _rutaDesdeHash = false;
+
+  function actualizarHash(ruta) {
+    if (_rutaDesdeHash) return;
+    const nuevo = '#' + ruta;
+    if (window.location.hash === nuevo) return;
+    history.pushState(null, '', window.location.pathname + window.location.search + nuevo);
+  }
+
+  function seccionPanelActual() {
+    const el = document.querySelector('.panel-section.activa');
+    const sec = el ? el.id.replace('sec-', '') : 'herramientas';
+    return SECCIONES_RUTEABLES.includes(sec) ? sec : 'herramientas';
+  }
+
+  function btnParaSeccion(sec) {
+    const el = document.querySelector('[onclick^="switchPanelTab(\'' + sec + '\'"]');
+    if (!el) return null;
+    const dd = el.closest('.panel-nav-dropdown');
+    return dd ? dd.querySelector('.panel-nav-btn') : el;
+  }
+
+  // Devuelve true si el hash era una ruta conocida (y la aplicó)
+  function aplicarRutaDesdeHash() {
+    const h = window.location.hash.replace(/^#/, '');
+    if (!h || h.includes('access_token=')) return false;
+    const esPanel = (h === 'panel' || h.indexOf('panel/') === 0);
+    if (!(h === 'landing' || h === 'login' || h === 'registro' || esPanel)) return false;
+
+    _rutaDesdeHash = true;
+    try {
+      const vActiva = id => document.getElementById('vista-' + id).classList.contains('activa');
+      if (h === 'landing') {
+        if (!vActiva('landing')) irA('landing');
+      } else if (h === 'login' || h === 'registro') {
+        if (sesiónActual) {
+          // Con sesión iniciada no tiene sentido volver al login: vamos al panel
+          history.replaceState(null, '', window.location.pathname + window.location.search + '#panel/' + seccionPanelActual());
+          if (!vActiva('panel')) irA('panel');
+        } else {
+          const registroVisible = document.getElementById('formRegistro').style.display === 'block';
+          const loginVisible = document.getElementById('formLogin').style.display !== 'none';
+          const yaEsta = vActiva('auth') && (h === 'registro' ? registroVisible : loginVisible);
+          if (!yaEsta) irA('auth', h);
+        }
+      } else {
+        if (!sesiónActual) {
+          history.replaceState(null, '', window.location.pathname + window.location.search + '#login');
+          irA('auth', 'login');
+        } else {
+          let sec = h.split('/')[1];
+          if (!SECCIONES_RUTEABLES.includes(sec) || (sec === 'admin' && !esAdmin())) sec = 'herramientas';
+          if (!vActiva('panel')) irA('panel');
+          const secEl = document.getElementById('sec-' + sec);
+          if (secEl && !secEl.classList.contains('activa')) switchPanelTab(sec, btnParaSeccion(sec));
+        }
+      }
+    } finally {
+      _rutaDesdeHash = false;
+    }
+    return true;
+  }
+
+  // Botones atrás/adelante del navegador o hash editado a mano
+  window.addEventListener('popstate', aplicarRutaDesdeHash);
+  window.addEventListener('hashchange', aplicarRutaDesdeHash);
 
   let _navScrollListenerAttached = false;
 
@@ -12506,9 +12584,9 @@
     if (cargarSesionGuardada()) {
       const navBtn = document.querySelector('#navTop .nav-btn.primary');
       if (navBtn) navBtn.textContent = 'Mi Panel →';
-      irA('panel');
+      if (!aplicarRutaDesdeHash()) irA('panel');
     } else {
-      irA('auth');
+      if (!aplicarRutaDesdeHash()) irA('auth');
     }
   })();
 </script>

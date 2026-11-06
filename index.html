@@ -1084,7 +1084,7 @@
 
   <!-- Nav top -->
   <div class="nav-top" id="navTop">
-    <button class="nav-btn" onclick="irA('auth', 'login')">Iniciar sesión</button>
+    <button class="nav-btn" id="navBtnLogin" onclick="irA('auth', 'login')">Iniciar sesión</button>
     <button class="nav-btn primary" onclick="irA('panel')">Mi Panel →</button>
   </div>
 
@@ -2130,6 +2130,9 @@
     if (glowFx) glowFx.classList.toggle('activa', vista === 'panel');
     if (vista === 'auth' && tab) switchAuthTab(tab);
     if (vista === 'panel') cargarPanel();
+    // El botón "Iniciar sesión" de la landing solo tiene sentido sin sesión
+    const btnLogin = document.getElementById('navBtnLogin');
+    if (btnLogin) btnLogin.style.display = sesiónActual ? 'none' : '';
     if (vista === 'landing') actualizarHash('landing');
     else if (vista === 'auth') actualizarHash(tab === 'registro' ? 'registro' : 'login');
     else if (vista === 'panel') actualizarHash('panel/' + seccionPanelActual());

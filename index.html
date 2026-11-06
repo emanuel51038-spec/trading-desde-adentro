@@ -6926,6 +6926,38 @@
   /* ══════════════════════
      ANALIZAR CON CLAUDE
   ══════════════════════ */
+  const _EMO_CANON = ['Tranquilo','Paciente','Fomo','Venganza','Ansioso','Miedo','Duda','Nervioso','Concentrado','Desconcentrado','Seguro','Confianza','Enojado','Avaricia','Desconcertado','Desapegado','Temeroso','Negativo'];
+  const _EMO_SINON = { revancha: 'Venganza', dudas: 'Duda', duditativo: 'Duda', seguridad: 'Seguro' };
+
+  function _distLev(a, b) {
+    const m = [];
+    for (let i = 0; i <= a.length; i++) { m[i] = [i]; }
+    for (let j = 1; j <= b.length; j++) { m[0][j] = j; }
+    for (let i = 1; i <= a.length; i++) {
+      for (let j = 1; j <= b.length; j++) {
+        m[i][j] = Math.min(m[i - 1][j] + 1, m[i][j - 1] + 1, m[i - 1][j - 1] + (a[i - 1] === b[j - 1] ? 0 : 1));
+      }
+    }
+    return m[a.length][b.length];
+  }
+
+  function normalizarEmocion(e) {
+    if (e === null || e === undefined) return null;
+    const crudo = String(e).trim();
+    if (!crudo || crudo.startsWith('__') || crudo.startsWith('/')) return null;
+    const limpio = crudo.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+    if (_EMO_SINON[limpio]) return _EMO_SINON[limpio];
+    let mejor = null, mejorDist = 99;
+    _EMO_CANON.forEach(c => {
+      const cl = c.toLowerCase();
+      const d = _distLev(limpio, cl);
+      if (d < mejorDist) { mejorDist = d; mejor = c; }
+    });
+    const maxDist = limpio.length <= 4 ? 0 : (limpio.length <= 6 ? 1 : 2);
+    if (mejor && mejorDist <= maxDist) return mejor;
+    return crudo.charAt(0).toUpperCase() + crudo.slice(1);
+  }
+
   function armarResumenParaClaude(ops) {
     const fmt = n => (n >= 0 ? '+' : '') + n.toFixed(2);
     const lista = ops.slice().sort((a, b) => new Date(a.fecha) - new Date(b.fecha));
@@ -6998,14 +7030,14 @@
     t += grupo('=== POR DÍA DE LA SEMANA ===', o => { const d = new Date(o.fecha); return isNaN(d) ? null : dias[d.getDay()]; });
     t += grupo('=== POR HORA DEL DÍA ===', o => { const d = new Date(o.fecha); return isNaN(d) ? null : String(d.getHours()).padStart(2, '0') + ':00'; });
     t += grupo('=== POR DURACIÓN DEL TRADE ===', tramoDur);
-    t += grupo('=== POR EMOCIÓN ===', o => (o.emocion && !String(o.emocion).startsWith('__')) ? o.emocion : null);
+    t += grupo('=== POR EMOCIÓN ===', o => normalizarEmocion(o.emocion));
 
     const ultimas = netos.slice(-40);
     t += '\n=== ÚLTIMAS ' + ultimas.length + ' OPERACIONES (fecha | instrumento | dirección | PnL neto | BE | estrategia | emoción) ===\n';
     ultimas.forEach(x => {
       const o = x.o;
       const dl = new Date(o.fecha); const fl = isNaN(dl) ? String(o.fecha).substring(0, 16) : dl.getFullYear() + '-' + String(dl.getMonth() + 1).padStart(2, '0') + '-' + String(dl.getDate()).padStart(2, '0') + ' ' + String(dl.getHours()).padStart(2, '0') + ':' + String(dl.getMinutes()).padStart(2, '0');
-      t += fl + ' | ' + (o.instrumento || '-') + ' | ' + (o.direccion || '-') + ' | ' + fmt(x.p) + ' | ' + (o.es_breakeven ? 'BE' : '-') + ' | ' + (o.estrategia || '-') + ' | ' + ((o.emocion && !String(o.emocion).startsWith('__')) ? o.emocion : '-') + '\n';
+      t += fl + ' | ' + (o.instrumento || '-') + ' | ' + (o.direccion || '-') + ' | ' + fmt(x.p) + ' | ' + (o.es_breakeven ? 'BE' : '-') + ' | ' + (o.estrategia || '-') + ' | ' + (normalizarEmocion(o.emocion) || '-') + '\n';
     });
     return t;
   }

@@ -4301,16 +4301,6 @@
           </button>
         </div>
         <div id="claudeAnalisisContent"><div style="text-align:center;color:var(--gris);font-size:13px;padding:20px">Presioná <strong style="color:var(--blanco)">🤖 Analizar con Claude</strong>: se copia el resumen (con los filtros que tengas aplicados) y abrís Claude para pegarlo.</div></div>
-        <div style="border-top:1px solid #1A1A1A;margin-top:16px;padding-top:16px">
-          <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap">
-            <div>
-              <div style="font-size:13px;font-weight:600;color:var(--blanco)">Conectar mi Claude</div>
-              <div style="font-size:11px;color:#555;margin-top:2px">Tu Claude lee tu journal directo, sin copiar y pegar (solo lectura)</div>
-            </div>
-            <button onclick="abrirConectorClaude()" style="background:#1A1A1A;color:var(--blanco);border:1px solid #2A2A2A;padding:8px 16px;border-radius:8px;cursor:pointer;font-size:12px;font-weight:600">Configurar conexión</button>
-          </div>
-          <div id="claudeConectorPanel"></div>
-        </div>
       </div>
       <div id="journalTableScroller" style="overflow-x:auto;background:var(--negro-card);border:1px solid var(--negro-border);border-radius:16px">
         <div id="journalTableScrollTop" style="overflow-x:auto;overflow-y:hidden;height:12px;border-bottom:1px solid #1A1A1A" onscroll="document.getElementById('journalTableScroller').scrollLeft=this.scrollLeft">
@@ -7090,94 +7080,6 @@
       </div>`;
     const ta = document.getElementById('claudeResumenTexto');
     if (ta) ta.value = texto;
-  }
-
-  /* ══════════════════════
-     CONECTOR MCP (tokens)
-  ══════════════════════ */
-  const MCP_JOURNAL_URL = SUPABASE_URL + '/functions/v1/mcp-journal';
-
-  async function abrirConectorClaude(tokenNuevo) {
-    const panel = document.getElementById('claudeConectorPanel');
-    if (!panel) return;
-    panel.innerHTML = '<div style="padding:16px;color:var(--gris);font-size:13px"><span class="spinner"></span> Cargando...</div>';
-
-    const r = await sbFetch('/rest/v1/mcp_tokens?select=id,nombre,prefijo,creado_en,ultimo_uso,revocado_en&order=creado_en.desc', {}, sesiónActual.access_token);
-    if (!r.ok || !Array.isArray(r.data)) {
-      panel.innerHTML = '<div style="padding:16px;color:#E57373;font-size:13px">No se pudieron cargar tus conexiones.</div>';
-      return;
-    }
-    const activos = r.data.filter(t => !t.revocado_en);
-    const fechaCorta = f => f ? new Date(f).toLocaleDateString('es-AR', { day: '2-digit', month: '2-digit', year: '2-digit' }) : 'nunca';
-
-    const filas = activos.map(t => `
-      <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px 12px;background:#0D0D0D;border:1px solid #1E1E1E;border-radius:8px;margin-top:8px">
-        <div style="font-size:12px;color:var(--gris)">
-          <strong style="color:var(--blanco)">${esc(t.nombre)}</strong> · ${esc(t.prefijo)}… · creado ${fechaCorta(t.creado_en)} · último uso ${fechaCorta(t.ultimo_uso)}
-        </div>
-        <button onclick="revocarTokenMcp('${escAttr(t.id)}')" style="background:transparent;color:#E57373;border:1px solid #3A1E1E;padding:5px 10px;border-radius:6px;cursor:pointer;font-size:11px;font-weight:600">Revocar</button>
-      </div>`).join('');
-
-    const bloqueNuevo = tokenNuevo ? `
-      <div style="margin-top:14px;padding:14px;background:#0D0D0D;border:1px solid var(--verde);border-radius:10px">
-        <div style="font-size:12px;color:var(--verde);font-weight:600;margin-bottom:8px">Tu token (se muestra una sola vez, copialo ahora)</div>
-        <input id="mcpTokenNuevo" readonly value="${escAttr(tokenNuevo)}" style="width:100%;box-sizing:border-box;background:#111;color:var(--blanco);border:1px solid #2A2A2A;border-radius:8px;padding:10px;font-size:12px;font-family:monospace">
-        <input id="mcpHeaderNuevo" readonly value="${escAttr('Bearer ' + tokenNuevo)}" style="display:none">
-        <div style="margin-top:10px">
-          <button onclick="copiarCampoMcp('mcpHeaderNuevo', this)" style="background:var(--rojo);color:white;border:none;padding:8px 16px;border-radius:8px;cursor:pointer;font-size:12px;font-weight:600">Copiar valor del header (Bearer + token)</button>
-        </div>
-      </div>` : '';
-
-    panel.innerHTML = `
-      <div style="margin-top:14px;font-size:12px;color:var(--gris);line-height:1.6">
-        <strong style="color:var(--blanco)">Cómo conectarlo:</strong><br>
-        1. Creá un token acá abajo.<br>
-        2. En Claude, andá a <em>Customize &gt; Connectors</em> y tocá <em>Add custom connector</em>.<br>
-        3. Nombre: <em>Trading desde Adentro</em>. URL del servidor: <span style="color:var(--blanco)">${esc(MCP_JOURNAL_URL)}</span><br>
-        4. En <em>Request headers</em> agregá: nombre <strong style="color:var(--blanco)">Authorization</strong>, valor <strong style="color:var(--blanco)">Bearer</strong> + espacio + tu token.<br>
-        5. Guardá, y pedile a Claude que analice tu journal.
-      </div>
-      <div style="margin-top:10px;display:flex;gap:8px;flex-wrap:wrap">
-        <input id="mcpNombreToken" maxlength="40" placeholder="Nombre (ej: Mi Claude)" style="flex:1;min-width:160px;background:#111;color:var(--blanco);border:1px solid #2A2A2A;border-radius:8px;padding:8px 10px;font-size:12px">
-        <button onclick="crearTokenMcp()" style="background:var(--rojo);color:white;border:none;padding:8px 16px;border-radius:8px;cursor:pointer;font-size:12px;font-weight:600">Crear token</button>
-      </div>
-      ${bloqueNuevo}
-      ${filas ? '<div style="margin-top:14px;font-size:11px;color:#555">Conexiones activas</div>' + filas : ''}
-      <div style="margin-top:12px;font-size:11px;color:#555">El token le da a tu Claude acceso de solo lectura a tu journal. Si lo compartiste o lo perdiste, revocalo y creá otro.</div>`;
-  }
-
-  async function crearTokenMcp() {
-    const nombre = (document.getElementById('mcpNombreToken')?.value || '').trim() || 'Mi Claude';
-    const r = await sbFetch('/rest/v1/rpc/crear_mcp_token', {
-      method: 'POST',
-      body: JSON.stringify({ p_nombre: nombre })
-    }, sesiónActual.access_token);
-    if (!r.ok || typeof r.data !== 'string') {
-      const msg = (r.data && r.data.message) ? r.data.message : 'No se pudo crear el token.';
-      alert(msg);
-      return;
-    }
-    await abrirConectorClaude(r.data);
-  }
-
-  async function revocarTokenMcp(id) {
-    if (!confirm('¿Revocar esta conexión? Tu Claude va a dejar de poder leer tu journal con este token.')) return;
-    const r = await sbFetch('/rest/v1/rpc/revocar_mcp_token', {
-      method: 'POST',
-      body: JSON.stringify({ p_id: id })
-    }, sesiónActual.access_token);
-    if (!r.ok) {
-      alert((r.data && r.data.message) ? r.data.message : 'No se pudo revocar el token.');
-      return;
-    }
-    await abrirConectorClaude();
-  }
-
-  async function copiarCampoMcp(idCampo, btn) {
-    const el = document.getElementById(idCampo);
-    if (!el) return;
-    const ok = await copiarTextoClaude(el.value);
-    if (btn) { const t = btn.textContent; btn.textContent = ok ? 'Copiado' : 'No se pudo copiar'; setTimeout(() => { btn.textContent = t; }, 1800); }
   }
 
   async function copiarResumenClaudeDeNuevo() {

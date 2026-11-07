@@ -4289,29 +4289,6 @@
         </div>
         <div id="monteCarloContent"><div style="text-align:center;color:var(--gris);font-size:13px;padding:20px">Presioná <strong style="color:var(--blanco)">🎲 Simular</strong> o <strong style="color:var(--blanco)">F9</strong> para correr una simulación de Monte Carlo.</div></div>
       </div>
-      <!-- ANALIZAR CON CLAUDE -->
-      <div style="background:var(--negro-card);border:1px solid var(--negro-border);border-radius:16px;padding:20px;margin-bottom:16px">
-        <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:16px">
-          <div>
-            <div style="font-size:12px;font-weight:600;letter-spacing:1px;text-transform:uppercase;color:var(--gris)">Analizar con Claude</div>
-            <div style="font-size:11px;color:#555;margin-top:2px">Armamos un resumen de tu journal para que lo pegues en tu Claude y recibas una devolución</div>
-          </div>
-          <button onclick="analizarConClaude()" style="background:var(--rojo);color:white;border:none;padding:8px 16px;border-radius:8px;cursor:pointer;font-size:12px;font-weight:600;display:flex;align-items:center;gap:6px">
-            🤖 Analizar con Claude
-          </button>
-        </div>
-        <div id="claudeAnalisisContent"><div style="text-align:center;color:var(--gris);font-size:13px;padding:20px">Presioná <strong style="color:var(--blanco)">🤖 Analizar con Claude</strong>: se copia el resumen (con los filtros que tengas aplicados) y abrís Claude para pegarlo.</div></div>
-        <div style="border-top:1px solid #1A1A1A;margin-top:16px;padding-top:16px">
-          <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap">
-            <div>
-              <div style="font-size:13px;font-weight:600;color:var(--blanco)">Conectar mi Claude</div>
-              <div style="font-size:11px;color:#555;margin-top:2px">Tu Claude lee tu journal directo, sin copiar y pegar (solo lectura)</div>
-            </div>
-            <button onclick="abrirConectorClaude()" style="background:#1A1A1A;color:var(--blanco);border:1px solid #2A2A2A;padding:8px 16px;border-radius:8px;cursor:pointer;font-size:12px;font-weight:600">Configurar conexión</button>
-          </div>
-          <div id="claudeConectorPanel"></div>
-        </div>
-      </div>
       <div id="journalTableScroller" style="overflow-x:auto;background:var(--negro-card);border:1px solid var(--negro-border);border-radius:16px">
         <div id="journalTableScrollTop" style="overflow-x:auto;overflow-y:hidden;height:12px;border-bottom:1px solid #1A1A1A" onscroll="document.getElementById('journalTableScroller').scrollLeft=this.scrollLeft">
           <div id="journalTableScrollTopInner" style="height:1px"></div>
@@ -6496,12 +6473,92 @@
       <div style="display:flex;gap:4px;border-bottom:1px solid #1E1E1E;margin-bottom:20px;margin-top:-8px">
         <button onclick="cambiarTabJournal('real')" style="${tabStyle(active === 'real')}">📒 Journal</button>
         <button onclick="cambiarTabJournal('backtest')" style="${tabStyle(active === 'backtest')}">📊 Backtest</button>
+        <button onclick="cambiarTabJournal('claude')" style="${tabStyle(active === 'claude')}">🤖 Claude</button>
       </div>`;
   }
 
   function cambiarTabJournal(tab) {
     if (tab === 'real') cargarJournal();
+    else if (tab === 'claude') cargarJournalClaude();
     else { _btSesionId = null; cargarJournalBacktest(); }
+  }
+
+  // ── Pestaña Claude (análisis del journal + conector) ──────
+  async function cargarJournalClaude() {
+    const cont = document.getElementById('journalContainer');
+    cont.innerHTML = '<div style="text-align:center;padding:40px;color:var(--gris)"><span class="spinner"></span> Cargando...</div>';
+
+    // Misma carga de datos que el journal real (el resumen necesita las ops y las comisiones)
+    const [r, rCom] = await Promise.all([
+      sbFetch('/rest/v1/operaciones_journal?select=*&user_id=eq.' + sesiónActual.user.id + '&order=fecha.desc', {}, sesiónActual.access_token),
+      sbFetch('/rest/v1/comisiones_journal?select=instrumento,comision_por_contrato&user_id=eq.' + sesiónActual.user.id, {}, sesiónActual.access_token)
+    ]);
+    if (!r.ok || !Array.isArray(r.data)) { cont.innerHTML = '<div style="color:#E57373;padding:20px">Error cargando el journal.</div>'; return; }
+
+    _comisiones = {};
+    if (rCom.ok && Array.isArray(rCom.data)) rCom.data.forEach(c => { _comisiones[c.instrumento] = Number(c.comision_por_contrato); });
+    _todasLasOps = r.data.filter(o => o.pnl !== null);
+    _opsFiltradas = _todasLasOps;
+
+    const header = btHeader('TRADING JOURNAL', 'Analizá tu journal con Claude.');
+    const ops = _todasLasOps;
+    const estrategiasUnicas = [...new Set(ops.map(o => o.estrategia).filter(Boolean))];
+    cont.innerHTML = header + renderJournalTabs('claude') + `
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;flex-wrap:wrap;gap:10px">
+        <span id="journalConteo" style="font-size:14px;font-weight:600">${ops.length} operaciones</span>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+          <div style="position:relative" id="cuentasDropdownWrap">
+            <button onclick="toggleCuentasDropdown()" style="background:#0D0D0D;border:1px solid #1E1E1E;color:var(--blanco);padding:7px 12px;border-radius:8px;font-size:13px;cursor:pointer;font-family:'DM Sans',sans-serif;display:flex;align-items:center;gap:6px;min-width:160px;justify-content:space-between">
+              <span id="cuentasDropdownLabel">Todas las cuentas</span>
+              <span style="font-size:10px;color:var(--gris)">▼</span>
+            </button>
+            <div id="cuentasDropdownMenu" style="display:none;position:absolute;top:calc(100% + 4px);left:0;background:#0D0D0D;border:1px solid #2A2A2A;border-radius:8px;z-index:100;min-width:200px;padding:8px 0;box-shadow:0 8px 24px rgba(0,0,0,0.5)">
+              <label style="display:flex;align-items:center;gap:8px;padding:6px 14px;cursor:pointer;font-size:13px;color:var(--gris)">
+                <input type="checkbox" id="chkTodasCuentas" checked style="accent-color:var(--rojo);width:14px;height:14px" onchange="seleccionarTodasCuentas()"> Todas las cuentas
+              </label>
+              <div style="height:1px;background:#1E1E1E;margin:4px 0"></div>
+              <div id="cuentasCheckboxList"></div>
+            </div>
+          </div>
+          <select id="filtroEstrategia" onchange="filtrarJournal()" style="background:#0D0D0D;border:1px solid #1E1E1E;color:var(--blanco);padding:7px 12px;border-radius:8px;font-size:13px;cursor:pointer;font-family:'DM Sans',sans-serif">
+            <option value="">Todas las estrategias</option>
+            ${estrategiasUnicas.map(e => `<option value="${escAttr(e)}">${esc(e)}</option>`).join('')}
+          </select>
+          <div style="display:flex;align-items:center;gap:4px;background:#0D0D0D;border:1px solid #1E1E1E;border-radius:8px;padding:4px 10px">
+            <span style="font-size:11px;color:var(--gris);white-space:nowrap">Desde</span>
+            <input type="date" id="filtroDesde" onchange="filtrarJournal()" onclick="this.showPicker && this.showPicker()" style="background:transparent;border:none;color:var(--blanco);font-size:13px;font-family:'DM Sans',sans-serif;cursor:pointer;outline:none;width:130px;color-scheme:dark">
+          </div>
+          <div style="display:flex;align-items:center;gap:4px;background:#0D0D0D;border:1px solid #1E1E1E;border-radius:8px;padding:4px 10px">
+            <span style="font-size:11px;color:var(--gris);white-space:nowrap">Hasta</span>
+            <input type="date" id="filtroHasta" onchange="filtrarJournal()" onclick="this.showPicker && this.showPicker()" style="background:transparent;border:none;color:var(--blanco);font-size:13px;font-family:'DM Sans',sans-serif;cursor:pointer;outline:none;width:130px;color-scheme:dark">
+          </div>
+          <button onclick="limpiarFiltros()" style="background:#1A1A1A;border:1px solid #2A2A2A;color:var(--gris);padding:7px 12px;border-radius:8px;font-size:12px;cursor:pointer">✕ Limpiar filtro</button>
+        </div>
+      </div>
+      <!-- ANALIZAR CON CLAUDE -->
+      <div style="background:var(--negro-card);border:1px solid var(--negro-border);border-radius:16px;padding:20px;margin-bottom:16px">
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:16px">
+          <div>
+            <div style="font-size:12px;font-weight:600;letter-spacing:1px;text-transform:uppercase;color:var(--gris)">Analizar con Claude</div>
+            <div style="font-size:11px;color:#555;margin-top:2px">Armamos un resumen de tu journal para que lo pegues en tu Claude y recibas una devolución</div>
+          </div>
+          <button onclick="analizarConClaude()" style="background:var(--rojo);color:white;border:none;padding:8px 16px;border-radius:8px;cursor:pointer;font-size:12px;font-weight:600;display:flex;align-items:center;gap:6px">
+            🤖 Analizar con Claude
+          </button>
+        </div>
+        <div id="claudeAnalisisContent"><div style="text-align:center;color:var(--gris);font-size:13px;padding:20px">Presioná <strong style="color:var(--blanco)">🤖 Analizar con Claude</strong>: se copia el resumen (con los filtros que tengas aplicados) y abrís Claude para pegarlo.</div></div>
+        <div style="border-top:1px solid #1A1A1A;margin-top:16px;padding-top:16px">
+          <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap">
+            <div>
+              <div style="font-size:13px;font-weight:600;color:var(--blanco)">Conectar mi Claude</div>
+              <div style="font-size:11px;color:#555;margin-top:2px">Tu Claude lee tu journal directo, sin copiar y pegar (solo lectura)</div>
+            </div>
+            <button onclick="abrirConectorClaude()" style="background:#1A1A1A;color:var(--blanco);border:1px solid #2A2A2A;padding:8px 16px;border-radius:8px;cursor:pointer;font-size:12px;font-weight:600">Configurar conexión</button>
+          </div>
+          <div id="claudeConectorPanel"></div>
+        </div>
+      </div>`;
+    setTimeout(() => iniciarCuentasDropdown(ops), 50);
   }
 
   // ═══════════════════════════════════════════════════════════
@@ -6904,7 +6961,28 @@
     else label.textContent = _cuentasSeleccionadas.size + ' cuentas';
   }
 
+  // Filtros de la pestaña Claude (no hay tabla ni gráficos que actualizar, solo el conteo y las ops del resumen)
+  function filtrarJournalClaude() {
+    const filtroEst   = document.getElementById('filtroEstrategia')?.value || '';
+    const filtroDesde = document.getElementById('filtroDesde')?.value || '';
+    const filtroHasta = document.getElementById('filtroHasta')?.value || '';
+    _opsFiltradas = _todasLasOps.filter(o => {
+      const fecha = o.fecha ? o.fecha.substring(0,10) : '';
+      return (!filtroEst   || o.estrategia === filtroEst)
+          && (_cuentasSeleccionadas.size === 0 || _cuentasSeleccionadas.has(o.cuenta))
+          && (!filtroDesde || fecha >= filtroDesde)
+          && (!filtroHasta || fecha <= filtroHasta);
+    });
+    const conteo = document.getElementById('journalConteo');
+    if (conteo) conteo.textContent = _opsFiltradas.length + ' operaciones';
+    const cont = document.getElementById('claudeAnalisisContent');
+    if (cont && cont.querySelector('textarea')) {
+      cont.innerHTML = '<div style="text-align:center;color:var(--gris);font-size:13px;padding:20px">Filtros actualizados. Presioná <strong style="color:var(--blanco)">🤖 Analizar con Claude</strong> para generar un resumen nuevo.</div>';
+    }
+  }
+
   function filtrarJournal() {
+    if (document.getElementById('claudeAnalisisContent')) return filtrarJournalClaude();
     const filtroEst   = document.getElementById('filtroEstrategia')?.value || '';
     const filtroDesde = document.getElementById('filtroDesde')?.value || '';
     const filtroHasta = document.getElementById('filtroHasta')?.value || '';
@@ -7215,7 +7293,7 @@
   async function analizarConClaude() {
     const cont = document.getElementById('claudeAnalisisContent');
     if (!cont) return;
-    const ops = _opsFiltradas.length > 0 ? _opsFiltradas : _todasLasOps;
+    const ops = _opsFiltradas;
     if (ops.length < 5) {
       cont.innerHTML = '<div style="text-align:center;color:#E57373;font-size:13px;padding:20px">Necesitás al menos 5 operaciones para armar el análisis.</div>';
       return;

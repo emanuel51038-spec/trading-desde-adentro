@@ -1071,6 +1071,19 @@
       .fondeos-filtros > select, .fondeos-filtros > input { flex: 1 1 100%; }
       .fondeos-filtros > button { flex: 1 1 100%; }
     }
+    /* Calendario de gastos y ganancias */
+    .fcal-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 6px; }
+    .fcal-dow { text-align: center; font-size: 10px; color: var(--gris); text-transform: uppercase; letter-spacing: 1px; padding: 4px 0; }
+    .fcal-dia { min-height: 66px; border: 1px solid #1A1A1A; border-radius: 8px; padding: 5px 6px; display: flex; flex-direction: column; gap: 1px; overflow: hidden; }
+    .fcal-dia.fcal-hoy { border-color: #FFD700; }
+    .fcal-num { font-size: 11px; color: var(--gris); }
+    .fcal-monto { font-size: 11px; font-weight: 700; line-height: 1.25; white-space: nowrap; }
+    .fcal-nav { background: #1A1A1A; border: 1px solid #2A2A2A; color: var(--blanco); padding: 5px 12px; border-radius: 8px; cursor: pointer; font-size: 14px; }
+    @media (max-width: 600px) {
+      .fcal-grid { gap: 3px; }
+      .fcal-dia { min-height: 52px; padding: 3px 4px; }
+      .fcal-monto { font-size: 9px; }
+    }
   </style>
   <script defer src="/_vercel/insights/script.js"></script>
 </head>
@@ -4560,6 +4573,9 @@
         ${renderCapitalRecuperado(totalGastado, totalRetirado)}
       </div>
 
+      <!-- Calendario mensual -->
+      <div id="fondeosCalendario" style="margin-bottom:24px"></div>
+
       <!-- Tabla -->
       <div style="background:var(--negro-card);border:1px solid var(--negro-border);border-radius:16px;overflow:hidden">
         ${fondeos.length === 0 ? `
@@ -4589,10 +4605,94 @@
         </div>`}
       </div>`;
 
+    // Calendario mensual (sobre el conjunto ya filtrado)
+    dibujarCalendarioFondeos(fondeos);
+
     // Dibujar gráficos (sobre el conjunto ya filtrado)
     setTimeout(() => {
       dibujarGraficosFondeos(fondeos);
     }, 100);
+  }
+
+  // ── Calendario de gastos y ganancias por día/mes ──
+  let _calFondeoRef = null; // { y, m } mes que se está mirando
+  let _fondeosParaCalendario = [];
+
+  function dibujarCalendarioFondeos(fondeos) {
+    if (Array.isArray(fondeos)) _fondeosParaCalendario = fondeos;
+    const cont = document.getElementById('fondeosCalendario');
+    if (!cont) return;
+    if (!_calFondeoRef) { const h = new Date(); _calFondeoRef = { y: h.getFullYear(), m: h.getMonth() }; }
+    const { y, m } = _calFondeoRef;
+    const pref = y + '-' + String(m + 1).padStart(2, '0');
+
+    const porDia = {};
+    let gastadoMes = 0, retiradoMes = 0;
+    _fondeosParaCalendario.forEach(f => {
+      const fecha = String(f.fecha || '').slice(0, 10);
+      if (fecha.slice(0, 7) !== pref) return;
+      const d = Number(fecha.slice(8, 10));
+      const monto = Number(f.monto) || 0;
+      const esRetiro = f.tipo === 'Retiro';
+      if (!porDia[d]) porDia[d] = { gasto: 0, retiro: 0, detalle: [] };
+      if (esRetiro) { porDia[d].retiro += monto; retiradoMes += monto; }
+      else { porDia[d].gasto += monto; gastadoMes += monto; }
+      const tipoTxt = f.tipo === 'Gasto' ? 'Gasto operativo' : (f.tipo === 'Evaluacion' ? 'Evaluación' : 'Retiro');
+      porDia[d].detalle.push((f.empresa || '') + ' · ' + tipoTxt + ' · ' + (esRetiro ? '+' : '-') + '$' + monto.toFixed(2));
+    });
+    const netoMes = retiradoMes - gastadoMes;
+
+    const fmt = v => Number.isInteger(v) ? String(v) : v.toFixed(2);
+    const hoy = new Date();
+    const hoyD = (hoy.getFullYear() === y && hoy.getMonth() === m) ? hoy.getDate() : -1;
+    const primerDow = (new Date(y, m, 1).getDay() + 6) % 7; // semana empieza en lunes
+    const diasMes = new Date(y, m + 1, 0).getDate();
+    let nombreMes = new Date(y, m, 1).toLocaleDateString('es-AR', { month: 'long', year: 'numeric' });
+    nombreMes = nombreMes.charAt(0).toUpperCase() + nombreMes.slice(1);
+
+    let celdas = '';
+    for (let i = 0; i < primerDow; i++) celdas += '<div></div>';
+    for (let d = 1; d <= diasMes; d++) {
+      const dd = porDia[d];
+      const neto = dd ? dd.retiro - dd.gasto : 0;
+      const bg = !dd ? 'transparent' : (neto > 0 ? 'rgba(76,175,80,0.12)' : (neto < 0 ? 'rgba(229,115,115,0.12)' : 'rgba(255,255,255,0.04)'));
+      celdas += `<div class="fcal-dia${d === hoyD ? ' fcal-hoy' : ''}" style="background:${bg}"${dd ? ` title="${escAttr(dd.detalle.join('\n'))}"` : ''}>
+        <span class="fcal-num">${d}</span>
+        ${dd && dd.retiro > 0 ? `<span class="fcal-monto" style="color:var(--verde)">+$${fmt(dd.retiro)}</span>` : ''}
+        ${dd && dd.gasto > 0 ? `<span class="fcal-monto" style="color:#E57373">-$${fmt(dd.gasto)}</span>` : ''}
+      </div>`;
+    }
+    const dows = ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom'].map(x => `<div class="fcal-dow">${x}</div>`).join('');
+
+    cont.innerHTML = `<div style="background:var(--negro-card);border:1px solid var(--negro-border);border-radius:16px;padding:20px">
+      <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;margin-bottom:14px">
+        <div style="display:flex;align-items:center;gap:8px">
+          <button class="fcal-nav" onclick="cambiarMesCalendarioFondeos(-1)">‹</button>
+          <div style="font-family:'Bebas Neue',sans-serif;font-size:22px;letter-spacing:1.5px;min-width:150px;text-align:center">${esc(nombreMes)}</div>
+          <button class="fcal-nav" onclick="cambiarMesCalendarioFondeos(1)">›</button>
+          <button class="fcal-nav" style="font-size:11px" onclick="irMesActualCalendarioFondeos()">Hoy</button>
+        </div>
+        <div style="display:flex;gap:16px;flex-wrap:wrap;font-size:12px;color:var(--gris)">
+          <span>Gastado <strong style="color:#E57373">-$${gastadoMes.toFixed(2)}</strong></span>
+          <span>Retirado <strong style="color:var(--verde)">+$${retiradoMes.toFixed(2)}</strong></span>
+          <span>Neto <strong style="color:${netoMes >= 0 ? 'var(--verde)' : '#E57373'}">${netoMes >= 0 ? '+' : '-'}$${Math.abs(netoMes).toFixed(2)}</strong></span>
+        </div>
+      </div>
+      <div class="fcal-grid">${dows}${celdas}</div>
+    </div>`;
+  }
+
+  function cambiarMesCalendarioFondeos(delta) {
+    if (!_calFondeoRef) return;
+    const f = new Date(_calFondeoRef.y, _calFondeoRef.m + delta, 1);
+    _calFondeoRef = { y: f.getFullYear(), m: f.getMonth() };
+    dibujarCalendarioFondeos();
+  }
+
+  function irMesActualCalendarioFondeos() {
+    const h = new Date();
+    _calFondeoRef = { y: h.getFullYear(), m: h.getMonth() };
+    dibujarCalendarioFondeos();
   }
 
   function renderFondeoCard(label, valor, color, sub) {

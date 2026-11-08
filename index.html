@@ -6483,15 +6483,27 @@
     else { _btSesionId = null; cargarJournalBacktest(); }
   }
 
-  // ── Pestaña Claude (análisis del journal + conector) ──────
+  // ── Pestaña Claude (análisis del journal o del backtest + conector) ──
+  let _claudeModo = 'journal';          // 'journal' | 'backtest'
+  let _claudeTieneBacktest = false;     // licencia activa de Manual Backtest Analyzer (o admin)
+  let _claudeBtCargado = false;
+  let _claudeBtSesiones = [];
+  let _claudeBtOps = [];
+  let _claudeBtFiltradas = [];
+
   async function cargarJournalClaude() {
     const cont = document.getElementById('journalContainer');
     cont.innerHTML = '<div style="text-align:center;padding:40px;color:var(--gris)"><span class="spinner"></span> Cargando...</div>';
 
+    const tk = sesiónActual.access_token;
+    const email = sesiónActual.user?.email || '';
     // Misma carga de datos que el journal real (el resumen necesita las ops y las comisiones)
-    const [r, rCom] = await Promise.all([
-      sbFetch('/rest/v1/operaciones_journal?select=*&user_id=eq.' + sesiónActual.user.id + '&order=fecha.desc', {}, sesiónActual.access_token),
-      sbFetch('/rest/v1/comisiones_journal?select=instrumento,comision_por_contrato&user_id=eq.' + sesiónActual.user.id, {}, sesiónActual.access_token)
+    // + chequeo de licencia activa del Manual Backtest Analyzer (herramienta paga)
+    const [r, rCom, rLic] = await Promise.all([
+      sbFetch('/rest/v1/operaciones_journal?select=*&user_id=eq.' + sesiónActual.user.id + '&order=fecha.desc', {}, tk),
+      sbFetch('/rest/v1/comisiones_journal?select=instrumento,comision_por_contrato&user_id=eq.' + sesiónActual.user.id, {}, tk),
+      esAdmin() ? Promise.resolve({ ok: true, data: [{ producto: 'ManualBacktestAnalyzer' }] })
+                : sbFetch('/rest/v1/licencias?select=producto&producto=eq.ManualBacktestAnalyzer&estado=eq.activa&email=eq.' + encodeURIComponent(email), {}, tk)
     ]);
     if (!r.ok || !Array.isArray(r.data)) { cont.innerHTML = '<div style="color:#E57373;padding:20px">Error cargando el journal.</div>'; return; }
 
@@ -6500,11 +6512,138 @@
     _todasLasOps = r.data.filter(o => o.pnl !== null);
     _opsFiltradas = _todasLasOps;
 
-    const header = btHeader('TRADING JOURNAL', 'Analizá tu journal con Claude.');
-    const ops = _todasLasOps;
-    const estrategiasUnicas = [...new Set(ops.map(o => o.estrategia).filter(Boolean))];
-    cont.innerHTML = header + renderJournalTabs('claude') + `
+    // Si no se pudo verificar la licencia, queda bloqueado
+    _claudeTieneBacktest = !!(rLic.ok && Array.isArray(rLic.data) && rLic.data.length > 0);
+    _claudeModo = 'journal';
+    _claudeBtCargado = false;
+    renderClaudeVista();
+  }
+
+  async function cambiarModoClaude(modo) {
+    if (modo === _claudeModo) return;
+    if (modo === 'backtest' && _claudeTieneBacktest && !_claudeBtCargado) {
+      const cont = document.getElementById('journalContainer');
+      cont.innerHTML = '<div style="text-align:center;padding:40px;color:var(--gris)"><span class="spinner"></span> Cargando backtest...</div>';
+      const ok = await cargarDatosClaudeBacktest();
+      if (!ok) {
+        cont.innerHTML = btHeader('TRADING JOURNAL', 'Analizá tu journal y tus backtests con Claude.') + renderJournalTabs('claude') + '<div style="color:#E57373;padding:20px">Error cargando el backtest.</div>';
+        return;
+      }
+    }
+    _claudeModo = modo;
+    if (modo === 'journal') _opsFiltradas = _todasLasOps;
+    else _claudeBtFiltradas = _claudeBtOps;
+    renderClaudeVista();
+  }
+
+  async function cargarDatosClaudeBacktest() {
+    const uid = sesiónActual.user.id;
+    const tk = sesiónActual.access_token;
+    const [rS, rO] = await Promise.all([
+      sbFetch('/rest/v1/backtest_sesiones?select=id,nombre,estrategia,created_at&user_id=eq.' + uid + '&order=created_at.desc', {}, tk),
+      sbFetch('/rest/v1/operaciones_backtest?select=sesion_id,pnl,contratos,instrumento,timeframe,es_long,rr,created_at&user_id=eq.' + uid + '&order=created_at.asc&limit=10000', {}, tk)
+    ]);
+    if (!rS.ok || !Array.isArray(rS.data) || !rO.ok || !Array.isArray(rO.data)) return false;
+    _claudeBtSesiones = rS.data;
+    // Solo operaciones que pertenecen a una sesión (las "sin sesión" son del indicador viejo)
+    _claudeBtOps = rO.data.filter(o => o.sesion_id && o.pnl !== null);
+    _claudeBtFiltradas = _claudeBtOps;
+    _claudeBtCargado = true;
+    return true;
+  }
+
+  function renderClaudeVista() {
+    const cont = document.getElementById('journalContainer');
+    const modo = _claudeModo;
+    const header = btHeader('TRADING JOURNAL', 'Analizá tu journal y tus backtests con Claude.');
+
+    const pill = act => `padding:8px 16px;border-radius:20px;font-size:12px;font-weight:600;cursor:pointer;font-family:'DM Sans',sans-serif;border:1px solid ${act ? 'var(--rojo)' : '#2A2A2A'};background:${act ? 'var(--rojo)' : '#0D0D0D'};color:${act ? 'white' : 'var(--gris)'}`;
+    const selector = `
+      <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:16px">
+        <span style="font-size:11px;font-weight:600;letter-spacing:1px;text-transform:uppercase;color:var(--gris);margin-right:4px">Analizar</span>
+        <button onclick="cambiarModoClaude('journal')" style="${pill(modo === 'journal')}">📒 Journal</button>
+        <button onclick="cambiarModoClaude('backtest')" style="${pill(modo === 'backtest')}">📊 Backtest${_claudeTieneBacktest ? '' : ' 🔒'}</button>
+      </div>`;
+
+    const panelCentrado = (icono, titulo, texto, boton) => `
+      <div style="background:#0D0D0D;border:1px solid #1E1E1E;border-radius:16px;padding:36px 32px;max-width:680px;margin:0 auto;text-align:center">
+        <div style="font-size:36px;margin-bottom:12px">${icono}</div>
+        <h3 style="font-size:20px;font-weight:700;color:var(--blanco);margin-bottom:6px">${titulo}</h3>
+        <p style="font-size:13px;color:var(--gris);line-height:1.6;margin-bottom:${boton ? '18px' : '0'}">${texto}</p>
+        ${boton || ''}
+      </div>`;
+
+    // Bloqueado: el análisis de backtest es parte de la herramienta paga
+    if (modo === 'backtest' && !_claudeTieneBacktest) {
+      cont.innerHTML = header + renderJournalTabs('claude') + selector + panelCentrado(
+        '🔒',
+        'El análisis de backtest es parte de Manual Backtest Analyzer',
+        'Con la licencia activa del indicador podés enviar tus sesiones de backtest al panel y analizarlas con Claude.',
+        `<button onclick="irATiendaProducto('ManualBacktestAnalyzer')" style="background:var(--rojo);color:white;border:none;padding:10px 20px;border-radius:8px;cursor:pointer;font-size:13px;font-weight:600">Ver Manual Backtest Analyzer</button>`
+      );
+      return;
+    }
+
+    // Con licencia pero sin operaciones de backtest todavía
+    if (modo === 'backtest' && _claudeBtOps.length === 0) {
+      cont.innerHTML = header + renderJournalTabs('claude') + selector + panelCentrado(
+        '📊',
+        'Todavía no tenés operaciones de backtest',
+        'Enviá operaciones desde el indicador <strong style="color:var(--blanco)">ManualBacktestAnalyzer</strong> en NinjaTrader 8 y vas a poder analizarlas acá.'
+      );
+      return;
+    }
+
+    const descr = modo === 'backtest'
+      ? 'Armamos un resumen de tus sesiones de backtest para que lo pegues en tu Claude y recibas una devolución'
+      : 'Armamos un resumen de tu journal para que lo pegues en tu Claude y recibas una devolución';
+    const filtroTxt = modo === 'backtest' ? '(con la sesión que tengas elegida)' : '(con los filtros que tengas aplicados)';
+
+    const cardHead = `      <!-- ANALIZAR CON CLAUDE -->
+      <div style="background:var(--negro-card);border:1px solid var(--negro-border);border-radius:16px;padding:20px;margin-bottom:16px">
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:16px">
+          <div>
+            <div style="font-size:12px;font-weight:600;letter-spacing:1px;text-transform:uppercase;color:var(--gris)">Analizar con Claude</div>
+            <div style="font-size:11px;color:#555;margin-top:2px">${descr}</div>
+          </div>
+          <button onclick="analizarConClaude()" style="background:var(--rojo);color:white;border:none;padding:8px 16px;border-radius:8px;cursor:pointer;font-size:12px;font-weight:600;display:flex;align-items:center;gap:6px">
+            🤖 Analizar con Claude
+          </button>
+        </div>
+        <div id="claudeAnalisisContent"><div style="text-align:center;color:var(--gris);font-size:13px;padding:20px">Presioná <strong style="color:var(--blanco)">🤖 Analizar con Claude</strong>: se copia el resumen ${filtroTxt} y abrís Claude para pegarlo.</div></div>
+`;
+    const conector = `        <div style="border-top:1px solid #1A1A1A;margin-top:16px;padding-top:16px">
+          <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap">
+            <div>
+              <div style="font-size:13px;font-weight:600;color:var(--blanco)">Conectar mi Claude</div>
+              <div style="font-size:11px;color:#555;margin-top:2px">Tu Claude lee tu journal directo, sin copiar y pegar (solo lectura)</div>
+            </div>
+            <button onclick="abrirConectorClaude()" style="background:#1A1A1A;color:var(--blanco);border:1px solid #2A2A2A;padding:8px 16px;border-radius:8px;cursor:pointer;font-size:12px;font-weight:600">Configurar conexión</button>
+          </div>
+          <div id="claudeConectorPanel"></div>
+        </div>
+`;
+    const card = cardHead + (modo === 'journal' ? conector : '') + '      </div>';
+
+    let barraFiltros;
+    if (modo === 'backtest') {
+      const selStyle = "background:#0D0D0D;border:1px solid #1E1E1E;color:var(--blanco);padding:7px 12px;border-radius:8px;font-size:13px;cursor:pointer;font-family:'DM Sans',sans-serif;max-width:320px";
+      const sesOpts = _claudeBtSesiones.map(x => `<option value="${escAttr(x.id)}">${esc(x.nombre)}${x.estrategia ? ' · ' + esc(x.estrategia) : ''}</option>`).join('');
+      barraFiltros = `
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;flex-wrap:wrap;gap:10px">
+        <span id="journalConteo" style="font-size:14px;font-weight:600">${_claudeBtFiltradas.length} operaciones</span>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+          <select id="claudeBtSesion" onchange="filtrarClaudeBacktest()" style="${selStyle}">
+            <option value="">Todas las sesiones</option>
+            ${sesOpts}
+          </select>
+          <button onclick="limpiarClaudeBacktest()" style="background:#1A1A1A;border:1px solid #2A2A2A;color:var(--gris);padding:7px 12px;border-radius:8px;font-size:12px;cursor:pointer">✕ Limpiar filtro</button>
+        </div>
+      </div>`;
+    } else {
+      const ops = _todasLasOps;
+      const estrategiasUnicas = [...new Set(ops.map(o => o.estrategia).filter(Boolean))];
+      barraFiltros = `      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;flex-wrap:wrap;gap:10px">
         <span id="journalConteo" style="font-size:14px;font-weight:600">${ops.length} operaciones</span>
         <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
           <div style="position:relative" id="cuentasDropdownWrap">
@@ -6534,31 +6673,120 @@
           </div>
           <button onclick="limpiarFiltros()" style="background:#1A1A1A;border:1px solid #2A2A2A;color:var(--gris);padding:7px 12px;border-radius:8px;font-size:12px;cursor:pointer">✕ Limpiar filtro</button>
         </div>
-      </div>
-      <!-- ANALIZAR CON CLAUDE -->
-      <div style="background:var(--negro-card);border:1px solid var(--negro-border);border-radius:16px;padding:20px;margin-bottom:16px">
-        <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:16px">
-          <div>
-            <div style="font-size:12px;font-weight:600;letter-spacing:1px;text-transform:uppercase;color:var(--gris)">Analizar con Claude</div>
-            <div style="font-size:11px;color:#555;margin-top:2px">Armamos un resumen de tu journal para que lo pegues en tu Claude y recibas una devolución</div>
-          </div>
-          <button onclick="analizarConClaude()" style="background:var(--rojo);color:white;border:none;padding:8px 16px;border-radius:8px;cursor:pointer;font-size:12px;font-weight:600;display:flex;align-items:center;gap:6px">
-            🤖 Analizar con Claude
-          </button>
-        </div>
-        <div id="claudeAnalisisContent"><div style="text-align:center;color:var(--gris);font-size:13px;padding:20px">Presioná <strong style="color:var(--blanco)">🤖 Analizar con Claude</strong>: se copia el resumen (con los filtros que tengas aplicados) y abrís Claude para pegarlo.</div></div>
-        <div style="border-top:1px solid #1A1A1A;margin-top:16px;padding-top:16px">
-          <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap">
-            <div>
-              <div style="font-size:13px;font-weight:600;color:var(--blanco)">Conectar mi Claude</div>
-              <div style="font-size:11px;color:#555;margin-top:2px">Tu Claude lee tu journal directo, sin copiar y pegar (solo lectura)</div>
-            </div>
-            <button onclick="abrirConectorClaude()" style="background:#1A1A1A;color:var(--blanco);border:1px solid #2A2A2A;padding:8px 16px;border-radius:8px;cursor:pointer;font-size:12px;font-weight:600">Configurar conexión</button>
-          </div>
-          <div id="claudeConectorPanel"></div>
-        </div>
       </div>`;
-    setTimeout(() => iniciarCuentasDropdown(ops), 50);
+    }
+
+    cont.innerHTML = header + renderJournalTabs('claude') + selector + barraFiltros + card;
+    if (modo === 'journal') setTimeout(() => iniciarCuentasDropdown(_todasLasOps), 50);
+  }
+
+  // Filtro de la pestaña Claude en modo backtest (por sesión)
+  function filtrarClaudeBacktest() {
+    const sid = document.getElementById('claudeBtSesion')?.value || '';
+    _claudeBtFiltradas = _claudeBtOps.filter(o => !sid || o.sesion_id === sid);
+    const conteo = document.getElementById('journalConteo');
+    if (conteo) conteo.textContent = _claudeBtFiltradas.length + ' operaciones';
+    const cont = document.getElementById('claudeAnalisisContent');
+    if (cont && cont.querySelector('textarea')) {
+      cont.innerHTML = '<div style="text-align:center;color:var(--gris);font-size:13px;padding:20px">Filtros actualizados. Presioná <strong style="color:var(--blanco)">🤖 Analizar con Claude</strong> para generar un resumen nuevo.</div>';
+    }
+  }
+
+  function limpiarClaudeBacktest() {
+    const el = document.getElementById('claudeBtSesion');
+    if (el) el.value = '';
+    filtrarClaudeBacktest();
+  }
+
+  // Resumen de sesiones de backtest para pegar en Claude
+  function armarResumenBacktestParaClaude(ops) {
+    const fmt = n => (n >= 0 ? '+' : '') + n.toFixed(2);
+    const sesPorId = {};
+    _claudeBtSesiones.forEach(x => { sesPorId[x.id] = x; });
+    const lista = ops.slice().sort((a, b) => new Date(a.created_at) - new Date(b.created_at));
+    const netos = lista.map(o => ({ o: o, p: btPnl(o) }));
+    const gan = netos.filter(x => x.p > 0);
+    const per = netos.filter(x => x.p < 0);
+    const sum = arr => arr.reduce((a, x) => a + x.p, 0);
+    const total = sum(netos);
+    const winrate = netos.length ? gan.length / netos.length * 100 : 0;
+    const avgG = gan.length ? sum(gan) / gan.length : 0;
+    const avgP = per.length ? sum(per) / per.length : 0;
+    const ratio = avgP !== 0 ? avgG / Math.abs(avgP) : 0;
+    const pf = sum(per) !== 0 ? sum(gan) / Math.abs(sum(per)) : 0;
+    const rrs = netos.map(x => Number(x.o.rr)).filter(v => isFinite(v) && v > 0);
+    const rrProm = rrs.length ? rrs.reduce((a, b) => a + b, 0) / rrs.length : 0;
+
+    let acum = 0, peak = 0, maxDD = 0, racha = 0, maxRacha = 0;
+    netos.forEach(x => {
+      acum += x.p;
+      if (acum > peak) peak = acum;
+      if (peak - acum > maxDD) maxDD = peak - acum;
+      if (x.p < 0) { racha++; if (racha > maxRacha) maxRacha = racha; }
+      else if (x.p > 0) { racha = 0; }
+    });
+
+    const grupo = (titulo, keyFn) => {
+      const m = {};
+      netos.forEach(x => {
+        const k = keyFn(x.o);
+        if (k === null || k === undefined || k === '') return;
+        if (!m[k]) m[k] = { n: 0, pnl: 0, w: 0 };
+        m[k].n++; m[k].pnl += x.p;
+        if (x.p > 0) m[k].w++;
+      });
+      const filas = Object.keys(m).sort().map(k => {
+        const g = m[k];
+        return '- ' + k + ': ' + g.n + ' ops, PnL ' + fmt(g.pnl) + ', win rate ' + Math.round(g.w / g.n * 100) + '%';
+      });
+      return filas.length ? '\n' + titulo + '\n' + filas.join('\n') + '\n' : '';
+    };
+
+    const tramoRR = o => {
+      const v = Number(o.rr);
+      if (!isFinite(v) || v <= 0) return null;
+      if (v < 1) return '1) menos de 1:1';
+      if (v < 2) return '2) de 1:1 a 2:1';
+      if (v < 3) return '3) de 2:1 a 3:1';
+      return '4) 3:1 o más';
+    };
+    const nombreSesion = o => {
+      const x = sesPorId[o.sesion_id];
+      return x ? x.nombre + (x.estrategia ? ' (' + x.estrategia + ')' : '') : null;
+    };
+    const fechaCorta = o => { const d = new Date(o.created_at); return isNaN(d) ? '-' : d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'); };
+
+    const desde = lista.length ? fechaCorta(lista[0]) : '-';
+    const hasta = lista.length ? fechaCorta(lista[lista.length - 1]) : '-';
+    const nSes = new Set(netos.map(x => x.o.sesion_id)).size;
+
+    let t = 'Sos un coach de trading sistemático. Analizá mis sesiones de backtest manual (futuros) y dame una devolución honesta y concreta, basada solo en los datos de abajo. Es backtest, no operativa real: no incluye emociones, slippage ni problemas de ejecución. No inventes datos que no estén acá, y avisame si la muestra es chica para sacar conclusiones.\n\n';
+    t += 'Quiero que me respondas con:\n1) Diagnóstico general en pocas líneas.\n2) Qué sesiones, estrategias o setups parecen tener ventaja y cuáles no, con la evidencia de los datos y aclarando si la muestra alcanza.\n3) Mis 3 puntos a mejorar o a seguir probando, con la evidencia de los datos.\n4) Una sola prueba concreta para el próximo backtest (qué variar y cuántas operaciones más necesito para confirmarlo).\n\n';
+    t += '=== RESUMEN ===\n';
+    t += 'Sesiones incluidas: ' + nSes + '\n';
+    t += 'Período de carga de las operaciones: ' + desde + ' a ' + hasta + '\n';
+    t += 'Operaciones: ' + netos.length + '\n';
+    t += 'PnL neto total (con comisiones): ' + fmt(total) + '\n';
+    t += 'Win rate: ' + winrate.toFixed(1) + '%\n';
+    t += 'Ganancia promedio: ' + fmt(avgG) + ' | Pérdida promedio: ' + fmt(avgP) + ' | Ratio: ' + ratio.toFixed(2) + '\n';
+    t += 'Profit factor: ' + pf.toFixed(2) + '\n';
+    t += 'RR planificado promedio: 1:' + rrProm.toFixed(2) + '\n';
+    t += 'Drawdown máximo: -' + maxDD.toFixed(2) + '\n';
+    t += 'Peor racha de pérdidas: ' + maxRacha + '\n';
+    t += grupo('=== POR SESIÓN (ESTRATEGIA) ===', nombreSesion);
+    t += grupo('=== POR INSTRUMENTO ===', o => o.instrumento);
+    t += grupo('=== POR TIMEFRAME ===', o => o.timeframe);
+    t += grupo('=== POR DIRECCIÓN ===', o => o.es_long ? 'Long' : 'Short');
+    t += grupo('=== POR RR PLANIFICADO ===', tramoRR);
+
+    const ultimas = netos.slice(-40);
+    t += '\n=== ÚLTIMAS ' + ultimas.length + ' OPERACIONES (fecha | sesión | instrumento | TF | dirección | RR planificado | PnL neto) ===\n';
+    ultimas.forEach(x => {
+      const o = x.o;
+      const rr = Number(o.rr);
+      t += fechaCorta(o) + ' | ' + (nombreSesion(o) || '-') + ' | ' + (o.instrumento || '-') + ' | ' + (o.timeframe || '-') + ' | ' + (o.es_long ? 'Long' : 'Short') + ' | ' + (isFinite(rr) && rr > 0 ? '1:' + rr.toFixed(2) : '-') + ' | ' + fmt(x.p) + '\n';
+    });
+    return t;
   }
 
   // ═══════════════════════════════════════════════════════════
@@ -7293,12 +7521,14 @@
   async function analizarConClaude() {
     const cont = document.getElementById('claudeAnalisisContent');
     if (!cont) return;
-    const ops = _opsFiltradas;
+    const esBt = _claudeModo === 'backtest';
+    if (esBt && !_claudeTieneBacktest) return;   // herramienta paga: sin licencia no se arma el resumen
+    const ops = esBt ? _claudeBtFiltradas : _opsFiltradas;
     if (ops.length < 5) {
       cont.innerHTML = '<div style="text-align:center;color:#E57373;font-size:13px;padding:20px">Necesitás al menos 5 operaciones para armar el análisis.</div>';
       return;
     }
-    const texto = armarResumenParaClaude(ops);
+    const texto = esBt ? armarResumenBacktestParaClaude(ops) : armarResumenParaClaude(ops);
     const ok = await copiarTextoClaude(texto);
     cont.innerHTML = `
       <div style="font-size:13px;color:${ok ? 'var(--verde)' : '#E57373'};margin-bottom:10px">${ok ? '✅ Resumen copiado. Abrí Claude y pegalo (Ctrl+V).' : 'No pudimos copiar solo. Seleccioná el texto de abajo y copialo.'}</div>

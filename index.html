@@ -6925,6 +6925,43 @@
   }
 
   // ── Lista de sesiones ─────────────────────────────────────
+  // Símbolo del activo de la sesión: el más usado, sin el vencimiento ("MNQ 12-26" -> "MNQ")
+  function btSimbolo(inst) {
+    const claves = Object.keys(inst || {}).sort((a, b) => inst[b] - inst[a]);
+    if (claves.length === 0) return { txt: '—', extra: 0 };
+    return { txt: claves[0], extra: claves.length - 1 };
+  }
+
+  // Miniatura de la equity curve ($ acumulado) en SVG
+  function btSparkline(puntos, idx) {
+    const W = 200, H = 56, pad = 4;
+    const base = 'viewBox="0 0 ' + W + ' ' + H + '" preserveAspectRatio="none" style="width:100%;height:' + H + 'px;display:block"';
+    if (!puntos || puntos.length < 2) {
+      return '<svg ' + base + '><line x1="0" y1="' + (H / 2) + '" x2="' + W + '" y2="' + (H / 2) + '" stroke="rgba(255,255,255,0.12)" stroke-width="1" stroke-dasharray="3 3" vector-effect="non-scaling-stroke"/></svg>';
+    }
+    const fin = puntos[puntos.length - 1];
+    const col = fin >= 0 ? '#4CAF50' : '#E57373';
+    const minV = Math.min(...puntos), maxV = Math.max(...puntos);
+    const rango = (maxV - minV) || 1;
+    const px = i => (i / (puntos.length - 1)) * W;
+    const py = v => pad + (1 - (v - minV) / rango) * (H - pad * 2);
+    const linea = puntos.map((v, i) => px(i).toFixed(1) + ',' + py(v).toFixed(1)).join(' ');
+    const area = 'M' + px(0).toFixed(1) + ',' + py(puntos[0]).toFixed(1) + ' ' +
+      puntos.map((v, i) => 'L' + px(i).toFixed(1) + ',' + py(v).toFixed(1)).join(' ') +
+      ' L' + W + ',' + H + ' L0,' + H + ' Z';
+    const gid = 'btsp' + idx;
+    const y0 = py(0);
+    const cero = (y0 > pad && y0 < H - pad)
+      ? '<line x1="0" y1="' + y0.toFixed(1) + '" x2="' + W + '" y2="' + y0.toFixed(1) + '" stroke="rgba(255,255,255,0.12)" stroke-width="1" stroke-dasharray="3 3" vector-effect="non-scaling-stroke"/>'
+      : '';
+    return '<svg ' + base + '>' +
+      '<defs><linearGradient id="' + gid + '" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="' + col + '" stop-opacity="0.35"/><stop offset="100%" stop-color="' + col + '" stop-opacity="0"/></linearGradient></defs>' +
+      cero +
+      '<path d="' + area + '" fill="url(#' + gid + ')"/>' +
+      '<polyline points="' + linea + '" fill="none" stroke="' + col + '" stroke-width="2" stroke-linejoin="round" stroke-linecap="round" vector-effect="non-scaling-stroke"/>' +
+      '</svg>';
+  }
+
   async function cargarListaSesionesBacktest() {
     const cont = document.getElementById('journalContainer');
     cont.innerHTML = '<div style="text-align:center;padding:40px;color:var(--gris)"><span class="spinner"></span> Cargando backtest...</div>';
@@ -6933,7 +6970,7 @@
     const tk = sesiónActual.access_token;
     const [rS, rO] = await Promise.all([
       sbFetch('/rest/v1/backtest_sesiones?select=id,nombre,estrategia,created_at&user_id=eq.' + uid + '&order=created_at.desc', {}, tk),
-      sbFetch('/rest/v1/operaciones_backtest?select=sesion_id,pnl,contratos,instrumento&user_id=eq.' + uid + '&limit=10000', {}, tk)
+      sbFetch('/rest/v1/operaciones_backtest?select=sesion_id,pnl,contratos,instrumento,created_at&user_id=eq.' + uid + '&order=created_at.asc&limit=10000', {}, tk)
     ]);
     if (!rS.ok || !Array.isArray(rS.data) || !rO.ok || !Array.isArray(rO.data)) {
       cont.innerHTML = '<div style="color:#E57373;padding:20px">Error cargando el backtest.</div>';
@@ -6941,34 +6978,50 @@
     }
 
     const sesiones = rS.data;
-    const resumen = {};   // sesion_id -> { n, wins, pnl }
+    const resumen = {};   // sesion_id -> { n, wins, pnl, puntos (curva), inst (activos) }
     let sinSesion = 0;
     rO.data.forEach(o => {
       if (!o.sesion_id) { sinSesion++; return; }
-      const r = resumen[o.sesion_id] || (resumen[o.sesion_id] = { n: 0, wins: 0, pnl: 0 });
+      const r = resumen[o.sesion_id] || (resumen[o.sesion_id] = { n: 0, wins: 0, pnl: 0, puntos: [0], inst: {} });
       const p = btPnl(o);
       r.n++; r.pnl += p; if (p > 0) r.wins++;
+      r.puntos.push(r.pnl);
+      const raiz = String(o.instrumento || '').trim().split(/\s+/)[0];
+      if (raiz) r.inst[raiz] = (r.inst[raiz] || 0) + 1;
     });
 
     const header = btHeader('TRADING JOURNAL', 'Sesiones de backtest registradas desde ManualBacktestAnalyzer (NT8). Cada sesión guarda su data por separado.');
 
-    const cards = sesiones.map(s => {
-      const r = resumen[s.id] || { n: 0, wins: 0, pnl: 0 };
+    const cards = sesiones.map((s, idx) => {
+      const r = resumen[s.id] || { n: 0, wins: 0, pnl: 0, puntos: [0], inst: {} };
       const wr = r.n ? Math.round(r.wins / r.n * 100) : 0;
       const pnlColor = r.pnl > 0 ? 'var(--verde)' : (r.pnl < 0 ? '#E57373' : 'var(--blanco)');
       const fecha = new Date(s.created_at).toLocaleDateString('es-AR', { day: '2-digit', month: '2-digit', year: '2-digit' });
+      const sim = btSimbolo(r.inst);
       return `
-        <div onclick="abrirSesionBacktest('${escAttr(s.id)}')" style="background:var(--negro-card);border:1px solid var(--negro-border);border-radius:12px;padding:18px 20px;cursor:pointer;transition:border-color .15s"
-             onmouseover="this.style.borderColor='var(--rojo)'" onmouseout="this.style.borderColor='var(--negro-border)'">
-          <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px;margin-bottom:4px">
-            <div style="font-size:17px;font-weight:700;color:var(--blanco);word-break:break-word">${esc(s.nombre)}</div>
-            <button onclick="event.stopPropagation();eliminarSesionBacktest('${escAttr(s.id)}')" title="Eliminar sesión" style="background:none;border:none;color:#E57373;cursor:pointer;font-size:14px;padding:2px 4px">🗑️</button>
+        <div onclick="abrirSesionBacktest('${escAttr(s.id)}')" style="background:var(--negro-card);border:1px solid var(--negro-border);border-radius:14px;padding:16px 18px;cursor:pointer;transition:border-color .15s,transform .15s"
+             onmouseover="this.style.borderColor='var(--rojo)';this.style.transform='translateY(-2px)'" onmouseout="this.style.borderColor='var(--negro-border)';this.style.transform='none'">
+          <div style="display:flex;align-items:center;gap:12px;margin-bottom:14px">
+            <div style="flex-shrink:0;min-width:48px;height:48px;padding:0 8px;border-radius:12px;background:#141414;border:1px solid #2A2A2A;display:flex;flex-direction:column;align-items:center;justify-content:center">
+              <span style="font-family:'Bebas Neue',sans-serif;font-size:${sim.txt.length > 3 ? 14 : 20}px;letter-spacing:1px;color:var(--blanco);line-height:1">${esc(sim.txt)}</span>
+              ${sim.extra > 0 ? `<span style="font-size:9px;color:var(--gris);margin-top:2px">+${sim.extra}</span>` : ''}
+            </div>
+            <div style="min-width:0;flex:1">
+              <div style="font-size:16px;font-weight:700;color:var(--blanco);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(s.nombre)}</div>
+              <div style="font-size:12px;color:var(--gris);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(s.estrategia) || 'Sin estrategia'} · ${esc(fecha)}</div>
+            </div>
+            <button onclick="event.stopPropagation();eliminarSesionBacktest('${escAttr(s.id)}')" title="Eliminar sesión" style="background:none;border:none;color:#E57373;cursor:pointer;font-size:14px;padding:2px 4px;flex-shrink:0">🗑️</button>
           </div>
-          <div style="font-size:12px;color:var(--gris);margin-bottom:14px;word-break:break-word">${esc(s.estrategia) || 'Sin estrategia'} · creada ${esc(fecha)}</div>
-          <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px">
-            <div><div style="font-size:10px;color:var(--gris);text-transform:uppercase;letter-spacing:1px;margin-bottom:4px">Ops</div><div style="font-family:'Bebas Neue',sans-serif;font-size:22px;color:var(--blanco)">${r.n}</div></div>
-            <div><div style="font-size:10px;color:var(--gris);text-transform:uppercase;letter-spacing:1px;margin-bottom:4px">Win Rate</div><div style="font-family:'Bebas Neue',sans-serif;font-size:22px;color:${r.n ? (wr >= 50 ? 'var(--verde)' : '#E57373') : 'var(--gris)'}">${r.n ? wr + '%' : '—'}</div></div>
-            <div><div style="font-size:10px;color:var(--gris);text-transform:uppercase;letter-spacing:1px;margin-bottom:4px">PnL</div><div style="font-family:'Bebas Neue',sans-serif;font-size:22px;color:${pnlColor}">${btUsd(r.pnl, true)}</div></div>
+          <div style="background:#0B0B0B;border:1px solid #1A1A1A;border-radius:10px;padding:8px 10px;margin-bottom:14px">${btSparkline(r.puntos, idx)}</div>
+          <div style="display:flex;justify-content:space-between;align-items:flex-end;gap:10px">
+            <div>
+              <div style="font-size:10px;color:var(--gris);text-transform:uppercase;letter-spacing:1px;margin-bottom:2px">PnL</div>
+              <div style="font-family:'Bebas Neue',sans-serif;font-size:28px;line-height:1;color:${pnlColor}">${btUsd(r.pnl, true)}</div>
+            </div>
+            <div style="text-align:right;font-size:12px;color:var(--gris);line-height:1.6">
+              <div><strong style="color:var(--blanco)">${r.n}</strong> ops</div>
+              <div>Win rate <strong style="color:${r.n ? (wr >= 50 ? 'var(--verde)' : '#E57373') : 'var(--gris)'}">${r.n ? wr + '%' : '—'}</strong></div>
+            </div>
           </div>
         </div>`;
     }).join('');
@@ -6991,7 +7044,7 @@
     }
 
     cont.innerHTML = header + renderJournalTabs('backtest') + `
-      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:14px">
+      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:14px">
         ${cards}${legacy}
       </div>`;
   }

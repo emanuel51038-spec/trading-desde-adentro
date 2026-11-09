@@ -255,6 +255,24 @@
       font-weight: 600; cursor: pointer; transition: background 0.2s;
     }
     .home-nav-btn:hover { background: var(--rojo-bright); }
+    .home-nav-btn.ghost { background: transparent; border: 1px solid #2A2A2A; color: var(--blanco); }
+    .home-nav-btn.ghost:hover { background: #1A1A1A; }
+    .home-nav-links { display: flex; align-items: center; gap: 8px; }
+    .home-nav-link {
+      background: none; border: none; color: var(--blanco); font-family: 'DM Sans', sans-serif;
+      font-size: 14px; font-weight: 500; cursor: pointer; padding: 9px 14px; border-radius: 8px; transition: background 0.2s;
+    }
+    .home-nav-link:hover { background: #1A1A1A; }
+    @media (max-width: 560px) {
+      .home-nav { padding: 0 12px; }
+      .home-nav-logo { width: 84px; }
+      .home-nav-links { gap: 4px; }
+      .home-nav-link { font-size: 12px; padding: 8px 8px; }
+      .home-nav-btn { padding: 8px 10px; font-size: 12px; }
+    }
+    .modal.modal-herr { max-width: 780px; max-height: 90vh; overflow-y: auto; padding: 32px; }
+    .screenshot-card.clickable { cursor: pointer; }
+    .screenshot-card-more { font-size: 12px; font-weight: 600; color: #E57373; margin-top: 10px; }
 
     /* Hero home */
     .home-hero {
@@ -1290,9 +1308,11 @@
   <!-- NAV FIJA -->
   <nav class="home-nav">
     <img src="logo.png" alt="Trading desde Adentro" class="home-nav-logo">
-    <button class="home-nav-btn" onclick="document.getElementById('loginSection').scrollIntoView({behavior:'smooth'})">
-      Iniciar sesión →
-    </button>
+    <div class="home-nav-links">
+      <button class="home-nav-link" onclick="irAHerramientasHome()">Herramientas</button>
+      <button class="home-nav-btn ghost" onclick="irALogin('login')">Iniciar sesión</button>
+      <button class="home-nav-btn" onclick="irALogin('registro')">Crear cuenta</button>
+    </div>
   </nav>
 
   <!-- HERO -->
@@ -1353,29 +1373,32 @@
   </div>
 
   <!-- HERRAMIENTAS / SCREENSHOTS -->
-  <div class="home-section reveal-up" style="padding-top:0">
+  <div class="home-section reveal-up" id="herramientas-home" style="padding-top:0;scroll-margin-top:80px">
     <h2 class="home-section-title">HERRAMIENTAS</h2>
     <p class="home-section-sub">Construidas desde la experiencia real del trading. Sin humo, sin promesas — solo herramientas que funcionan.</p>
     <div class="screenshots-grid">
-      <div class="screenshot-card">
+      <div class="screenshot-card clickable" onclick="abrirHerramientaPublica('DailyLossLimiter')">
         <img src="captura_DailyLossLimiter.jpeg" alt="Daily Loss Limiter">
         <div class="screenshot-card-body">
           <div class="screenshot-card-title">Daily Loss Limiter</div>
           <div class="screenshot-card-desc">Bloqueo automatico de operaciones al superar el limite de perdida diaria. Inviolable y persistente. Para NinjaTrader 8.</div>
+          <div class="screenshot-card-more">Ver detalles →</div>
         </div>
       </div>
-      <div class="screenshot-card">
+      <div class="screenshot-card clickable" onclick="abrirHerramientaPublica('ManualBacktestAnalyzer')">
         <img src="ManualBacktestAnalyzer.png" alt="Backtest Manual">
         <div class="screenshot-card-body">
           <div class="screenshot-card-title">Backtest Manual</div>
           <div class="screenshot-card-desc">Indicador para hacer backtesting manual directamente en el grafico de NinjaTrader 8. Estadisticas en tiempo real y envio de operaciones al Trading Journal con un click.</div>
+          <div class="screenshot-card-more">Ver detalles →</div>
         </div>
       </div>
-      <div class="screenshot-card">
+      <div class="screenshot-card clickable" onclick="abrirHerramientaPublica('TDA_RiskReward')">
         <img src="captura_TDARiskReward.png" alt="TDA Risk/Reward">
         <div class="screenshot-card-body">
           <div class="screenshot-card-title">TDA Risk/Reward</div>
           <div class="screenshot-card-desc">Herramienta profesional de Risk/Reward para NinjaTrader 8. Dibujo en 2 clicks, ratio en tiempo real, riesgo máximo en USD con contratos automáticos, auto-extensión de R y línea BreakEven por comisiones.</div>
+          <div class="screenshot-card-more">Ver detalles →</div>
         </div>
       </div>
       <div class="screenshot-card">
@@ -3177,6 +3200,105 @@
       if (reg) reg.scrollIntoView({ behavior: 'smooth' });
     }, 300);
   }
+
+  /* ══════════════════════════════════
+     HOME PÚBLICO: nav + fichas de herramientas
+  ══════════════════════════════════ */
+  const TOOLS_PUBLICAS = {
+    DailyLossLimiter: {
+      badge: 'NinjaTrader 8 · Add-On Profesional',
+      titulo: 'DAILY LOSS<br><span>LIMITER</span>',
+      sub: `Protegé tu capital con un bloqueador automático de pérdidas diarias. Inviolable, persistente y con licencia por equipo.`,
+      img: 'captura_DailyLossLimiter.jpeg',
+      video: '6EIDsro37-4',
+      features: [
+        ['🔒', 'Bloqueo automático', `Cancela nuevas órdenes automáticamente cuando alcanzás el límite de pérdida configurado.`],
+        ['💻', 'Múltiples cuentas', `Monitoreá varias cuentas simultáneamente, cada una con su propio límite independiente.`],
+        ['🔑', 'Protección por contraseña', `El operador no puede desactivar el limitador sin la contraseña. Ideal para prop firms.`],
+        ['💾', 'Persistente al reinicio', `El estado se guarda en disco. Si reiniciás NT8 con cuentas bloqueadas, siguen bloqueadas.`],
+        ['🔄', 'Desbloqueo inteligente', `Se desbloquea automáticamente cuando el P&L vuelve a $0. Sin intervención manual.`],
+        ['🛡️', 'Licencia por equipo', `Licencia vinculada a tu MAC Address. No se puede compartir ni usar en otra PC.`]
+      ]
+    },
+    TDA_RiskReward: {
+      badge: 'NinjaTrader 8 · Drawing Tool',
+      titulo: 'TDA RISK<br><span>REWARD</span>',
+      sub: `Herramienta profesional de Risk/Reward para NinjaTrader 8. Dibujo en 2 clicks, ratio en tiempo real, riesgo máximo en USD con contratos automáticos, auto-extensión de R y línea BreakEven por comisiones.`,
+      img: 'captura_TDARiskReward.png',
+      video: 'PsBWp7Nma84',
+      features: [
+        ['📐', 'Dibujo en 2 clicks', `Primer click para la entrada, segundo click para el stop. El target se calcula automáticamente en 2R (configurable) y listo para operar.`],
+        ['⚡', 'Ratio en tiempo real', `Arrastrá el stop y el target se reposiciona automáticamente manteniendo el ratio que elegiste. Invertí de long a short sin reconfigurar nada.`],
+        ['💵', 'Riesgo máximo en USD', `Definí cuánto estás dispuesto a arriesgar en dólares y la herramienta calcula sola cuántos contratos usar según el stop, ajustándose en vivo mientras lo movés — con sincronización automática de la cantidad en el ChartTrader.`],
+        ['🚀', 'Auto-extensión de R', `Cuando el precio alcanza el ratio actual, la herramienta suma automáticamente un R más, mostrándote en tiempo real hasta dónde debería moverse el precio para el próximo nivel.`],
+        ['💰', 'Cálculo automático de contratos', `La herramienta lee la cantidad del ChartTrader y recalcula el monto USD en vivo. Ves exactamente cuánto arriesgás y cuánto ganás con los contratos configurados.`],
+        ['📏', 'Regla de R múltiples', `Visualizá líneas guía en 1R, 2R, 3R, 4R, 5R... mientras arrastrás el target. Cada múltiplo muestra el monto USD, los puntos y el ratio correspondiente.`],
+        ['🎯', 'Línea BreakEven opcional', `Configurá tu comisión por lado y la herramienta te dibuja una línea sutil donde tenés que mover el stop para cubrir costos. Ideal para cuentas de prop firms.`],
+        ['🛡️', 'Licencia por equipo', `Licencia vinculada a tu MAC Address. No se puede compartir ni usar en otra PC.`]
+      ]
+    },
+    ManualBacktestAnalyzer: {
+      badge: 'NinjaTrader 8 · Indicador',
+      titulo: 'BACKTEST<br><span>ANALYZER</span>',
+      sub: `Realizá backtests a libro abierto de forma rápida y sencilla. Dibujá tus Risk/Reward en el gráfico, obtené estadísticas completas en tiempo real y enviá las operaciones al Trading Journal con un solo click.`,
+      img: 'ManualBacktestAnalyzer.png',
+      video: null,
+      features: [
+        ['📊', 'Risk/Reward en el gráfico', `Dibujá directamente en el chart tu entrada, stop loss y take profit. Visualizá el ratio de forma clara e instantánea.`],
+        ['📈', 'Estadísticas en tiempo real', `Win rate, profit factor, ratio R:R, racha máxima y más. Todo se actualiza automáticamente con cada operación.`],
+        ['📖', 'Backtesting a libro abierto', `Recorré el gráfico vela por vela y registrá tus operaciones como si estuvieras en vivo. Sin replay ni simulador.`],
+        ['🚀', 'Integración con Trading Journal', `Enviá todas las operaciones del backtest al Trading Journal con un solo click. Quedan guardadas en tu panel web para analizarlas cuando quieras.`],
+        ['📉', 'Analytics web avanzado', `Accedé desde tu panel web a tus sesiones de backtest, cada una con su data separada: PnL acumulado en $, Win Rate, Profit Factor, Expected Value, Max Drawdown y equity curve.`],
+        ['🛡️', 'Licencia por equipo', `Licencia vinculada a tu MAC Address. No se puede compartir ni usar en otra PC.`]
+      ]
+    }
+  };
+
+  function irAHerramientasHome() {
+    const el = document.getElementById('herramientas-home');
+    if (el) el.scrollIntoView({ behavior: 'smooth' });
+  }
+
+  function irALogin(tab) {
+    switchAuthTab(tab);
+    const el = document.getElementById('loginSection');
+    if (el) el.scrollIntoView({ behavior: 'smooth' });
+  }
+
+  function abrirHerramientaPublica(key) {
+    const t = TOOLS_PUBLICAS[key];
+    if (!t) return;
+    const feats = t.features.map(f =>
+      '<div class="feature-card"><div class="feature-icon">' + f[0] + '</div><h3>' + f[1] + '</h3><p>' + f[2] + '</p></div>'
+    ).join('');
+    const video = t.video
+      ? '<div style="position:relative;padding-top:56.25%;border-radius:12px;overflow:hidden;border:1px solid var(--negro-border);margin-bottom:24px">' +
+        '<iframe src="https://www.youtube.com/embed/' + t.video + '" title="Video" allowfullscreen style="position:absolute;inset:0;width:100%;height:100%;border:0"></iframe></div>'
+      : '';
+    document.getElementById('modalHerramientaBody').innerHTML =
+      '<div style="font-size:11px;font-weight:600;letter-spacing:1.5px;text-transform:uppercase;color:#E57373;margin-bottom:8px">' + t.badge + '</div>' +
+      '<h3 style="font-size:38px;line-height:1;margin-bottom:12px">' + t.titulo + '</h3>' +
+      '<p style="font-size:14px;color:#B8B8B8;line-height:1.7;margin-bottom:24px">' + t.sub + '</p>' +
+      '<img src="' + t.img + '" alt="" style="width:100%;display:block;border-radius:12px;border:1px solid var(--negro-border);margin-bottom:24px">' +
+      video +
+      '<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:12px;margin-bottom:28px">' + feats + '</div>' +
+      '<div style="display:flex;gap:10px;flex-wrap:wrap">' +
+        '<button class="home-btn-primary" onclick="cerrarHerramientaPublica();irALogin(\'registro\')">Crear cuenta para obtenerla →</button>' +
+        '<button class="home-nav-btn ghost" style="padding:14px 22px" onclick="cerrarHerramientaPublica();irALogin(\'login\')">Ya tengo cuenta</button>' +
+      '</div>';
+    const ov = document.getElementById('modalHerramienta');
+    ov.classList.add('active');
+    ov.scrollTop = 0;
+    ov.querySelector('.modal').scrollTop = 0;
+  }
+
+  function cerrarHerramientaPublica() {
+    const ov = document.getElementById('modalHerramienta');
+    if (!ov) return;
+    ov.classList.remove('active');
+    document.getElementById('modalHerramientaBody').innerHTML = '';   // corta el video
+  }
+  document.addEventListener('keydown', e => { if (e.key === 'Escape') cerrarHerramientaPublica(); });
 
   async function cargarPanel() {
     // Mostrar tab admin si corresponde
@@ -13575,5 +13697,13 @@
   }
 })();
 </script>
+<!-- FICHA PÚBLICA DE HERRAMIENTA -->
+<div class="modal-overlay" id="modalHerramienta" onclick="if(event.target===this)cerrarHerramientaPublica()">
+  <div class="modal modal-herr">
+    <button class="modal-close" onclick="cerrarHerramientaPublica()" aria-label="Cerrar">✕</button>
+    <div id="modalHerramientaBody"></div>
+  </div>
+</div>
+
 </body>
 </html>

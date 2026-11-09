@@ -1430,7 +1430,7 @@
         <img src="ManualBacktestAnalyzer.png" alt="Backtest Manual">
         <div class="screenshot-card-body">
           <div class="screenshot-card-title">Backtest Manual</div>
-          <div class="screenshot-card-desc">Indicador para hacer backtesting manual directamente en el grafico de NinjaTrader 8. Estadisticas en tiempo real y envio de operaciones al Trading Journal con un click.</div>
+          <div class="screenshot-card-desc">Indicador para hacer backtesting manual directamente en el grafico de NinjaTrader 8. Estadisticas en tiempo real y envio de operaciones al Trading Journal con un click. Generá con un click un prompt para analizar tus sesiones con Claude.</div>
           <div class="screenshot-card-more">Ver detalles →</div>
         </div>
       </div>
@@ -1461,8 +1461,8 @@
           </div>
         </div>
         <div class="screenshot-card-body">
-          <div class="screenshot-card-title">Trading Journal</div>
-          <div class="screenshot-card-desc">Journal integrado con NinjaTrader 8 y Telegram. Registra estrategia, emociones, reglas y genera estadisticas automaticamente.</div>
+          <div class="screenshot-card-title">Trading Journal <span style="margin-left:6px;font-size:10px;font-weight:700;letter-spacing:1px;color:#4CAF50;background:rgba(76,175,80,0.12);border:1px solid rgba(76,175,80,0.3);border-radius:6px;padding:2px 7px;vertical-align:middle">GRATIS</span></div>
+          <div class="screenshot-card-desc">Journal gratuito integrado con NinjaTrader 8 y Telegram. Registra estrategia, emociones, reglas y genera estadisticas automaticamente. Con un click generás un prompt para analizar tus operaciones con Claude.</div>
         </div>
       </div>
     </div>
@@ -1575,7 +1575,8 @@
       <details class="faq-item"><summary>¿Cómo descargo e instalo las herramientas?</summary><div class="faq-resp">Con la licencia activa, entrás a tu panel, a Mi Panel → Mis herramientas, y descargás la herramienta junto con su guía.</div></details>
       <details class="faq-item"><summary>¿Sirven para cuentas de fondeo (prop firms)?</summary><div class="faq-resp">Están pensadas con ese uso en mente: el Daily Loss Limiter bloquea nuevas órdenes al llegar a tu límite diario y se protege con contraseña, y TDA Risk/Reward calcula los contratos según tu riesgo en USD y dibuja la línea de breakeven por comisiones. De todas formas, revisá siempre las reglas de tu firma.</div></details>
       <details class="faq-item"><summary>¿Se puede desactivar el Daily Loss Limiter una vez bloqueado?</summary><div class="faq-resp">No sin la contraseña. Además, el estado se guarda en disco: si reiniciás NinjaTrader con cuentas bloqueadas, siguen bloqueadas. Se desbloquean solas cuando el P&amp;L vuelve a $0.</div></details>
-      <details class="faq-item"><summary>¿Cómo veo los resultados del Backtest Manual?</summary><div class="faq-resp">Iniciás sesión en el indicador con tu cuenta, creás una sesión de backtest (nombre y estrategia) y enviás tus operaciones con un click. Quedan en tu panel web, en Mi Trading → Journal → Backtest, cada sesión con su data separada: PnL acumulado en $, win rate, profit factor, expected value, max drawdown y equity curve.</div></details>
+      <details class="faq-item"><summary>¿El Trading Journal es gratuito?</summary><div class="faq-resp">Sí, el Trading Journal es gratuito para todos los usuarios con cuenta. Registra tus operaciones, estrategia, emociones y reglas, genera estadísticas automáticamente y tiene la opción Analizar con Claude: se copia un resumen de tus datos y lo pegás en Claude para recibir un análisis.</div></details>
+      <details class="faq-item"><summary>¿Cómo veo los resultados del Backtest Manual?</summary><div class="faq-resp">Iniciás sesión en el indicador con tu cuenta, creás una sesión de backtest (nombre y estrategia) y enviás tus operaciones con un click. Quedan en tu panel web, en Mi Trading → Journal → Backtest, cada sesión con su data separada: PnL acumulado en $, win rate, profit factor, expected value, max drawdown y equity curve. Desde la pestaña Claude del Journal también podés generar un prompt con el resumen de tus sesiones y pegarlo en Claude para que las analice.</div></details>
       <details class="faq-item"><summary>¿TDA Risk/Reward calcula los contratos por mí?</summary><div class="faq-resp">Sí. Definís cuánto querés arriesgar en dólares y la herramienta calcula los contratos según el stop, ajustándose en vivo mientras lo movés, y sincroniza la cantidad con el ChartTrader.</div></details>
       <details class="faq-item"><summary>¿Las herramientas son asesoramiento financiero?</summary><div class="faq-resp">No. Son herramientas para ordenar tu operativa y no garantizan resultados. Operar futuros implica riesgo de pérdida, y los resultados de un backtest no aseguran resultados futuros.</div></details>
     </div>
@@ -3228,7 +3229,7 @@
       subtitle.textContent = esRR
         ? 'Herramienta profesional de Risk/Reward para NinjaTrader 8. Dibujá tu entrada y stop con 2 clicks, ajustá el R:R en tiempo real, definí un riesgo máximo en USD y dejá que la herramienta calcule los contratos por vos, con auto-extensión de R a medida que el precio avanza.'
         : esMBA
-        ? 'Realizá backtests a libro abierto de forma rápida y sencilla. Dibujá tus Risk/Reward en el gráfico, obtené estadísticas completas en tiempo real y enviá las operaciones al Trading Journal con un solo click.'
+        ? 'Realizá backtests a libro abierto de forma rápida y sencilla. Dibujá tus Risk/Reward en el gráfico, obtené estadísticas completas en tiempo real, enviá las operaciones al Trading Journal con un solo click y generá un prompt para analizar tus sesiones con Claude.'
         : 'Protegé tu capital con un bloqueador automático de pérdidas diarias. Inviolable, persistente y con licencia por equipo.';
     }
     if (formTitle) {
@@ -3257,6 +3258,7 @@
         + '<div class="feature-card"><div class="feature-icon">📖</div><h3>Backtesting a libro abierto</h3><p>Recorré el gráfico vela por vela y registrá tus operaciones como si estuvieras en vivo. Sin replay ni simulador.</p></div>'
         + '<div class="feature-card"><div class="feature-icon">🚀</div><h3>Integración con Trading Journal</h3><p>Enviá todas las operaciones del backtest al Trading Journal con un solo click. Quedan guardadas en tu panel web para analizarlas cuando quieras.</p></div>'
         + '<div class="feature-card"><div class="feature-icon">📉</div><h3>Analytics web avanzado</h3><p>Accedé desde tu panel web a tus sesiones de backtest, cada una con su data separada: PnL acumulado en $, Win Rate, Profit Factor, Expected Value, Max Drawdown y equity curve.</p></div>'
+        + '<div class="feature-card"><div class="feature-icon">🤖</div><h3>Analizá tus sesiones con Claude</h3><p>Generá con un click un prompt con el resumen de tus sesiones de backtest (resultados por sesión, estrategia y tramos de R:R), pegalo en Claude y recibí un análisis. Lo hacés desde la pestaña Claude de tu Journal, que es gratuito.</p></div>'
         + '<div class="feature-card"><div class="feature-icon">🛡️</div><h3>Licencia por equipo</h3><p>Licencia vinculada a tu MAC Address. No se puede compartir ni usar en otra PC.</p></div>';
       } else {
         fg.innerHTML =
@@ -3317,7 +3319,7 @@
     ManualBacktestAnalyzer: {
       badge: 'NinjaTrader 8 · Indicador',
       titulo: 'BACKTEST<br><span>ANALYZER</span>',
-      sub: `Realizá backtests a libro abierto de forma rápida y sencilla. Dibujá tus Risk/Reward en el gráfico, obtené estadísticas completas en tiempo real y enviá las operaciones al Trading Journal con un solo click.`,
+      sub: `Realizá backtests a libro abierto de forma rápida y sencilla. Dibujá tus Risk/Reward en el gráfico, obtené estadísticas completas en tiempo real, enviá las operaciones al Trading Journal con un solo click y generá un prompt para analizar tus sesiones con Claude.`,
       img: 'ManualBacktestAnalyzer.png',
       video: null,
       features: [
@@ -3326,6 +3328,7 @@
         ['📖', 'Backtesting a libro abierto', `Recorré el gráfico vela por vela y registrá tus operaciones como si estuvieras en vivo. Sin replay ni simulador.`],
         ['🚀', 'Integración con Trading Journal', `Enviá todas las operaciones del backtest al Trading Journal con un solo click. Quedan guardadas en tu panel web para analizarlas cuando quieras.`],
         ['📉', 'Analytics web avanzado', `Accedé desde tu panel web a tus sesiones de backtest, cada una con su data separada: PnL acumulado en $, Win Rate, Profit Factor, Expected Value, Max Drawdown y equity curve.`],
+        ['🤖', 'Analizá tus sesiones con Claude', `Generá con un click un prompt con el resumen de tus sesiones de backtest (resultados por sesión, estrategia y tramos de R:R), pegalo en Claude y recibí un análisis. Lo hacés desde la pestaña Claude de tu Journal, que es gratuito.`],
         ['🛡️', 'Licencia por equipo', `Licencia vinculada a tu MAC Address. No se puede compartir ni usar en otra PC.`]
       ]
     }

@@ -1610,8 +1610,8 @@
       <details class="faq-item"><summary>¿Cómo descargo e instalo las herramientas?</summary><div class="faq-resp">Con la licencia activa, entrás a tu panel, a Mi Panel → Mis herramientas, y descargás la herramienta junto con su guía.</div></details>
       <details class="faq-item"><summary>¿Sirven para cuentas de fondeo (prop firms)?</summary><div class="faq-resp">Están pensadas con ese uso en mente: el Daily Loss Limiter bloquea nuevas órdenes al llegar a tu límite diario y se protege con contraseña, y TDA Risk/Reward calcula los contratos según tu riesgo en USD y dibuja la línea de breakeven por comisiones. De todas formas, revisá siempre las reglas de tu firma.</div></details>
       <details class="faq-item"><summary>¿Se puede desactivar el Daily Loss Limiter una vez bloqueado?</summary><div class="faq-resp">No sin la contraseña. Además, el estado se guarda en disco: si reiniciás NinjaTrader con cuentas bloqueadas, siguen bloqueadas. Se desbloquean solas cuando el P&amp;L vuelve a $0.</div></details>
-      <details class="faq-item"><summary>¿El Trading Journal es gratuito?</summary><div class="faq-resp">Sí, el Trading Journal es gratuito para todos los usuarios con cuenta. Registra tus operaciones, estrategia, emociones y reglas, genera estadísticas automáticamente y tiene la opción Analizar con Claude: se copia un resumen de tus datos y lo pegás en Claude para recibir un análisis.</div></details>
-      <details class="faq-item"><summary>¿Cómo veo los resultados del Backtest Manual?</summary><div class="faq-resp">Iniciás sesión en el indicador con tu cuenta, creás una sesión de backtest (nombre y estrategia) y enviás tus operaciones con un click. Quedan en tu panel web, en Mi Trading → Journal → Backtest, cada sesión con su data separada: PnL acumulado en $, win rate, profit factor, expected value, max drawdown y equity curve. Desde la pestaña Claude del Journal también podés generar un prompt con el resumen de tus sesiones y pegarlo en Claude para que las analice.</div></details>
+      <details class="faq-item"><summary>¿El Trading Journal es gratuito?</summary><div class="faq-resp">Sí, el Trading Journal es gratuito para todos los usuarios con cuenta. Registra tus operaciones, estrategia, emociones y reglas, genera estadísticas automáticamente y tiene la opción Analizar con Claude (dentro de la pestaña Mixi): se copia un resumen de tus datos y lo pegás en Claude para recibir un análisis.</div></details>
+      <details class="faq-item"><summary>¿Cómo veo los resultados del Backtest Manual?</summary><div class="faq-resp">Iniciás sesión en el indicador con tu cuenta, creás una sesión de backtest (nombre y estrategia) y enviás tus operaciones con un click. Quedan en tu panel web, en Mi Trading → Journal → Backtest, cada sesión con su data separada: PnL acumulado en $, win rate, profit factor, expected value, max drawdown y equity curve. Desde la pestaña Mixi del Journal también podés generar un prompt con el resumen de tus sesiones y pegarlo en Claude para que las analice.</div></details>
       <details class="faq-item"><summary>¿TDA Risk/Reward calcula los contratos por mí?</summary><div class="faq-resp">Sí. Definís cuánto querés arriesgar en dólares y la herramienta calcula los contratos según el stop, ajustándose en vivo mientras lo movés, y sincroniza la cantidad con el ChartTrader.</div></details>
       <details class="faq-item"><summary>¿Las herramientas son asesoramiento financiero?</summary><div class="faq-resp">No. Son herramientas para ordenar tu operativa y no garantizan resultados. Operar futuros implica riesgo de pérdida, y los resultados de un backtest no aseguran resultados futuros.</div></details>
     </div>
@@ -3293,7 +3293,7 @@
         + '<div class="feature-card"><div class="feature-icon">📖</div><h3>Backtesting a libro abierto</h3><p>Recorré el gráfico vela por vela y registrá tus operaciones como si estuvieras en vivo. Sin replay ni simulador.</p></div>'
         + '<div class="feature-card"><div class="feature-icon">🚀</div><h3>Integración con Trading Journal</h3><p>Enviá todas las operaciones del backtest al Trading Journal con un solo click. Quedan guardadas en tu panel web para analizarlas cuando quieras.</p></div>'
         + '<div class="feature-card"><div class="feature-icon">📉</div><h3>Analytics web avanzado</h3><p>Accedé desde tu panel web a tus sesiones de backtest, cada una con su data separada: PnL acumulado en $, Win Rate, Profit Factor, Expected Value, Max Drawdown y equity curve.</p></div>'
-        + '<div class="feature-card"><div class="feature-icon">🤖</div><h3>Analizá tus sesiones con Claude</h3><p>Generá con un click un prompt con el resumen de tus sesiones de backtest (resultados por sesión, estrategia y tramos de R:R), pegalo en Claude y recibí un análisis. Lo hacés desde la pestaña Claude de tu Journal, que es gratuito.</p></div>'
+        + '<div class="feature-card"><div class="feature-icon">🤖</div><h3>Analizá tus sesiones con Claude</h3><p>Generá con un click un prompt con el resumen de tus sesiones de backtest (resultados por sesión, estrategia y tramos de R:R), pegalo en Claude y recibí un análisis. Lo hacés desde la pestaña Mixi de tu Journal, que es gratuito.</p></div>'
         + '<div class="feature-card"><div class="feature-icon">🛡️</div><h3>Licencia por equipo</h3><p>Licencia vinculada a tu MAC Address. No se puede compartir ni usar en otra PC.</p></div>';
       } else {
         fg.innerHTML =
@@ -3363,7 +3363,7 @@
         ['📖', 'Backtesting a libro abierto', `Recorré el gráfico vela por vela y registrá tus operaciones como si estuvieras en vivo. Sin replay ni simulador.`],
         ['🚀', 'Integración con Trading Journal', `Enviá todas las operaciones del backtest al Trading Journal con un solo click. Quedan guardadas en tu panel web para analizarlas cuando quieras.`],
         ['📉', 'Analytics web avanzado', `Accedé desde tu panel web a tus sesiones de backtest, cada una con su data separada: PnL acumulado en $, Win Rate, Profit Factor, Expected Value, Max Drawdown y equity curve.`],
-        ['🤖', 'Analizá tus sesiones con Claude', `Generá con un click un prompt con el resumen de tus sesiones de backtest (resultados por sesión, estrategia y tramos de R:R), pegalo en Claude y recibí un análisis. Lo hacés desde la pestaña Claude de tu Journal, que es gratuito.`],
+        ['🤖', 'Analizá tus sesiones con Claude', `Generá con un click un prompt con el resumen de tus sesiones de backtest (resultados por sesión, estrategia y tramos de R:R), pegalo en Claude y recibí un análisis. Lo hacés desde la pestaña Mixi de tu Journal, que es gratuito.`],
         ['🛡️', 'Licencia por equipo', `Licencia vinculada a tu MAC Address. No se puede compartir ni usar en otra PC.`]
       ]
     }
@@ -3463,7 +3463,7 @@
       '<div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:28px">' + ejemplos.map(chip).join('') + '</div>' +
       '<div style="background:#0D0D0D;border:1px solid var(--negro-border);border-radius:12px;padding:16px 18px;margin-bottom:24px;font-size:13px;color:#B8B8B8;line-height:1.7">' +
         '<strong style="color:var(--blanco)">Dónde lo encuentro:</strong> iniciá sesión, entrá al Trading Journal y abrí la pestaña <strong style="color:var(--blanco)">Mixi</strong>.<br>' +
-        '<strong style="color:var(--blanco)">Para hablarle:</strong> funciona en Edge y Chrome. En otros navegadores podés escribirle.<br>' +
+        '<strong style="color:var(--blanco)">Para hablarle:</strong> funciona en Edge y Chrome. En otros navegadores podés escribirle. El audio lo procesa el servicio de voz de tu navegador; Mixi no lo graba ni lo guarda.<br>' +
         'Mixi es una herramienta para ordenar tu operativa y leer tus propios datos. No es asesoramiento financiero ni garantiza resultados.' +
       '</div>' +
       '<div style="display:flex;gap:10px;flex-wrap:wrap">' +
@@ -6853,6 +6853,8 @@
   // ═══════════════════════════════════════════════════════════
   // TAB SWITCHER JOURNAL REAL ↔ BACKTEST
   // ═══════════════════════════════════════════════════════════
+  // Pestaña “Claude” oculta para todos (no se borra): su resumen ahora vive en Mixi → “Analizar con Claude”. Poné true para volver a mostrarla.
+  const CLAUDE_TAB_VISIBLE = false;
   function renderJournalTabs(active) {
     const tabStyle = (isActive) => `
       padding:10px 20px;
@@ -6871,14 +6873,14 @@
       <div style="display:flex;gap:4px;border-bottom:1px solid #1E1E1E;margin-bottom:20px;margin-top:-8px">
         <button onclick="cambiarTabJournal('real')" style="${tabStyle(active === 'real')}">📒 Journal</button>
         <button onclick="cambiarTabJournal('backtest')" style="${tabStyle(active === 'backtest')}">📊 Backtest</button>
-        <button onclick="cambiarTabJournal('claude')" style="${tabStyle(active === 'claude')}">🤖 Claude</button>
-        ${esAdmin() ? `<button onclick="cambiarTabJournal('mixi')" style="${tabStyle(active === 'mixi')}">🎙️ Mixi</button>` : ''}
+        ${CLAUDE_TAB_VISIBLE ? `<button onclick="cambiarTabJournal('claude')" style="${tabStyle(active === 'claude')}">🤖 Claude</button>` : ''}
+        <button onclick="cambiarTabJournal('mixi')" style="${tabStyle(active === 'mixi')}">🎙️ Mixi</button>
       </div>`;
   }
 
   function cambiarTabJournal(tab) {
     if (tab === 'real') cargarJournal();
-    else if (tab === 'claude') cargarJournalClaude();
+    else if (tab === 'claude') (CLAUDE_TAB_VISIBLE ? cargarJournalClaude() : cargarJournalMixi());
     else if (tab === 'mixi') cargarJournalMixi();
     else { _btSesionId = null; cargarJournalBacktest(); }
   }
@@ -8194,7 +8196,6 @@
 
   async function cargarJournalMixi() {
     const cont = document.getElementById('journalContainer');
-    if (!esAdmin()) { cargarJournal(); return; }
     cont.innerHTML = '<div style="text-align:center;padding:40px;color:var(--gris)"><span class="spinner"></span> Cargando...</div>';
     await mixiCargarMetricas();
 
@@ -8217,7 +8218,7 @@
         <div style="font-size:11px;color:#777;line-height:1.5;margin-bottom:12px">
           Tip: abrilo en pestaña nueva y arrastrá esa pestaña fuera del navegador para dejarlo en otra pantalla.
           ${_mixiD.jError ? 'No se pudo leer tu journal ahora; recargá la pestaña.' : _mixiSinOps ? 'Todavía no hay operaciones en tu journal: Mixi te lo va a decir cuando le preguntes.' : 'Usa tus <strong>operaciones reales</strong> (hoy, ayer, semana, mes, año e historial), netas de comisiones.'}
-          La voz funciona en Edge y Chrome; en otros navegadores podés escribirle a Mixi. ${mixiBtResumen()}
+          La voz funciona en Edge y Chrome; en otros navegadores podés escribirle a Mixi. El audio lo procesa el servicio de voz de tu navegador (en Chrome, Google; en Edge, Microsoft): Mixi no lo graba ni lo guarda. ${mixiBtResumen()}
         </div>
         <iframe id="mixiFrame" title="Simulador MIXI" allow="microphone; clipboard-write" style="width:100%;height:980px;border:1px solid #1E1E1E;border-radius:12px;background:#101215"></iframe>
       </div>
@@ -8241,7 +8242,6 @@
   }
 
   function mixiAbrir(modo) {
-    if (!esAdmin()) return;
     const w = modo === 'ventana'
       ? window.open('', 'mixi_ventana', 'popup=yes,width=460,height=860')
       : window.open('', '_blank');

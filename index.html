@@ -8224,6 +8224,7 @@
         body: JSON.stringify({ pregunta: String(pregunta || ''), historial: Array.isArray(historial) ? historial : [], contexto: mixiContextoPro() })
       });
       const j = await res.json().catch(() => null);
+      if (j && j.detalle) console.warn('Mixi Pro →', j.codigo, j.detalle);      // detalle técnico (solo lo recibe el admin): mirá la consola del navegador (F12)
       return (j && typeof j.ok === 'boolean') ? j : { ok: false, mensaje: 'Mixi Pro no pudo responder ahora.' };
     } catch (e) {
       return { ok: false, mensaje: e && e.name === 'AbortError' ? 'Mixi Pro tardó demasiado. Probá de nuevo.' : 'No pude conectar con Mixi Pro. Revisá tu internet.' };

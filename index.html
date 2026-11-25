@@ -13681,11 +13681,20 @@
             <div id="adminEmailPreviewContent"></div>
           </div>
 
+          <label class="padmin-label">Programar envío <span style="font-weight:400;color:#555">· Opcional (hora de Argentina)</span></label>
+          <input type="datetime-local" id="adminEmailFecha" class="padmin-input">
+
           <div style="display:flex;gap:8px">
             <button onclick="_previsualizarAdmin()" class="padmin-btn-sec" style="flex:1">👁️ Previsualizar</button>
+            <button onclick="_programarEmailAdmin()" id="btnAdminProgramar" class="padmin-btn-sec" style="flex:1">🕒 Programar</button>
             <button onclick="_enviarEmailAdmin()" id="btnAdminEnviar" class="padmin-btn" style="flex:2">📧 Enviar</button>
           </div>
           <div id="adminEnvioMsg" style="display:none;margin-top:12px;font-size:12px;padding:10px 14px;border-radius:8px"></div>
+        </div>
+
+        <div class="padmin-card" style="margin-top:16px">
+          <h3 style="font-size:15px;font-weight:700;margin-bottom:16px">Envíos programados</h3>
+          <div id="adminProgramados" style="font-size:13px;color:var(--gris)">Cargando...</div>
         </div>
       </div>
 
@@ -13829,6 +13838,7 @@
     _actualizarContAdmin();
     _renderAdminUsersTable();
     _cargarCuponesAdmin();
+    _cargarProgramadosAdmin();
 
     // Mostrar tab admin en nav si no está visible
     const tabAdmin = document.getElementById('tabAdmin');
@@ -13943,6 +13953,94 @@
     btn.disabled = false;
     btn.textContent = '📧 Enviar';
     showMsg(`✓ Enviado a ${enviados} usuario${enviados!==1?'s':''}.`, true);
+  }
+
+  async function _programarEmailAdmin() {
+    const asunto  = document.getElementById('adminEmailAsunto')?.value.trim();
+    const mensaje = document.getElementById('adminEmailMsg')?.value.trim();
+    const dest    = document.getElementById('adminEmailDest')?.value;
+    const fecha   = document.getElementById('adminEmailFecha')?.value;
+    const msgEl   = document.getElementById('adminEnvioMsg');
+    const btn     = document.getElementById('btnAdminProgramar');
+
+    const showMsg = (txt, ok) => {
+      if (!msgEl) return;
+      msgEl.style.cssText = ok
+        ? 'display:block;background:rgba(76,175,80,.1);color:var(--verde);border:1px solid rgba(76,175,80,.3)'
+        : 'display:block;background:rgba(229,115,115,.1);color:#E57373;border:1px solid rgba(229,115,115,.3)';
+      msgEl.textContent = txt;
+    };
+
+    if (!asunto || !mensaje) { showMsg('Completá el asunto y el mensaje.', false); return; }
+    if (!fecha) { showMsg('Elegí la fecha y hora de envío.', false); return; }
+    const cuando = new Date(fecha);
+    if (isNaN(cuando.getTime()) || cuando.getTime() < Date.now() + 60000) {
+      showMsg('La fecha tiene que ser al menos 1 minuto en el futuro.', false); return;
+    }
+
+    const dests = _getDestinatariosAdmin(dest);
+    if (!dests.length) { showMsg('No hay destinatarios para el filtro seleccionado.', false); return; }
+    if (!confirm(`¿Programar email para ${dests.length} usuario${dests.length!==1?'s':''}?\n\nAsunto: ${asunto}\nEnvío: ${cuando.toLocaleString('es-AR')}`)) return;
+
+    // Se guarda la lista ya resuelta, con el mensaje personalizado por usuario
+    const lista = dests.map(u => ({
+      email: u.email || '',
+      nombre: u.nombre || 'Trader',
+      mensaje: mensaje.replace(/\{nombre\}/g, u.nombre||'Trader').replace(/\{email\}/g, u.email||'').replace(/\{producto\}/g, u.producto||'')
+    })).filter(u => u.email);
+
+    btn.disabled = true;
+    const r = await sbFetch('/rest/v1/emails_programados', {
+      method: 'POST',
+      headers: { 'Prefer': 'return=minimal' },
+      body: JSON.stringify({
+        asunto,
+        mensaje,
+        imagen_url: _adminImgUrl || null,
+        destinatarios: lista,
+        enviar_en: cuando.toISOString()
+      })
+    }, sesiónActual.access_token);
+    btn.disabled = false;
+
+    if (r.ok) {
+      showMsg(`✓ Programado para ${cuando.toLocaleString('es-AR')} (${lista.length} destinatarios).`, true);
+      _cargarProgramadosAdmin();
+    } else {
+      showMsg('Error al programar: ' + (typeof r.data === 'string' ? r.data : (r.data?.message || r.status)), false);
+    }
+  }
+
+  async function _cargarProgramadosAdmin() {
+    const cont = document.getElementById('adminProgramados');
+    if (!cont) return;
+    const r = await sbFetch('/rest/v1/emails_programados?select=id,asunto,enviar_en,estado,enviados,destinatarios&order=enviar_en.desc&limit=20', {}, sesiónActual.access_token);
+    if (!r.ok || !Array.isArray(r.data)) { cont.textContent = 'No se pudo cargar la lista.'; return; }
+    if (!r.data.length) { cont.textContent = 'No hay envíos programados.'; return; }
+    const estados = { pendiente: '🕒 Pendiente', enviando: '⏳ Enviando', enviado: '✓ Enviado', cancelado: '✕ Cancelado' };
+    cont.innerHTML = r.data.map(e => {
+      const n = Array.isArray(e.destinatarios) ? e.destinatarios.length : 0;
+      const cancelar = e.estado === 'pendiente'
+        ? `<button onclick="_cancelarProgramadoAdmin('${e.id}')" style="background:rgba(229,115,115,.1);border:1px solid rgba(229,115,115,.2);color:#E57373;border-radius:6px;padding:4px 10px;font-size:11px;cursor:pointer">Cancelar</button>`
+        : '';
+      return `<div style="display:flex;align-items:center;justify-content:space-between;gap:8px;padding:10px 0;border-bottom:1px solid #222">
+        <div>
+          <div style="color:var(--blanco);font-weight:600">${esc(e.asunto)}</div>
+          <div style="font-size:11px;margin-top:2px">${new Date(e.enviar_en).toLocaleString('es-AR')} · ${n} destinatarios · ${estados[e.estado] || esc(e.estado)}${e.estado==='enviado' ? ' (' + e.enviados + ')' : ''}</div>
+        </div>
+        ${cancelar}
+      </div>`;
+    }).join('');
+  }
+
+  async function _cancelarProgramadoAdmin(id) {
+    if (!confirm('¿Cancelar este envío programado?')) return;
+    await sbFetch('/rest/v1/emails_programados?id=eq.' + encodeURIComponent(id) + '&estado=eq.pendiente', {
+      method: 'PATCH',
+      headers: { 'Prefer': 'return=minimal' },
+      body: JSON.stringify({ estado: 'cancelado' })
+    }, sesiónActual.access_token);
+    _cargarProgramadosAdmin();
   }
 
   async function _crearCupon() {
